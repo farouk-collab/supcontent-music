@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Détail — SUPCONTENT</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
+      <div class="menu">
+        <a class="pill" href="/index.html">Accueil</a>
+        <a class="pill" href="/search.html">Recherche</a>
+        <a class="pill" href="/auth.html">Connexion</a>
+        <a class="pill" href="/profile.html">Profil</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div id="box"><small>Chargement…</small></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { apiFetch, qs, toast, escapeHtml } from "/app.js";
+
+    const box = document.querySelector("#box");
+
+    function pickImage(images){
+      if (!Array.isArray(images) || images.length === 0) return "";
+      return images[0]?.url || images[0] || "";
+    }
+
+    function row(label, value){
+      return `<div class="row" style="margin-top:8px"><span class="badge">${escapeHtml(label)}</span><div style="color:var(--muted)">${value}</div></div>`;
+    }
+
+    async function load(){
+      const type = qs("type");
+      const id = qs("id");
+      if (!type || !id){
+        box.innerHTML = `<small>Paramètres manquants. Reviens sur <a href="/search.html">Recherche</a>.</small>`;
+        return;
+      }
+      try{
+        const data = await apiFetch(`/media/${encodeURIComponent(type)}/${encodeURIComponent(id)}`);
+        const img = pickImage(data.images);
+        const name = data.name || "";
+        const subtitle =
+          data.artists ? data.artists.map(a=>a.name).join(", ") :
+          data.genres ? data.genres.join(", ") :
+          "";
+
+        box.innerHTML = `
+          <div class="row" style="justify-content:space-between">
+            <div>
+              <h2 style="margin:0">${escapeHtml(name)}</h2>
+              <div style="color:var(--muted);margin-top:6px">${escapeHtml(subtitle)}</div>
+              <div style="margin-top:10px" class="row">
+                <span class="badge">${escapeHtml(type)}</span>
+                <span class="badge">id: <code>${escapeHtml(id)}</code></span>
+              </div>
+            </div>
+            <div style="width:180px;max-width:42vw">
+              <div class="item" style="min-height:auto">
+                <div class="cover" style="height:180px">
+                  ${img ? `<img src="${escapeHtml(img)}" alt="">` : `<div class="badge">no image</div>`}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr/>
+
+          ${data.release_date ? row("Release", escapeHtml(data.release_date)) : ""}
+          ${typeof data.popularity === "number" ? row("Popularity", escapeHtml(data.popularity)) : ""}
+          ${data.external_urls?.spotify ? row("Spotify", `<a class="pill" target="_blank" rel="noreferrer" href="${escapeHtml(data.external_urls.spotify)}">Ouvrir sur Spotify</a>`) : ""}
+
+          <hr/>
+          <small>Prochaine étape : afficher reviews/likes/commentaires ici (données locales Postgres + infos Spotify).</small>
+        `;
+      }catch(err){
+        box.innerHTML = `<small style="color:#ffb0b0">Erreur: ${escapeHtml(err.message)}</small>`;
+        toast(err.message, "Erreur media");
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

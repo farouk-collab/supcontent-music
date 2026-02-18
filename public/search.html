@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Recherche — SUPCONTENT</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
+      <div class="menu">
+        <a class="pill" href="/index.html">Accueil</a>
+        <a class="pill" href="/search.html">Recherche</a>
+        <a class="pill" href="/auth.html">Connexion</a>
+        <a class="pill" href="/profile.html">Profil</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card span4">
+        <h2>Recherche Spotify</h2>
+        <form id="searchForm" class="form">
+          <div>
+            <label>Requête</label>
+            <input class="input" name="q" required placeholder="daft punk" />
+          </div>
+          <div class="two">
+            <div>
+              <label>Type</label>
+              <select name="type">
+                <option value="artist">artist</option>
+                <option value="album">album</option>
+                <option value="track">track</option>
+              </select>
+            </div>
+            <div>
+              <label>Limit</label>
+              <input class="input" name="limit" type="number" min="1" max="50" value="12" />
+            </div>
+          </div>
+          <button class="btn primary" type="submit">Rechercher</button>
+          <small>Ça appelle <code>/search</code> côté backend (pas l’API Spotify directement).</small>
+        </form>
+      </div>
+
+      <div class="card span8">
+        <h2>Résultats</h2>
+        <div id="results" class="results"></div>
+        <small id="hint"></small>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    import { apiFetch, toast, escapeHtml } from "/app.js";
+
+    const form = document.querySelector("#searchForm");
+    const results = document.querySelector("#results");
+    const hint = document.querySelector("#hint");
+
+    function pickImage(images){
+      if (!Array.isArray(images) || images.length === 0) return "";
+      return images[0]?.url || images[0] || "";
+    }
+
+    function renderItem(it){
+      const img = pickImage(it.images);
+      const name = it.name || "";
+      const id = it.id;
+      const type = it.type;
+      const sub = it.artists ? it.artists.map(a=>a.name).join(", ") : (it.genres ? it.genres.join(", ") : "");
+      const href = `/media.html?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
+
+      return `
+        <a class="item" href="${href}">
+          <div class="cover">${img ? `<img src="${escapeHtml(img)}" alt="">` : `<div class="badge">no image</div>`}</div>
+          <div class="meta">
+            <div class="title">${escapeHtml(name)}</div>
+            <div class="sub">${escapeHtml(sub)}</div>
+            <div class="badge">Ouvrir détail</div>
+          </div>
+        </a>
+      `;
+    }
+
+    async function doSearch(q, type, limit){
+      results.innerHTML = `<small>Chargement…</small>`;
+      hint.textContent = "";
+      try{
+        const data = await apiFetch(`/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&limit=${encodeURIComponent(limit)}`);
+        const items = data?.items || [];
+        if (!items.length){
+          results.innerHTML = `<small>Aucun résultat</small>`;
+          return;
+        }
+        results.innerHTML = items.map(renderItem).join("");
+        hint.textContent = `Résultats: ${items.length}`;
+      }catch(err){
+        results.innerHTML = `<small style="color:#ffb0b0">Erreur: ${escapeHtml(err.message)}</small>`;
+        toast(err.message, "Erreur recherche");
+      }
+    }
+
+    form.addEventListener("submit", (e)=>{
+      e.preventDefault();
+      const fd = new FormData(form);
+      const q = String(fd.get("q")||"").trim();
+      const type = String(fd.get("type")||"artist");
+      const limit = String(fd.get("limit")||"12");
+      doSearch(q, type, limit);
+    });
+
+    // auto demo
+    doSearch("daft punk", "artist", 12);
+  </script>
+</body>
+</html>

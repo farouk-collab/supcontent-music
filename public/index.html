@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>SUPCONTENT Music</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
+
+      <div class="menu">
+        <a class="pill" href="/index.html">Accueil</a>
+        <a class="pill" href="/search.html">Recherche</a>
+
+        <!-- ✅ Affichage dynamique via index.js -->
+        <a class="pill" href="/auth.html" data-auth="login">Connexion</a>
+        <a class="pill" href="/profile.html" data-auth="profile" style="display:none">Profil</a>
+        <a class="pill" href="#" data-auth="logout" style="display:none">Déconnexion</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="hero">
+      <h1>Réseau social musical (backend ready) 🎵</h1>
+      <p>
+        Tu as déjà : Auth JWT + PostgreSQL + Redis + Spotify search/media.
+        Maintenant on a un front minimal pour visualiser tout ça.
+      </p>
+
+      <div class="row" style="margin-top:10px; gap:12px; flex-wrap:wrap">
+        <a class="btn primary" href="/search.html">Lancer une recherche</a>
+
+        <!-- ✅ Boutons dynamiques -->
+        <a class="btn" href="/auth.html" data-cta="auth">Créer un compte / Se connecter</a>
+        <a class="btn" href="/profile.html" data-cta="profile" style="display:none">Aller au profil</a>
+      </div>
+
+      <div style="margin-top:12px">
+        <small id="sessionHint" style="color:var(--muted)"></small>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card span6">
+        <h2>Ce qui marche déjà</h2>
+        <div class="row" style="flex-wrap:wrap; gap:10px">
+          <span class="badge">✅ /auth/register</span>
+          <span class="badge">✅ /auth/login</span>
+          <span class="badge">✅ /auth/me</span>
+          <span class="badge">✅ /search</span>
+          <span class="badge">✅ /media/:type/:id</span>
+        </div>
+        <hr/>
+        <p>
+          <small>
+            Astuce : passe par <span class="kbd">Recherche</span> pour voir covers + ouvrir la page détail.
+          </small>
+        </p>
+      </div>
+
+      <div class="card span6">
+        <h2>État DB</h2>
+        <p>Tables présentes :</p>
+        <div class="row" style="margin-top:10px; flex-wrap:wrap; gap:10px">
+          <span class="badge">users</span>
+          <span class="badge">reviews</span>
+          <span class="badge">review_likes</span>
+          <span class="badge">review_comments</span>
+          <span class="badge">collections</span>
+          <span class="badge">collection_items</span>
+          <span class="badge">follows</span>
+          <span class="badge">notifications</span>
+          <span class="badge">user_settings</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- ✅ Important : script de la page -->
+  <script type="module" src="/index.js"></script>
+</body>
+</html>
