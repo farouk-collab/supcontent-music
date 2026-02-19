@@ -172,3 +172,66 @@ label{font-size:.9rem; color: var(--muted)}
 .toast.show{display:block}
 .toast strong{display:block}
 hr{border:none; border-top:1px solid var(--border); margin:14px 0}
+/* ===== HOME CAROUSELS ===== */
+.carousel{
+  margin-top: 14px;
+  overflow: hidden;
+  border-radius: 18px;
+  perspective: 900px;
+}
+
+.carousel-track{
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 10px 2px 12px 2px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none; /* Firefox */
+}
+.carousel-track::-webkit-scrollbar{ display:none; }
+
+.tile{
+  scroll-snap-align: start;
+  min-width: 180px;
+  max-width: 180px;
+  border: 1px solid rgba(255,255,255,.10);
+  background: rgba(255,255,255,.04);
+  border-radius: 16px;
+  overflow: hidden;
+  transform-style: preserve-3d;
+  transition: transform .18s ease, border-color .18s ease;
+}
+.tile:hover{
+  transform: translateZ(18px) rotateY(-6deg);
+  border-color: rgba(255,255,255,.18);
+}
+
+.tile .cover{
+  width: 100%;
+  height: 180px;
+  background: rgba(255,255,255,.06);
+  background-size: cover;
+  background-position: center;
+}
+.tile .meta{
+  padding: 10px 10px 12px 10px;
+}
+.tile .title{
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.tile .sub{
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* bouton flèche un peu mieux */
+button.btn[data-car-prev], button.btn[data-car-next]{
+  padding: 8px 12px;
+  border-radius: 14px;
+}

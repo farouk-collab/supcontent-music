@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
+  <!-- NAV -->
   <div class="nav">
     <div class="nav-inner">
       <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
@@ -15,7 +16,7 @@
         <a class="pill" href="/index.html">Accueil</a>
         <a class="pill" href="/search.html">Recherche</a>
 
-        <!-- ✅ Affichage dynamique via index.js -->
+        <!-- affichage dynamique via index.js -->
         <a class="pill" href="/auth.html" data-auth="login">Connexion</a>
         <a class="pill" href="/profile.html" data-auth="profile" style="display:none">Profil</a>
         <a class="pill" href="#" data-auth="logout" style="display:none">Déconnexion</a>
@@ -24,17 +25,18 @@
   </div>
 
   <div class="container">
+    <!-- HERO -->
     <div class="hero">
-      <h1>Réseau social musical (backend ready) 🎵</h1>
+      <h1>SUPCONTENT Music 🎵</h1>
       <p>
-        Tu as déjà : Auth JWT + PostgreSQL + Redis + Spotify search/media.
-        Maintenant on a un front minimal pour visualiser tout ça.
+        Découvre des titres, artistes et albums. Le backend est prêt (Auth + PostgreSQL + Redis + Spotify).
+        Maintenant on met un accueil “Netflix-like” avec des sections qui défilent.
       </p>
 
       <div class="row" style="margin-top:10px; gap:12px; flex-wrap:wrap">
         <a class="btn primary" href="/search.html">Lancer une recherche</a>
 
-        <!-- ✅ Boutons dynamiques -->
+        <!-- CTA dynamiques -->
         <a class="btn" href="/auth.html" data-cta="auth">Créer un compte / Se connecter</a>
         <a class="btn" href="/profile.html" data-cta="profile" style="display:none">Aller au profil</a>
       </div>
@@ -44,7 +46,87 @@
       </div>
     </div>
 
-    <div class="grid">
+    <!-- CAROUSELS (HOME FEED) -->
+    <div class="grid" style="margin-top:18px">
+      <div class="card span12">
+        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+          <div>
+            <h2 style="margin:0">Tendances</h2>
+            <small style="color:var(--muted)">Survole pour pause • molette pour scroll • flèches pour naviguer</small>
+          </div>
+          <div class="row" style="gap:10px">
+            <button class="btn" type="button" data-car-prev="trending" aria-label="Précédent">◀</button>
+            <button class="btn" type="button" data-car-next="trending" aria-label="Suivant">▶</button>
+          </div>
+        </div>
+
+        <div class="carousel" data-carousel="trending" style="margin-top:14px">
+          <div class="carousel-track" data-track="trending">
+            <!-- injecté par /index.js -->
+          </div>
+        </div>
+      </div>
+
+      <div class="card span12">
+        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+          <div>
+            <h2 style="margin:0">Rap</h2>
+            <small style="color:var(--muted)">Sélection Rap (Spotify search)</small>
+          </div>
+          <div class="row" style="gap:10px">
+            <button class="btn" type="button" data-car-prev="rap" aria-label="Précédent">◀</button>
+            <button class="btn" type="button" data-car-next="rap" aria-label="Suivant">▶</button>
+          </div>
+        </div>
+
+        <div class="carousel" data-carousel="rap" style="margin-top:14px">
+          <div class="carousel-track" data-track="rap">
+            <!-- injecté par /index.js -->
+          </div>
+        </div>
+      </div>
+
+      <div class="card span12">
+        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+          <div>
+            <h2 style="margin:0">Afro</h2>
+            <small style="color:var(--muted)">Afro / Amapiano / Afrobeats</small>
+          </div>
+          <div class="row" style="gap:10px">
+            <button class="btn" type="button" data-car-prev="afro" aria-label="Précédent">◀</button>
+            <button class="btn" type="button" data-car-next="afro" aria-label="Suivant">▶</button>
+          </div>
+        </div>
+
+        <div class="carousel" data-carousel="afro" style="margin-top:14px">
+          <div class="carousel-track" data-track="afro">
+            <!-- injecté par /index.js -->
+          </div>
+        </div>
+      </div>
+
+      <div class="card span12">
+        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+          <div>
+            <h2 style="margin:0">Pop</h2>
+            <small style="color:var(--muted)">Pop / Hits</small>
+          </div>
+          <div class="row" style="gap:10px">
+            <button class="btn" type="button" data-car-prev="pop" aria-label="Précédent">◀</button>
+            <button class="btn" type="button" data-car-next="pop" aria-label="Suivant">▶</button>
+          </div>
+        </div>
+
+        <div class="carousel" data-carousel="pop" style="margin-top:14px">
+          <div class="carousel-track" data-track="pop">
+            <!-- injecté par /index.js -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TECH / STATUS -->
+    <div class="grid" style="margin-top:18px">
       <div class="card span6">
         <h2>Ce qui marche déjà</h2>
         <div class="row" style="flex-wrap:wrap; gap:10px">
@@ -54,10 +136,10 @@
           <span class="badge">✅ /search</span>
           <span class="badge">✅ /media/:type/:id</span>
         </div>
-        <hr/>
+        <hr />
         <p>
           <small>
-            Astuce : passe par <span class="kbd">Recherche</span> pour voir covers + ouvrir la page détail.
+            Astuce : passe par <span class="kbd">Recherche</span> pour voir les covers + ouvrir la page détail.
           </small>
         </p>
       </div>
@@ -82,7 +164,7 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- ✅ Important : script de la page -->
+  <!-- IMPORTANT : pas de script inline (CSP), tout est dans index.js -->
   <script type="module" src="/index.js"></script>
 </body>
 </html>

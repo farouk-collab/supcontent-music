@@ -9,8 +9,10 @@ import path from "path";
 dotenv.config();
 
 import { pool, redis } from "./connections";
-import { spotifyGet, spotifySearch } from "./services"; // re-exported from index
+import { spotifyGet, spotifySearch } from "./services";
 import authRoutes from "./routes/auth";
+import usersRoutes from "./routes/users";
+import uploadRoutes from "./routes/uploads";
 
 const app = express();
 
@@ -24,6 +26,8 @@ app.use(morgan("dev"));
    API ROUTES
 ====================== */
 app.use("/auth", authRoutes);
+app.use("/users", usersRoutes);
+app.use("/upload", uploadRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
@@ -61,7 +65,7 @@ app.get("/redis-test", async (_req, res) => {
 app.get("/search", async (req, res) => {
   try {
     const q = String(req.query.q ?? "").trim();
-    const type = String(req.query.type ?? "track") as "track" | "album" | "artist";
+    const type = String(req.query.type ?? "track").trim() as "track" | "album" | "artist";
 
     const pageRaw = Array.isArray(req.query.page) ? req.query.page[0] : req.query.page;
     const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
@@ -77,35 +81,37 @@ app.get("/search", async (req, res) => {
       return res.status(400).json({ erreur: "Le paramètre 'type' doit être track|album|artist" });
     }
 
-    const data = await spotifySearch({ q, type, page, limit });
-    res.json(data);
+    const offset = (page - 1) * limit;
+
+    const data = await spotifySearch({ q, type, limit, offset });
+    return res.json(data);
   } catch (e: any) {
-    console.error("Spotify /search error:", e?.response?.status, e?.response?.data ?? e?.message);
-    res.status(500).json({
+    console.error("Spotify /search error:", e?.status ?? e?.response?.status, e?.data ?? e?.response?.data ?? e?.message);
+    return res.status(500).json({
       erreur: "échec de la recherche Spotify",
-      status: e?.response?.status ?? null,
-      details: e?.response?.data ?? e?.message ?? null,
+      status: e?.status ?? e?.response?.status ?? null,
+      details: e?.data ?? e?.response?.data ?? e?.message ?? null,
     });
   }
 });
 
 app.get("/media/:type/:id", async (req, res) => {
   try {
-    const type = req.params.type as "track" | "album" | "artist";
-    const id = req.params.id;
+    const type = String(req.params.type).trim() as "track" | "album" | "artist";
+    const id = String(req.params.id || "").trim();
 
     if (!["track", "album", "artist"].includes(type)) {
       return res.status(400).json({ erreur: "Le paramètre 'type' doit être track|album|artist" });
     }
 
     const data = await spotifyGet(type, id);
-    res.json(data);
+    return res.json(data);
   } catch (e: any) {
-    console.error("Spotify /media error:", e?.response?.status, e?.response?.data ?? e?.message);
-    res.status(500).json({
+    console.error("Spotify /media error:", e?.status ?? e?.response?.status, e?.data ?? e?.response?.data ?? e?.message);
+    return res.status(500).json({
       erreur: "échec de la récupération Spotify",
-      status: e?.response?.status ?? null,
-      details: e?.response?.data ?? e?.message ?? null,
+      status: e?.status ?? e?.response?.status ?? null,
+      details: e?.data ?? e?.response?.data ?? e?.message ?? null,
     });
   }
 });
@@ -114,6 +120,7 @@ app.get("/media/:type/:id", async (req, res) => {
    STATIC FRONT (HTML/CSS/JS)
 ====================== */
 app.use(express.static(path.join(__dirname, "../public")));
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/", (_req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
