@@ -16,8 +16,19 @@ async function getAccessToken(): Promise<string> {
   const now = Date.now();
   if (cachedToken && now < tokenExpiresAt) return cachedToken;
 
-  const clientId = mustEnv("SPOTIFY_CLIENT_ID");
-  const clientSecret = mustEnv("SPOTIFY_CLIENT_SECRET");
+  let clientId: string;
+  let clientSecret: string;
+  try {
+    clientId = mustEnv("SPOTIFY_CLIENT_ID");
+    clientSecret = mustEnv("SPOTIFY_CLIENT_SECRET");
+  } catch (err: any) {
+    const e = new Error(
+      "Spotify credentials not configured. Set SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in your environment or .env file."
+    );
+    (e as any).status = 503;
+    throw e;
+  }
+
   const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
   const res = await axios.post(
@@ -62,18 +73,20 @@ export async function spotifySearch(params: {
   const limitNum = Math.max(1, Math.min(50, Math.trunc(Number(params.limit) || 20)));
   const offsetNum = Math.max(0, Math.trunc(Number(params.offset) || 0));
 
-  console.log("🎵 Spotify SEARCH params:", { q, type, limit: limitNum, offset: offsetNum });
+  console.log("🎵 Spotify SEARCH params:", { q, type, limit: limitNum, offset: offsetNum, limitType: typeof params.limit });
 
   try {
-    const res = await axios.get(`${SPOTIFY_API_BASE}/search`, {
+    const query = new URLSearchParams({
+      q,
+      type,
+      limit: String(limitNum),
+      offset: String(offsetNum),
+      market: "FR",
+    }).toString();
+    const url = `${SPOTIFY_API_BASE}/search?${query}`;
+    console.log("🎧 Spotify request URL:", url);
+    const res = await axios.get(url, {
       headers: { Authorization: `Bearer ${token}` },
-      params: {
-        q,
-        type,
-        limit: limitNum,   // ✅ nombre, pas string
-        offset: offsetNum, // ✅ nombre, pas string
-        market: "FR",
-      },
       timeout: 15000,
     });
 

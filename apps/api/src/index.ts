@@ -81,13 +81,36 @@ app.get("/search", async (req, res) => {
       return res.status(400).json({ erreur: "Le paramètre 'type' doit être track|album|artist" });
     }
 
-    const offset = (page - 1) * limit;
+    // Ensure integers and safe ranges before calling Spotify
+    const safeLimit = Math.trunc(Number(limit) || 20);
+    const finalLimit = Math.max(1, Math.min(50, safeLimit));
+    const finalOffset = Math.max(0, Math.trunc(Number((page - 1) * finalLimit) || 0));
 
-    const data = await spotifySearch({ q, type, limit, offset });
-    return res.json(data);
+    console.log("🎯 /search final params:", { q, type, limit: finalLimit, offset: finalOffset, page });
+
+    try {
+      const data = await spotifySearch({ q, type, limit: finalLimit, offset: finalOffset });
+      return res.json(data);
+    } catch (e: any) {
+      const statusCode = e?.status ?? e?.response?.status ?? null;
+      const errData = e?.data ?? e?.response?.data ?? null;
+      const errMessage =
+        (errData && (errData.error?.message || errData.message)) || e?.message || "";
+      if (statusCode === 400 && String(errMessage).includes("Invalid limit")) {
+        console.warn("Spotify returned Invalid limit — retrying with smaller limit=10");
+        const fallback = await spotifySearch({ q, type, limit: 10, offset: 0 });
+        return res.json(fallback);
+      }
+      throw e;
+    }
   } catch (e: any) {
-    console.error("Spotify /search error:", e?.status ?? e?.response?.status, e?.data ?? e?.response?.data ?? e?.message);
-    return res.status(500).json({
+    console.error(
+      "Spotify /search error:",
+      e?.status ?? e?.response?.status,
+      e?.data ?? e?.response?.data ?? e?.message
+    );
+    const statusCode = e?.status ?? e?.response?.status ?? 500;
+    return res.status(statusCode).json({
       erreur: "échec de la recherche Spotify",
       status: e?.status ?? e?.response?.status ?? null,
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
@@ -107,8 +130,13 @@ app.get("/media/:type/:id", async (req, res) => {
     const data = await spotifyGet(type, id);
     return res.json(data);
   } catch (e: any) {
-    console.error("Spotify /media error:", e?.status ?? e?.response?.status, e?.data ?? e?.response?.data ?? e?.message);
-    return res.status(500).json({
+    console.error(
+      "Spotify /media error:",
+      e?.status ?? e?.response?.status,
+      e?.data ?? e?.response?.data ?? e?.message
+    );
+    const statusCode = e?.status ?? e?.response?.status ?? 500;
+    return res.status(statusCode).json({
       erreur: "échec de la récupération Spotify",
       status: e?.status ?? e?.response?.status ?? null,
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
