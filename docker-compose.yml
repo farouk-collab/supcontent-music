@@ -1,0 +1,37 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: supcontent-db
+    restart: always
+    environment:
+      POSTGRES_USER: supcontent
+      POSTGRES_PASSWORD: supcontent
+      POSTGRES_DB: supcontent
+    ports:
+      - "5432:5432"
+    volumes:
+      - supcontent_pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: supcontent-redis
+    restart: always
+    ports:
+      - "6379:6379"
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: supcontent-pgadmin
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  supcontent_pgdata:

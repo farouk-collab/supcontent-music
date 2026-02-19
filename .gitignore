@@ -1,8 +1,22 @@
+# deps
 node_modules/
+**/node_modules/
+
+# build
 dist/
+build/
+**/dist/
+**/build/
+
+# env
 .env
 .env.*
+*.local
+
+# logs
+*.log
+
+# uploads / files persos
 uploads/
 public/uploads/
-*.log
-.DS_Store
+apps/**/uploads/
