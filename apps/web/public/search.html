@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Recherche â€” SUPCONTENT</title>
+  <title>Recherche — SUPCONTENT</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -25,7 +25,7 @@
         <h2>Recherche Spotify</h2>
         <form id="searchForm" class="form">
           <div>
-            <label>RequÃªte</label>
+            <label>Requête</label>
             <input class="input" name="q" required placeholder="daft punk" />
           </div>
           <div class="two">
@@ -43,12 +43,12 @@
             </div>
           </div>
           <button class="btn primary" type="submit">Rechercher</button>
-          <small>Ã‡a appelle <code>/search</code> cÃ´tÃ© backend (pas lâ€™API Spotify directement).</small>
+          <small>Ça appelle <code>/search</code> côté backend (pas l’API Spotify directement).</small>
         </form>
       </div>
 
       <div class="card span8">
-        <h2>RÃ©sultats</h2>
+        <h2>Résultats</h2>
         <div id="results" class="results"></div>
         <small id="hint"></small>
       </div>
@@ -91,25 +91,25 @@
           <div class="meta">
             <div class="title">${escapeHtml(name)}</div>
             <div class="sub">${escapeHtml(sub)}</div>
-            <div class="badge">Ouvrir dÃ©tail</div>
+            <div class="badge">Ouvrir détail</div>
           </div>
         </a>
       `;
     }
 
     async function doSearch(q, type, limit){
-      results.innerHTML = `<small>Chargementâ€¦</small>`;
+      results.innerHTML = `<small>Chargement…</small>`;
       hint.textContent = "";
       try{
         const data = await apiFetch(`/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&limit=${encodeURIComponent(limit)}`);
         const items = pickItems(data);
         if (!items.length){
-          results.innerHTML = `<small>Aucun rÃ©sultat</small>`;
+          results.innerHTML = `<small>Aucun résultat</small>`;
           return;
         }
         results.innerHTML = items.map(renderItem).join("");
         const withImageCount = items.filter((it)=>Boolean(pickImage(it))).length;
-        hint.textContent = `RÃ©sultats: ${items.length} | Images: ${withImageCount}`;
+        hint.textContent = `Résultats: ${items.length} | Images: ${withImageCount}`;
       }catch(err){
         results.innerHTML = `<small style="color:#ffb0b0">Erreur: ${escapeHtml(err.message)}</small>`;
         toast(err.message, "Erreur recherche");
