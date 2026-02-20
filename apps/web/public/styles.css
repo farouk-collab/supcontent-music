@@ -23,6 +23,10 @@ body{
   color:var(--text);
 }
 
+body.has-mobile-footer{
+  padding-bottom: 92px;
+}
+
 a{color:inherit; text-decoration:none}
 small{color:var(--muted)}
 code{background:rgba(255,255,255,.08); padding:.15rem .35rem; border-radius:8px}
@@ -230,8 +234,124 @@ hr{border:none; border-top:1px solid var(--border); margin:14px 0}
   text-overflow: ellipsis;
 }
 
+/* Story-like carousel variant */
+.story-tile{
+  min-width: 132px;
+  max-width: 132px;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 2px 2px 8px 2px;
+  transition: transform .16s ease;
+}
+
+.story-tile:hover{
+  transform: translateY(-2px);
+  border: 0;
+}
+
+.story-ring{
+  width: 96px;
+  height: 96px;
+  border-radius: 999px;
+  padding: 3px;
+  background: linear-gradient(135deg, #ffd43b 0%, #ff6b6b 42%, #8b5cf6 100%);
+  box-shadow: 0 10px 20px rgba(0,0,0,.25);
+}
+
+.story-avatar{
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  border: 3px solid #0b1020;
+  background: rgba(255,255,255,.08);
+  background-size: cover;
+  background-position: center;
+  display: grid;
+  place-items: center;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.story-title{
+  width: 100%;
+  text-align: center;
+  font-weight: 800;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.story-sub{
+  width: 100%;
+  text-align: center;
+  color: var(--muted);
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* bouton flèche un peu mieux */
 button.btn[data-car-prev], button.btn[data-car-next]{
   padding: 8px 12px;
   border-radius: 14px;
+}
+
+/* ===== MOBILE EMOJI FOOTER NAV ===== */
+.mobile-footer{
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: block;
+  background: rgba(7,10,20,.94);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--border);
+}
+
+.mobile-footer-inner{
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 8px 10px 10px 10px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.mobile-tab{
+  display: grid;
+  place-items: center;
+  padding: 6px 2px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  color: var(--muted);
+}
+
+.mobile-tab .ico{
+  font-size: 22px;
+  line-height: 1;
+  font-family: "Segoe UI Symbol", "Noto Sans Symbols", ui-sans-serif, system-ui;
+}
+
+.mobile-tab .txt{
+  margin-top: 5px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.mobile-tab:hover{
+  border-color: var(--border);
+  color: var(--text);
+}
+
+.mobile-tab.is-active{
+  color: var(--text);
+  background: rgba(255,255,255,.06);
+  border-color: rgba(124,92,255,.38);
 }

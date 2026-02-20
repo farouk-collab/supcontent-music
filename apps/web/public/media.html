@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Détail — SUPCONTENT</title>
+  <title>DÃ©tail â€” SUPCONTENT</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -13,6 +13,7 @@
       <div class="menu">
         <a class="pill" href="/index.html">Accueil</a>
         <a class="pill" href="/search.html">Recherche</a>
+        <a class="pill" href="/library.html">Bibliotheque</a>
         <a class="pill" href="/auth.html">Connexion</a>
         <a class="pill" href="/profile.html">Profil</a>
       </div>
@@ -21,7 +22,7 @@
 
   <div class="container">
     <div class="card">
-      <div id="box"><small>Chargement…</small></div>
+      <div id="box"><small>Chargementâ€¦</small></div>
     </div>
   </div>
 
@@ -49,7 +50,7 @@
       const type = qs("type");
       const id = qs("id");
       if (!type || !id){
-        box.innerHTML = `<small>Paramètres manquants. Reviens sur <a href="/search.html">Recherche</a>.</small>`;
+        box.innerHTML = `<small>ParamÃ¨tres manquants. Reviens sur <a href="/search.html">Recherche</a>.</small>`;
         return;
       }
       try{
@@ -87,7 +88,7 @@
           ${data.external_urls?.spotify ? row("Spotify", `<a class="pill" target="_blank" rel="noreferrer" href="${escapeHtml(data.external_urls.spotify)}">Ouvrir sur Spotify</a>`) : ""}
 
           <hr/>
-          <small>Prochaine étape : afficher reviews/likes/commentaires ici (données locales Postgres + infos Spotify).</small>
+          <small>Prochaine Ã©tape : afficher reviews/likes/commentaires ici (donnÃ©es locales Postgres + infos Spotify).</small>
         `;
       }catch(err){
         box.innerHTML = `<small style="color:#ffb0b0">Erreur: ${escapeHtml(err.message)}</small>`;
@@ -97,5 +98,7 @@
 
     load();
   </script>
+  <script type="module" src="/footer.js"></script>
 </body>
 </html>
+

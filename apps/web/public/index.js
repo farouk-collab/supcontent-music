@@ -2,7 +2,6 @@ import { apiFetch, toast, getTokens, serverLogout } from "/app.js";
 
 console.log("INDEX JS LOADED");
 
-// ============ AUTH UI (menu + CTA) ============
 function syncAuthUI() {
   const t = getTokens();
 
@@ -34,28 +33,16 @@ function bindLogout() {
     e.preventDefault();
     await serverLogout();
     syncAuthUI();
-    toast("Déconnecté.", "OK");
+    toast("Deconnecte.", "OK");
   });
 }
 
-// ============ CAROUSEL HELPERS ============
 function pickItems(data) {
-  // Ton API peut renvoyer plusieurs formes
-  return (
-    data?.items ||
-    data?.tracks?.items ||
-    data?.albums?.items ||
-    data?.artists?.items ||
-    []
-  );
+  return data?.items || data?.tracks?.items || data?.albums?.items || data?.artists?.items || [];
 }
 
 function makeTile(item) {
-  const img =
-    item?.images?.[0]?.url ||
-    item?.album?.images?.[0]?.url ||
-    item?.album?.images?.[1]?.url ||
-    "";
+  const img = item?.images?.[0]?.url || item?.album?.images?.[0]?.url || item?.album?.images?.[1]?.url || "";
 
   const title = item?.name || "Sans titre";
   const sub = item?.artists?.map((a) => a.name).join(", ") || item?.type || "";
@@ -64,7 +51,7 @@ function makeTile(item) {
 
   const a = document.createElement("a");
   a.className = "tile";
-  a.href = id ? `/media.html?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}` : "#";
+  a.href = id ? `/media?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}` : "#";
   a.style.textDecoration = "none";
   a.style.color = "inherit";
 
@@ -92,14 +79,57 @@ function makeTile(item) {
   return a;
 }
 
+function makeStoryTile(person) {
+  const a = document.createElement("a");
+  a.className = "tile story-tile";
+  a.href = person.href || "/profile.html";
+  a.style.textDecoration = "none";
+  a.style.color = "inherit";
+
+  const ring = document.createElement("div");
+  ring.className = "story-ring";
+
+  const avatar = document.createElement("div");
+  avatar.className = "story-avatar";
+  if (person.avatar) avatar.style.backgroundImage = `url('${person.avatar}')`;
+  else avatar.textContent = "o";
+  ring.appendChild(avatar);
+
+  const t = document.createElement("div");
+  t.className = "story-title";
+  t.textContent = person.name || "profil";
+
+  const s = document.createElement("div");
+  s.className = "story-sub";
+  s.textContent = person.handle || "";
+
+  a.appendChild(ring);
+  a.appendChild(t);
+  a.appendChild(s);
+  return a;
+}
+
+function fillStories(trackEl) {
+  if (!trackEl) return;
+
+  const followed = [
+    { name: "Ayoub", handle: "@ayoub93", avatar: "https://i.pravatar.cc/160?img=12", href: "/profile.html" },
+    { name: "Lea", handle: "@lea.music", avatar: "https://i.pravatar.cc/160?img=47", href: "/profile.html" },
+    { name: "Nora", handle: "@nora.vibes", avatar: "https://i.pravatar.cc/160?img=33", href: "/profile.html" },
+    { name: "Ibra", handle: "@ibra.flow", avatar: "https://i.pravatar.cc/160?img=53", href: "/profile.html" },
+    { name: "Maya", handle: "@maya.pop", avatar: "https://i.pravatar.cc/160?img=24", href: "/profile.html" },
+    { name: "Rayan", handle: "@rayan.rap", avatar: "https://i.pravatar.cc/160?img=61", href: "/profile.html" },
+  ];
+
+  trackEl.innerHTML = "";
+  followed.forEach((p) => trackEl.appendChild(makeStoryTile(p)));
+}
+
 async function fillTrack(trackEl, { q, type = "track", limit = 10 }) {
   trackEl.innerHTML = `<small style="color:var(--muted)">Chargement Spotify...</small>`;
 
   try {
-    const data = await apiFetch(
-      `/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&page=1&limit=${limit}`
-    );
-
+    const data = await apiFetch(`/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&page=1&limit=${limit}`);
     const items = pickItems(data);
 
     trackEl.innerHTML = "";
@@ -120,10 +150,8 @@ function enhanceCarousel(key) {
   const track = document.querySelector(`.carousel-track[data-track="${key}"]`);
   const prev = document.querySelector(`[data-car-prev="${key}"]`);
   const next = document.querySelector(`[data-car-next="${key}"]`);
-
   if (!track) return;
 
-  // molette => scroll horizontal
   track.addEventListener(
     "wheel",
     (e) => {
@@ -134,11 +162,9 @@ function enhanceCarousel(key) {
   );
 
   const step = () => Math.max(260, track.clientWidth * 0.8);
-
   if (prev) prev.addEventListener("click", () => track.scrollBy({ left: -step(), behavior: "smooth" }));
   if (next) next.addEventListener("click", () => track.scrollBy({ left: step(), behavior: "smooth" }));
 
-  // auto-scroll + pause hover
   let timer = null;
   const start = () => {
     if (timer) return;
@@ -159,10 +185,10 @@ function enhanceCarousel(key) {
   start();
 }
 
-// ============ MAIN ============
 async function main() {
   syncAuthUI();
   bindLogout();
+  fillStories(document.querySelector("#storiesTrack"));
 
   const sections = [
     { key: "trending", q: "Top hits", type: "track" },
@@ -179,4 +205,3 @@ async function main() {
 }
 
 main();
-

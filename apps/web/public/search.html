@@ -13,6 +13,7 @@
       <div class="menu">
         <a class="pill" href="/index.html">Accueil</a>
         <a class="pill" href="/search.html">Recherche</a>
+        <a class="pill" href="/library.html">Bibliotheque</a>
         <a class="pill" href="/auth.html">Connexion</a>
         <a class="pill" href="/profile.html">Profil</a>
       </div>
@@ -83,7 +84,7 @@
       const id = it.id;
       const type = it.type;
       const sub = it.artists ? it.artists.map(a=>a.name).join(", ") : (it.genres ? it.genres.join(", ") : "");
-      const href = `/media.html?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
+      const href = `/media?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}`;
 
       return `
         <a class="item" href="${href}">
@@ -128,6 +129,8 @@
     // auto demo
     doSearch("daft punk", "artist", 10);
   </script>
+  <script type="module" src="/footer.js"></script>
 </body>
 </html>
+
 

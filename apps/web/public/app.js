@@ -114,3 +114,8 @@ export function resolveMediaUrl(url = "") {
   if (s.startsWith("/")) return API + s;
   return s;
 }
+
+export function qs(name) {
+  const params = new URLSearchParams(window.location.search);
+  return params.get(name) || "";
+}

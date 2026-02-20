@@ -15,6 +15,7 @@
       <div class="menu">
         <a class="pill" href="/index.html">Accueil</a>
         <a class="pill" href="/search.html">Recherche</a>
+        <a class="pill" href="/library.html">Bibliotheque</a>
 
         <!-- affichage dynamique via index.js -->
         <a class="pill" href="/auth.html" data-auth="login">Connexion</a>
@@ -48,6 +49,20 @@
 
     <!-- CAROUSELS (HOME FEED) -->
     <div class="grid" style="margin-top:18px">
+      <div class="card span12">
+        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+          <div>
+            <h2 style="margin:0">Stories - Abonnements</h2>
+            <small style="color:var(--muted)">Comptes que tu suis</small>
+          </div>
+        </div>
+        <div class="carousel" style="margin-top:14px">
+          <div id="storiesTrack" class="carousel-track">
+            <!-- injecte par /index.js -->
+          </div>
+        </div>
+      </div>
+
       <div class="card span12">
         <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
           <div>
@@ -166,5 +181,6 @@
 
   <!-- IMPORTANT : pas de script inline (CSP), tout est dans index.js -->
   <script type="module" src="/index.js"></script>
+  <script type="module" src="/footer.js"></script>
 </body>
 </html>
