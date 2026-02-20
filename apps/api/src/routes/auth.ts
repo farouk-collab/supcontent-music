@@ -20,6 +20,8 @@ import { requireAuth, AuthedRequest } from "../middleware/requireAuth";
    Router
 ========================= */
 const router = Router();
+const GITHUB_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+const oauthStateStore = new Map<string, number>();
 
 /* =========================
    Schemas
@@ -69,6 +71,26 @@ const UpdateMeSchema = z.object({
 ========================= */
 function hashToken(token: string) {
   return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+function newOauthState() {
+  const state = crypto.randomBytes(24).toString("hex");
+  oauthStateStore.set(state, Date.now());
+  return state;
+}
+
+function consumeOauthState(state: string) {
+  const createdAt = oauthStateStore.get(state);
+  if (!createdAt) return false;
+  oauthStateStore.delete(state);
+  return Date.now() - createdAt <= GITHUB_OAUTH_STATE_TTL_MS;
+}
+
+function cleanupOauthStates() {
+  const now = Date.now();
+  for (const [s, createdAt] of oauthStateStore.entries()) {
+    if (now - createdAt > GITHUB_OAUTH_STATE_TTL_MS) oauthStateStore.delete(s);
+  }
 }
 
 function ensureUploadsDir() {
@@ -136,6 +158,157 @@ function extFromMime(mime: string) {
 ========================= */
 
 router.get("/ping", (_req, res) => res.json({ ok: true }));
+
+router.get("/oauth/github/start", (req, res) => {
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  const redirectUri =
+    process.env.GITHUB_REDIRECT_URI || "http://localhost:1234/auth/oauth/github/callback";
+
+  if (!clientId) {
+    return res.status(503).json({ erreur: "GITHUB_CLIENT_ID manquant" });
+  }
+
+  cleanupOauthStates();
+  const state = newOauthState();
+  const returnTo =
+    typeof req.query.returnTo === "string" && req.query.returnTo.trim()
+      ? req.query.returnTo.trim()
+      : process.env.FRONTEND_URL || "http://localhost:4173";
+
+  const payload = Buffer.from(JSON.stringify({ returnTo }), "utf8").toString("base64url");
+  const query = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    scope: "read:user user:email",
+    state: `${state}.${payload}`,
+  });
+
+  return res.redirect(`https://github.com/login/oauth/authorize?${query.toString()}`);
+});
+
+router.get("/oauth/github/callback", async (req, res) => {
+  try {
+    const clientId = process.env.GITHUB_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+    const redirectUri =
+      process.env.GITHUB_REDIRECT_URI || "http://localhost:1234/auth/oauth/github/callback";
+    if (!clientId || !clientSecret) {
+      return res.status(503).json({ erreur: "OAuth GitHub non configuré" });
+    }
+
+    const code = String(req.query.code || "");
+    const stateRaw = String(req.query.state || "");
+    const [state, encodedPayload] = stateRaw.split(".", 2);
+    if (!code || !state || !consumeOauthState(state)) {
+      return res.status(400).json({ erreur: "State OAuth invalide ou expiré" });
+    }
+
+    let returnTo = process.env.FRONTEND_URL || "http://localhost:4173";
+    try {
+      if (encodedPayload) {
+        const decoded = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+        if (decoded?.returnTo && typeof decoded.returnTo === "string") {
+          returnTo = decoded.returnTo;
+        }
+      }
+    } catch {
+      // fallback to FRONTEND_URL
+    }
+
+    const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        client_id: clientId,
+        client_secret: clientSecret,
+        code,
+        redirect_uri: redirectUri,
+      }),
+    });
+    const tokenData = (await tokenRes.json()) as { access_token?: string; error?: string };
+    if (!tokenRes.ok || !tokenData?.access_token) {
+      return res.status(401).json({ erreur: "Échec échange token GitHub", details: tokenData });
+    }
+
+    const ghToken = tokenData.access_token;
+    const [userRes, emailsRes] = await Promise.all([
+      fetch("https://api.github.com/user", {
+        headers: {
+          Authorization: `Bearer ${ghToken}`,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "supcontent-music",
+        },
+      }),
+      fetch("https://api.github.com/user/emails", {
+        headers: {
+          Authorization: `Bearer ${ghToken}`,
+          Accept: "application/vnd.github+json",
+          "User-Agent": "supcontent-music",
+        },
+      }),
+    ]);
+
+    const ghUser = (await userRes.json()) as {
+      id?: number;
+      login?: string;
+      name?: string;
+      email?: string | null;
+      avatar_url?: string;
+    };
+    const ghEmails = (await emailsRes.json()) as Array<{
+      email: string;
+      primary: boolean;
+      verified: boolean;
+    }>;
+
+    const chosenEmail =
+      ghUser?.email ||
+      ghEmails?.find((e) => e.primary && e.verified)?.email ||
+      ghEmails?.find((e) => e.verified)?.email ||
+      ghEmails?.[0]?.email ||
+      "";
+    if (!chosenEmail) {
+      return res.status(400).json({ erreur: "Aucun email GitHub exploitable" });
+    }
+
+    const displayName = String(ghUser?.name || ghUser?.login || "GitHub User").slice(0, 30);
+
+    let user = await findUserByEmail(chosenEmail);
+    if (!user) {
+      const randomPassword = crypto.randomBytes(24).toString("hex");
+      const password_hash = await bcrypt.hash(randomPassword, 12);
+      const created = await createUser({
+        email: chosenEmail,
+        password_hash,
+        display_name: displayName,
+      });
+      if (ghUser?.avatar_url) {
+        await pool.query("UPDATE users SET avatar_url = $1 WHERE id = $2", [ghUser.avatar_url, created.id]);
+      }
+      user = await findUserByEmail(chosenEmail);
+    }
+    if (!user) {
+      return res.status(500).json({ erreur: "Échec création/chargement utilisateur OAuth" });
+    }
+
+    const access = signAccessToken({ sub: user.id, email: user.email });
+    const refresh = signRefreshToken({ sub: user.id, email: user.email });
+    const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
+    await storeRefreshToken({ userId: user.id, tokenHash: hashToken(refresh), expiresAt });
+
+    const redir = new URL("/auth.html", returnTo);
+    redir.searchParams.set("oauth", "github");
+    redir.searchParams.set("accessToken", access);
+    redir.searchParams.set("refreshToken", refresh);
+    return res.redirect(redir.toString());
+  } catch (err: any) {
+    console.error("OAuth GitHub error:", err?.message || err);
+    return res.status(500).json({ erreur: "Erreur OAuth GitHub" });
+  }
+});
 
 router.post("/register", async (req, res) => {
   const parsed = RegisterSchema.safeParse(req.body);

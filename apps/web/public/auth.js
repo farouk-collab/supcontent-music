@@ -1,13 +1,15 @@
 import { apiFetch, setTokens, serverLogout, toast, getTokens } from "/app.js";
 
+const API = "http://localhost:1234";
+
 const rf = document.querySelector("#registerForm");
 const lf = document.querySelector("#loginForm");
 const logoutBtn = document.querySelector("#logoutBtn");
+const githubLoginBtn = document.querySelector("#githubLoginBtn");
 
 function afterAuth(r) {
   setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
 
-  // debug visible
   const t = getTokens();
   console.log("TOKENS SAVED:", {
     accessLen: t.accessToken.length,
@@ -17,6 +19,25 @@ function afterAuth(r) {
   toast("Connecte. Redirection...", "OK");
   setTimeout(() => (window.location.href = "/profile.html"), 400);
 }
+
+function consumeOauthParams() {
+  const params = new URLSearchParams(window.location.search);
+  const accessToken = params.get("accessToken");
+  const refreshToken = params.get("refreshToken");
+  if (!accessToken || !refreshToken) return;
+
+  setTokens({ accessToken, refreshToken });
+  toast("Connexion GitHub reussie.", "OK");
+
+  params.delete("accessToken");
+  params.delete("refreshToken");
+  params.delete("oauth");
+  const next = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""}`;
+  window.history.replaceState({}, "", next);
+  setTimeout(() => (window.location.href = "/profile.html"), 300);
+}
+
+consumeOauthParams();
 
 rf?.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -46,6 +67,10 @@ lf?.addEventListener("submit", async (e) => {
 
 logoutBtn?.addEventListener("click", async () => {
   await serverLogout();
-  toast("Déconnecté.", "OK");
+  toast("Deconnecte.", "OK");
 });
 
+githubLoginBtn?.addEventListener("click", () => {
+  const returnTo = window.location.origin;
+  window.location.href = `${API}/auth/oauth/github/start?returnTo=${encodeURIComponent(returnTo)}`;
+});
