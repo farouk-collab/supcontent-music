@@ -140,6 +140,28 @@
       </div>
     </div>
 
+    <div class="grid" style="margin-top:18px">
+      <div class="card span12">
+        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+          <div>
+            <h2 style="margin:0">Actualites musique</h2>
+            <small style="color:var(--muted)">Nouvelles sorties + activite de la communaute</small>
+          </div>
+          <button id="refreshNewsBtn" class="btn" type="button">Rafraichir actus</button>
+        </div>
+        <div class="news-grid" style="margin-top:12px">
+          <div>
+            <h3 style="margin:0 0 10px 0">Nouvelles sorties</h3>
+            <div id="newsReleases"><small>Chargement...</small></div>
+          </div>
+          <div>
+            <h3 style="margin:0 0 10px 0">Actu communaute</h3>
+            <div id="newsCommunity"><small>Chargement...</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- TECH / STATUS -->
     <div class="grid" style="margin-top:18px">
       <div class="card span6">
@@ -175,6 +197,7 @@
         </div>
       </div>
     </div>
+
   </div>
 
   <div id="toast" class="toast"></div>

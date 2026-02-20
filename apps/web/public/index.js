@@ -125,6 +125,72 @@ function fillStories(trackEl) {
   followed.forEach((p) => trackEl.appendChild(makeStoryTile(p)));
 }
 
+function renderReleaseCard(it) {
+  const href = it?.id ? `/media?type=album&id=${encodeURIComponent(it.id)}` : "#";
+  const img = it?.image || "";
+  const title = it?.name || "Sans titre";
+  const artists = Array.isArray(it?.artists) ? it.artists.join(", ") : "";
+  const date = it?.release_date || "";
+  return `
+    <a class="news-item" href="${href}">
+      <div class="news-cover">${img ? `<img src="${img}" alt="">` : `<span class="badge">album</span>`}</div>
+      <div>
+        <div class="news-title">${title}</div>
+        <div class="news-sub">${artists}</div>
+        <div class="news-meta">${date}</div>
+      </div>
+    </a>
+  `;
+}
+
+function renderCommunityCard(it) {
+  const href = `/media?type=${encodeURIComponent(it.media_type)}&id=${encodeURIComponent(it.media_id)}`;
+  const mediaName = it?.media?.name || it.media_id;
+  const mediaSub = it?.media?.subtitle || "";
+  const img = it?.media?.image || "";
+  const kind = it.kind === "review" ? "Review" : "Commentaire";
+  const rating = typeof it.rating === "number" ? ` • ${it.rating}/5` : "";
+  const author = it.display_name || "Utilisateur";
+  const text = it.text || "";
+  return `
+    <a class="news-item" href="${href}">
+      <div class="news-cover">${img ? `<img src="${img}" alt="">` : `<span class="badge">${it.media_type}</span>`}</div>
+      <div>
+        <div class="news-title">${mediaName}</div>
+        <div class="news-sub">${mediaSub}</div>
+        <div class="news-meta">${kind}${rating} • par ${author}</div>
+        ${text ? `<div class="news-text">${text}</div>` : ""}
+      </div>
+    </a>
+  `;
+}
+
+async function loadMusicNews() {
+  const releasesBox = document.querySelector("#newsReleases");
+  const communityBox = document.querySelector("#newsCommunity");
+  if (!releasesBox || !communityBox) return;
+
+  releasesBox.innerHTML = `<small>Chargement...</small>`;
+  communityBox.innerHTML = `<small>Chargement...</small>`;
+
+  try {
+    const data = await apiFetch("/music/news?limit=8");
+    const releases = Array.isArray(data?.releases) ? data.releases : [];
+    const community = Array.isArray(data?.community) ? data.community : [];
+
+    releasesBox.innerHTML = releases.length
+      ? releases.slice(0, 8).map(renderReleaseCard).join("")
+      : `<small>Aucune nouvelle sortie.</small>`;
+    communityBox.innerHTML = community.length
+      ? community.slice(0, 8).map(renderCommunityCard).join("")
+      : `<small>Pas encore d'activite communautaire.</small>`;
+  } catch (err) {
+    releasesBox.innerHTML = `<small style="color:#ffb0b0">Erreur actualites.</small>`;
+    communityBox.innerHTML = `<small style="color:#ffb0b0">Erreur actualites.</small>`;
+    toast(err?.message || "Erreur actualites musique", "Erreur");
+  }
+}
+
 async function fillTrack(trackEl, { q, type = "track", limit = 10 }) {
   trackEl.innerHTML = `<small style="color:var(--muted)">Chargement Spotify...</small>`;
 
@@ -189,6 +255,13 @@ async function main() {
   syncAuthUI();
   bindLogout();
   fillStories(document.querySelector("#storiesTrack"));
+  await loadMusicNews();
+  const refreshNewsBtn = document.querySelector("#refreshNewsBtn");
+  if (refreshNewsBtn) {
+    refreshNewsBtn.addEventListener("click", () => {
+      loadMusicNews().catch((err) => toast(err?.message || "Erreur actualites", "Erreur"));
+    });
+  }
 
   const sections = [
     { key: "trending", q: "Top hits", type: "track" },

@@ -11,7 +11,7 @@ dotenv.config();
 import { pool, redis } from "./connections";
 import { ensureCollectionsTables } from "./db/collections";
 import { ensureSocialTables } from "./db/social";
-import { spotifyGet, spotifySearch } from "./services";
+import { spotifyGet, spotifyNewReleases, spotifySearch } from "./services";
 import authRoutes from "./routes/auth";
 import collectionsRoutes from "./routes/collections";
 import usersRoutes from "./routes/users";
@@ -164,6 +164,163 @@ app.get("/media/:type/:id", async (req, res) => {
     const statusCode = e?.status ?? e?.response?.status ?? 500;
     return res.status(statusCode).json({
       erreur: "Ã©chec de la rÃ©cupÃ©ration Spotify",
+      status: e?.status ?? e?.response?.status ?? null,
+      details: e?.data ?? e?.response?.data ?? e?.message ?? null,
+    });
+  }
+});
+
+app.get("/music/news", async (req, res) => {
+  try {
+    const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
+    const limitNum = Number.parseInt(String(limitRaw ?? "10"), 10);
+    const limit = Number.isFinite(limitNum) ? Math.max(1, Math.min(20, limitNum)) : 10;
+
+    let releaseItems: any[] = [];
+    try {
+      const releasesData: any = await spotifyNewReleases(limit);
+      releaseItems = releasesData?.albums?.items || [];
+    } catch (e: any) {
+      const statusCode = e?.status ?? e?.response?.status ?? null;
+      if (statusCode === 403) {
+        // Some Spotify apps/regions block /browse/new-releases in client-credentials mode.
+        // Fallback: build a "news" feed from album searches.
+        const seeds = ["new music friday", "nouveautes album", "sorties rap", "pop nouveautes"];
+        const searched = await Promise.all(
+          seeds.map(async (q) => {
+            try {
+              const r: any = await spotifySearch({ q, type: "album", limit: 6, offset: 0 });
+              return r?.albums?.items || r?.items || [];
+            } catch {
+              return [];
+            }
+          })
+        );
+        const flat = searched.flat();
+        const uniq = new Map<string, any>();
+        for (const a of flat) {
+          const id = String(a?.id || "");
+          if (!id || uniq.has(id)) continue;
+          uniq.set(id, a);
+        }
+        releaseItems = Array.from(uniq.values()).slice(0, limit);
+      } else {
+        throw e;
+      }
+    }
+
+    const releases = releaseItems.map((a: any) => ({
+      id: String(a?.id || ""),
+      name: String(a?.name || ""),
+      media_type: "album",
+      artists: Array.isArray(a?.artists) ? a.artists.map((x: any) => String(x?.name || "")).filter(Boolean) : [],
+      image: String(a?.images?.[0]?.url || ""),
+      release_date: String(a?.release_date || ""),
+      total_tracks: Number(a?.total_tracks || 0),
+      spotify_url: String(a?.external_urls?.spotify || ""),
+    }));
+
+    let recentReviews: any[] = [];
+    let recentComments: any[] = [];
+    try {
+      const [reviewsRes, commentsRes] = await Promise.all([
+        pool.query(
+          `
+            SELECT r.media_type, r.media_id, r.rating, r.body, r.created_at, u.display_name
+            FROM reviews r
+            JOIN users u ON u.id = r.user_id
+            ORDER BY r.created_at DESC
+            LIMIT 10
+          `
+        ),
+        pool.query(
+          `
+            SELECT r.media_type, r.media_id, rc.body, rc.created_at, u.display_name
+            FROM review_comments rc
+            JOIN reviews r ON r.id = rc.review_id
+            JOIN users u ON u.id = rc.user_id
+            ORDER BY rc.created_at DESC
+            LIMIT 10
+          `
+        ),
+      ]);
+      recentReviews = reviewsRes.rows || [];
+      recentComments = commentsRes.rows || [];
+    } catch {
+      recentReviews = [];
+      recentComments = [];
+    }
+
+    const communityRaw = [
+      ...recentReviews.map((x: any) => ({
+        kind: "review",
+        media_type: String(x.media_type || "track"),
+        media_id: String(x.media_id || ""),
+        text: String(x.body || ""),
+        rating: x.rating == null ? null : Number(x.rating),
+        display_name: String(x.display_name || "Utilisateur"),
+        created_at: x.created_at,
+      })),
+      ...recentComments.map((x: any) => ({
+        kind: "comment",
+        media_type: String(x.media_type || "track"),
+        media_id: String(x.media_id || ""),
+        text: String(x.body || ""),
+        rating: null,
+        display_name: String(x.display_name || "Utilisateur"),
+        created_at: x.created_at,
+      })),
+    ]
+      .sort((a, b) => new Date(String(b.created_at || 0)).getTime() - new Date(String(a.created_at || 0)).getTime())
+      .slice(0, 10);
+
+    const uniqMedia = Array.from(
+      new Map(
+        communityRaw.map((x) => [`${x.media_type}:${x.media_id}`, { media_type: x.media_type, media_id: x.media_id }])
+      ).values()
+    );
+
+    const mediaMap = new Map<string, { name: string; subtitle: string; image: string }>();
+    await Promise.all(
+      uniqMedia.map(async (m) => {
+        try {
+          const raw: any = await spotifyGet(m.media_type as "track" | "album" | "artist", m.media_id);
+          const subtitle = Array.isArray(raw?.artists)
+            ? raw.artists.map((a: any) => String(a?.name || "")).filter(Boolean).join(", ")
+            : Array.isArray(raw?.genres)
+              ? raw.genres.map((g: any) => String(g || "")).filter(Boolean).join(", ")
+              : "";
+          const image = String(raw?.images?.[0]?.url || raw?.album?.images?.[0]?.url || "");
+          mediaMap.set(`${m.media_type}:${m.media_id}`, {
+            name: String(raw?.name || ""),
+            subtitle,
+            image,
+          });
+        } catch {
+          mediaMap.set(`${m.media_type}:${m.media_id}`, { name: "", subtitle: "", image: "" });
+        }
+      })
+    );
+
+    const community = communityRaw.map((x) => ({
+      ...x,
+      media: mediaMap.get(`${x.media_type}:${x.media_id}`) || { name: "", subtitle: "", image: "" },
+    }));
+
+    return res.json({
+      generated_at: new Date().toISOString(),
+      releases,
+      community,
+    });
+  } catch (e: any) {
+    console.error(
+      "Music news error:",
+      e?.status ?? e?.response?.status,
+      e?.data ?? e?.response?.data ?? e?.message
+    );
+    const statusCode = e?.status ?? e?.response?.status ?? 500;
+    return res.status(statusCode).json({
+      erreur: "echec chargement actualites musique",
       status: e?.status ?? e?.response?.status ?? null,
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
     });

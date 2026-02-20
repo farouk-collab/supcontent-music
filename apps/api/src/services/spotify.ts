@@ -131,3 +131,26 @@ export async function spotifyGet(type: SpotifyType, id: string) {
     throw e;
   }
 }
+
+export async function spotifyNewReleases(limit = 10) {
+  const token = await getAccessToken();
+  const safeLimit = Math.max(1, Math.min(20, Math.trunc(Number(limit) || 10)));
+
+  try {
+    const res = await axios.get(`${SPOTIFY_API_BASE}/browse/new-releases`, {
+      headers: { Authorization: `Bearer ${token}` },
+      params: { country: "FR", limit: safeLimit },
+      timeout: 15000,
+    });
+    return res.data;
+  } catch (err: any) {
+    const status = err?.response?.status ?? null;
+    const data = err?.response?.data ?? null;
+    console.error("Spotify NEW RELEASES error:", status, data);
+
+    const e = new Error(`Spotify API returned ${status}: ${JSON.stringify(data)}`);
+    (e as any).status = status;
+    (e as any).data = data;
+    throw e;
+  }
+}
