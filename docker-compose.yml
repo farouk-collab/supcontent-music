@@ -1,6 +1,35 @@
-version: "3.9"
-
 services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: supcontent-api
+    restart: always
+    environment:
+      PORT: 1234
+      DATABASE_URL: postgres://supcontent:supcontent@db:5432/supcontent
+      REDIS_URL: redis://redis:6379
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+    depends_on:
+      - db
+      - redis
+    ports:
+      - "1234:1234"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: supcontent-web
+    restart: always
+    depends_on:
+      - api
+    ports:
+      - "4173:80"
+
   db:
     image: postgres:15
     container_name: supcontent-db

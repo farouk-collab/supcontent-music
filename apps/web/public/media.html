@@ -32,9 +32,13 @@
 
     const box = document.querySelector("#box");
 
-    function pickImage(images){
-      if (!Array.isArray(images) || images.length === 0) return "";
-      return images[0]?.url || images[0] || "";
+    function pickImage(item){
+      const candidates = [
+        ...(Array.isArray(item?.images) ? item.images : []),
+        ...(Array.isArray(item?.album?.images) ? item.album.images : []),
+      ];
+      if (!candidates.length) return "";
+      return candidates[0]?.url || candidates[0] || "";
     }
 
     function row(label, value){
@@ -50,7 +54,7 @@
       }
       try{
         const data = await apiFetch(`/media/${encodeURIComponent(type)}/${encodeURIComponent(id)}`);
-        const img = pickImage(data.images);
+        const img = pickImage(data);
         const name = data.name || "";
         const subtitle =
           data.artists ? data.artists.map(a=>a.name).join(", ") :

@@ -85,12 +85,12 @@
             <div>
               <label>Photo de profil (fichier)</label>
               <input class="input" name="avatar_file" type="file" accept="image/*" />
-              <small>PNG/JPG/WebP (max 3MB) — upload à l’étape 3</small>
+              <small>PNG/JPG/WebP (max 3MB)</small>
             </div>
             <div>
               <label>Photo de couverture (fichier)</label>
               <input class="input" name="cover_file" type="file" accept="image/*" />
-              <small>PNG/JPG/WebP (max 3MB) — upload à l’étape 3</small>
+              <small>PNG/JPG/WebP (max 3MB)</small>
             </div>
           </div>
 
@@ -100,7 +100,7 @@
           </div>
 
           <small id="hint" style="display:block;margin-top:10px;color:var(--muted)">
-            Si rien ne se passe: regarde la console (F12) → Network → PATCH /auth/me.
+            Si rien ne se passe: regarde la console (F12) → Network → POST /upload/* puis PATCH /auth/me.
           </small>
         </form>
       </div>
@@ -110,7 +110,7 @@
         <div id="previewBox"><small>Chargement…</small></div>
         <hr/>
         <small style="color:var(--muted)">
-          Ici on preview aussi les fichiers choisis, même avant l’upload.
+          Ici on preview les fichiers choisis puis on les enregistre au clic sur Enregistrer.
         </small>
       </div>
     </div>
@@ -119,6 +119,6 @@
   <div id="toast" class="toast"></div>
 
   <!-- cache-busting version param ensures browser fetches latest JS -->
-  <script type="module" src="/profile-edit.js?v=2"></script>
+  <script type="module" src="/profile-edit.js?v=3"></script>
 </body>
 </html>

@@ -40,11 +40,11 @@
 
           <div>
             <label>Mot de passe (min 8)</label>
-            <input class="input" name="password" type="password" minlength="8" required placeholder="Password123!" autocomplete="new-password" />
+            <input class="input" name="password" type="password" minlength="8" required placeholder="Password123!" autocomplete="new-password" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}" title="8+ caractères avec majuscule, minuscule, chiffre et caractère spécial." />
           </div>
 
           <button class="btn primary" type="submit">S'inscrire</button>
-          <small>Après inscription, on stocke les tokens en localStorage.</small>
+          <small>Après inscription, on stocke les tokens en localStorage. Mot de passe: 8+ caractères avec majuscule, minuscule, chiffre, spécial.</small>
         </form>
       </div>
 
@@ -73,8 +73,7 @@
         </div>
 
         <small>
-          La déconnexion ici efface les tokens côté navigateur.
-          (On ajoutera /auth/logout côté serveur plus tard si besoin)
+          La déconnexion invalide la session côté serveur puis efface les tokens côté navigateur.
         </small>
       </div>
     </div>

@@ -26,7 +26,13 @@ const router = Router();
 ========================= */
 const RegisterSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8),
+  password: z
+    .string()
+    .min(8)
+    .regex(/[A-Z]/, "Le mot de passe doit contenir une majuscule")
+    .regex(/[a-z]/, "Le mot de passe doit contenir une minuscule")
+    .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre")
+    .regex(/[^A-Za-z0-9]/, "Le mot de passe doit contenir un caractère spécial"),
   displayName: z.string().min(2).max(30),
 });
 
@@ -50,8 +56,12 @@ const UpdateMeSchema = z.object({
   gender: z.enum(["male", "female", "other", "prefer_not_to_say", ""]).optional(),
   birth_date: z.union([z.string(), z.literal(""), z.null()]).optional(), // YYYY-MM-DD / "" / null
 
-  avatar_url: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
-  cover_url: z.union([z.string().url(), z.literal(""), z.null()]).optional(),
+  avatar_url: z
+    .union([z.string().url(), z.string().regex(/^\/uploads\/[A-Za-z0-9._-]+$/), z.literal(""), z.null()])
+    .optional(),
+  cover_url: z
+    .union([z.string().url(), z.string().regex(/^\/uploads\/[A-Za-z0-9._-]+$/), z.literal(""), z.null()])
+    .optional(),
 });
 
 /* =========================

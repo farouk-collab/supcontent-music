@@ -18,8 +18,12 @@ const UpdateMeSchema = z.object({
   location: z.string().max(80).optional(),
   gender: z.enum(["male", "female", "other", "prefer_not_to_say"]).optional(),
   birth_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  avatar_url: z.string().url().max(300).optional().or(z.literal("")),
-  cover_url: z.string().url().max(300).optional().or(z.literal("")),
+  avatar_url: z
+    .union([z.string().url().max(300), z.string().regex(/^\/uploads\/[A-Za-z0-9._-]+$/), z.literal("")])
+    .optional(),
+  cover_url: z
+    .union([z.string().url().max(300), z.string().regex(/^\/uploads\/[A-Za-z0-9._-]+$/), z.literal("")])
+    .optional(),
 });
 
 router.patch("/me", requireAuth, async (req: AuthedRequest, res) => {

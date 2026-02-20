@@ -16,7 +16,26 @@ import uploadRoutes from "./routes/uploads";
 
 const app = express();
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        baseUri: ["'self'"],
+        fontSrc: ["'self'", "https:", "data:"],
+        formAction: ["'self'"],
+        frameAncestors: ["'self'"],
+        imgSrc: ["'self'", "data:", "blob:", "https://i.scdn.co", "https://mosaic.scdn.co"],
+        objectSrc: ["'none'"],
+        scriptSrc: ["'self'"],
+        scriptSrcAttr: ["'none'"],
+        styleSrc: ["'self'", "https:", "'unsafe-inline'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+  })
+);
 app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(cookieParser());
@@ -64,6 +83,7 @@ app.get("/redis-test", async (_req, res) => {
 
 app.get("/search", async (req, res) => {
   try {
+    const SPOTIFY_SEARCH_MAX_LIMIT = 10;
     const q = String(req.query.q ?? "").trim();
     const type = String(req.query.type ?? "track").trim() as "track" | "album" | "artist";
 
@@ -74,7 +94,9 @@ app.get("/search", async (req, res) => {
     const limitNum = Number.parseInt(String(limitRaw ?? "20"), 10);
 
     const page = Number.isFinite(pageNum) && pageNum > 0 ? pageNum : 1;
-    const limit = Number.isFinite(limitNum) ? Math.min(50, Math.max(1, limitNum)) : 20;
+    const limit = Number.isFinite(limitNum)
+      ? Math.min(SPOTIFY_SEARCH_MAX_LIMIT, Math.max(1, limitNum))
+      : SPOTIFY_SEARCH_MAX_LIMIT;
 
     if (!q) return res.status(400).json({ erreur: "Le paramètre 'q' est requis" });
     if (!["track", "album", "artist"].includes(type)) {
@@ -82,8 +104,8 @@ app.get("/search", async (req, res) => {
     }
 
     // Ensure integers and safe ranges before calling Spotify
-    const safeLimit = Math.trunc(Number(limit) || 20);
-    const finalLimit = Math.max(1, Math.min(50, safeLimit));
+    const safeLimit = Math.trunc(Number(limit) || SPOTIFY_SEARCH_MAX_LIMIT);
+    const finalLimit = Math.max(1, Math.min(SPOTIFY_SEARCH_MAX_LIMIT, safeLimit));
     const finalOffset = Math.max(0, Math.trunc(Number((page - 1) * finalLimit) || 0));
 
     console.log("🎯 /search final params:", { q, type, limit: finalLimit, offset: finalOffset, page });
@@ -144,14 +166,10 @@ app.get("/media/:type/:id", async (req, res) => {
   }
 });
 
-/* ======================
-   STATIC FRONT (HTML/CSS/JS)
-====================== */
-app.use(express.static(path.join(__dirname, "../public")));
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.get("/", (_req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
+  res.json({ ok: true, service: "supcontent-api" });
 });
 
 const PORT = process.env.PORT || 1234;

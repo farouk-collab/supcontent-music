@@ -65,12 +65,16 @@ export async function spotifySearch(params: {
   limit: number;
   offset: number;
 }) {
+  const SPOTIFY_SEARCH_MAX_LIMIT = 10;
   const token = await getAccessToken();
 
   const q = String(params.q ?? "").trim();
   const type = String(params.type ?? "track").trim() as SpotifyType;
 
-  const limitNum = Math.max(1, Math.min(50, Math.trunc(Number(params.limit) || 20)));
+  const limitNum = Math.max(
+    1,
+    Math.min(SPOTIFY_SEARCH_MAX_LIMIT, Math.trunc(Number(params.limit) || SPOTIFY_SEARCH_MAX_LIMIT))
+  );
   const offsetNum = Math.max(0, Math.trunc(Number(params.offset) || 0));
 
   console.log("🎵 Spotify SEARCH params:", { q, type, limit: limitNum, offset: offsetNum, limitType: typeof params.limit });

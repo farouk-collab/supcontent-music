@@ -18,6 +18,23 @@ export function clearTokens() {
   localStorage.removeItem(LS.refresh);
 }
 
+export async function serverLogout() {
+  const { refreshToken } = getTokens();
+  try {
+    if (refreshToken) {
+      await fetch(API + "/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
+    }
+  } catch {
+    // best effort: on supprime quand même les tokens locaux
+  } finally {
+    clearTokens();
+  }
+}
+
 export function isLoggedIn() {
   return getTokens().accessToken.length > 0;
 }
@@ -86,4 +103,14 @@ export function escapeHtml(s = "") {
     .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;").replaceAll('"', "&quot;")
     .replaceAll("'", "&#039;");
+}
+
+export function resolveMediaUrl(url = "") {
+  const s = String(url || "").trim();
+  if (!s) return "";
+  if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("blob:") || s.startsWith("data:")) {
+    return s;
+  }
+  if (s.startsWith("/")) return API + s;
+  return s;
 }

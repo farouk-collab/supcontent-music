@@ -1,4 +1,4 @@
-import { apiFetch, setTokens, clearTokens, toast, getTokens } from "/app.js";
+import { apiFetch, setTokens, serverLogout, toast, getTokens } from "/app.js";
 
 const rf = document.querySelector("#registerForm");
 const lf = document.querySelector("#loginForm");
@@ -7,14 +7,14 @@ const logoutBtn = document.querySelector("#logoutBtn");
 function afterAuth(r) {
   setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
 
-  // ✅ preuve visible
+  // debug visible
   const t = getTokens();
   console.log("TOKENS SAVED:", {
     accessLen: t.accessToken.length,
     refreshLen: t.refreshToken.length,
   });
 
-  toast("Connecté ✅ Redirection…", "OK");
+  toast("Connecte. Redirection...", "OK");
   setTimeout(() => (window.location.href = "/profile.html"), 400);
 }
 
@@ -44,7 +44,8 @@ lf?.addEventListener("submit", async (e) => {
   }
 });
 
-logoutBtn?.addEventListener("click", () => {
-  clearTokens();
-  toast("Déconnecté (tokens supprimés).", "OK");
+logoutBtn?.addEventListener("click", async () => {
+  await serverLogout();
+  toast("Déconnecté.", "OK");
 });
+

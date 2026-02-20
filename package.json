@@ -6,12 +6,15 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev:api",
+    "dev": "concurrently -n api,web -c cyan,green \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "npm --workspace apps/api run dev",
-    "dev:web": "npm --workspace apps/web run dev",
+    "dev:web": "npx serve apps/web/public -l 4173",
     "build": "npm -ws run build"
   },
   "dependencies": {
     "axios": "^1.13.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

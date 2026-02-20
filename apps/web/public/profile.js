@@ -1,8 +1,8 @@
-import { apiFetch, toast, escapeHtml, getTokens, clearTokens } from "/app.js";
+import { apiFetch, toast, escapeHtml, getTokens, serverLogout, resolveMediaUrl } from "/app.js";
 
-console.log("PROFILE JS LOADED ✅");
+console.log("PROFILE JS LOADED");
 
-// éléments présents dans profile.html (vue)
+// elements presents dans profile.html (vue)
 const profileView = document.querySelector("#profileView");
 const refreshBtn = document.querySelector("#refreshBtn");
 const logoutBtn = document.querySelector("#logoutBtn");
@@ -11,10 +11,10 @@ const refreshLenEl = document.querySelector("#refreshLen");
 const statusBadge = document.querySelector("#statusBadge");
 const diagBox = document.querySelector("#diagBox");
 
-// sécurité: si un élément manque, on log et on stop proprement
+// securite: si un element manque, on log et on stop proprement
 function must(el, name) {
   if (!el) {
-    console.error(`❌ Élément manquant dans profile.html: ${name}`);
+    console.error(`Element manquant dans profile.html: ${name}`);
     return false;
   }
   return true;
@@ -29,8 +29,8 @@ if (
   !must(statusBadge, "#statusBadge") ||
   !must(diagBox, "#diagBox")
 ) {
-  // On évite le crash addEventListener sur null
-  throw new Error("profile.html ne contient pas tous les éléments attendus.");
+  // On evite le crash addEventListener sur null
+  throw new Error("profile.html ne contient pas tous les elements attendus.");
 }
 
 function updateTokenStats() {
@@ -38,12 +38,12 @@ function updateTokenStats() {
   accessLenEl.textContent = String(t.accessToken?.length || 0);
   refreshLenEl.textContent = String(t.refreshToken?.length || 0);
 
-  statusBadge.textContent = t.accessToken ? "Connecté ✅" : "Non connecté ❌";
+  statusBadge.textContent = t.accessToken ? "Connecte" : "Non connecte";
 
   diagBox.innerHTML = `
     <div>Origin: <code>${escapeHtml(location.origin)}</code></div>
-    <div>Access token présent: <strong>${t.accessToken ? "OUI" : "NON"}</strong></div>
-    <div>Refresh token présent: <strong>${t.refreshToken ? "OUI" : "NON"}</strong></div>
+    <div>Access token present: <strong>${t.accessToken ? "OUI" : "NON"}</strong></div>
+    <div>Refresh token present: <strong>${t.refreshToken ? "OUI" : "NON"}</strong></div>
   `;
 
   return t;
@@ -58,12 +58,15 @@ function renderNeedAuth(msg) {
 }
 
 function renderProfile(u) {
-  const coverStyle = u.cover_url
-    ? `background-image:url('${escapeHtml(u.cover_url)}'); background-size:cover; background-position:center;`
+  const coverUrl = resolveMediaUrl(u.cover_url || "");
+  const avatarUrl = resolveMediaUrl(u.avatar_url || "");
+
+  const coverStyle = coverUrl
+    ? `background-image:url('${escapeHtml(coverUrl)}'); background-size:cover; background-position:center;`
     : `background:linear-gradient(135deg, rgba(124,92,255,.25), rgba(0,255,209,.12));`;
 
-  const avatar = u.avatar_url
-    ? `<img alt="" src="${escapeHtml(u.avatar_url)}" style="width:84px;height:84px;border-radius:22px;object-fit:cover;border:1px solid rgba(255,255,255,.12)"/>`
+  const avatar = avatarUrl
+    ? `<img alt="" src="${escapeHtml(avatarUrl)}" style="width:84px;height:84px;border-radius:22px;object-fit:cover;border:1px solid rgba(255,255,255,.12)"/>`
     : `<div style="width:84px;height:84px;border-radius:22px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12)"></div>`;
 
   profileView.innerHTML = `
@@ -73,19 +76,19 @@ function renderProfile(u) {
       <div style="padding:14px;display:flex;gap:14px;align-items:center">
         ${avatar}
         <div>
-          <div style="font-weight:900;font-size:22px">${escapeHtml(u.display_name || "—")}</div>
+          <div style="font-weight:900;font-size:22px">${escapeHtml(u.display_name || "-")}</div>
           <div style="color:var(--muted)">@${escapeHtml(u.username || "username")}</div>
           <div style="margin-top:6px;color:var(--muted)">${escapeHtml(u.email || "")}</div>
         </div>
       </div>
 
       <div style="padding:0 14px 14px 14px;color:var(--muted)">
-        <div>${escapeHtml(u.bio || "Bio vide…")}</div>
+        <div>${escapeHtml(u.bio || "Bio vide...")}</div>
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
           ${u.location ? `<span class="badge">${escapeHtml(u.location)}</span>` : ""}
           ${u.gender ? `<span class="badge">${escapeHtml(u.gender)}</span>` : ""}
-          ${u.birth_date ? `<span class="badge">🎂 ${escapeHtml(String(u.birth_date).slice(0,10))}</span>` : ""}
-          ${u.website ? `<a class="pill" href="${escapeHtml(u.website)}" target="_blank" rel="noreferrer">🔗 Site</a>` : ""}
+          ${u.birth_date ? `<span class="badge">Date: ${escapeHtml(String(u.birth_date).slice(0,10))}</span>` : ""}
+          ${u.website ? `<a class="pill" href="${escapeHtml(u.website)}" target="_blank" rel="noreferrer">Site</a>` : ""}
         </div>
       </div>
     </div>
@@ -96,7 +99,7 @@ async function loadMe() {
   const t = updateTokenStats();
 
   if (!t.accessToken) {
-    renderNeedAuth("Aucun token trouvé dans le navigateur (localStorage). Connecte-toi sur /auth.html.");
+    renderNeedAuth("Aucun token trouve dans le navigateur (localStorage). Connecte-toi sur /auth.html.");
     return;
   }
 
@@ -106,17 +109,17 @@ async function loadMe() {
   } catch (err) {
     console.error(err);
     toast(err?.message || "Erreur /auth/me", "Erreur");
-    if (err?.status === 401) renderNeedAuth("401 Unauthorized : token manquant/expiré. Reconnecte-toi.");
+    if (err?.status === 401) renderNeedAuth("401 Unauthorized : token manquant/expire. Reconnecte-toi.");
     else profileView.innerHTML = `<small style="color:#ffb0b0">Erreur: ${escapeHtml(err?.message || "")}</small>`;
   }
 }
 
 refreshBtn.addEventListener("click", loadMe);
 
-logoutBtn.addEventListener("click", () => {
-  clearTokens();
+logoutBtn.addEventListener("click", async () => {
+  await serverLogout();
   updateTokenStats();
-  toast("Déconnecté (tokens supprimés).", "OK");
+  toast("Déconnecté.", "OK");
   renderNeedAuth("Tokens supprimés. Reconnecte-toi.");
 });
 

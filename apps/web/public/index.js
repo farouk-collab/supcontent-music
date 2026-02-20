@@ -1,6 +1,6 @@
-import { apiFetch, toast, getTokens, clearTokens } from "/app.js";
+import { apiFetch, toast, getTokens, serverLogout } from "/app.js";
 
-console.log("INDEX JS LOADED ✅");
+console.log("INDEX JS LOADED");
 
 // ============ AUTH UI (menu + CTA) ============
 function syncAuthUI() {
@@ -24,17 +24,17 @@ function syncAuthUI() {
   if (ctaAuth) ctaAuth.style.display = isAuthed ? "none" : "";
   if (ctaProfile) ctaProfile.style.display = isAuthed ? "" : "none";
 
-  if (hint) hint.textContent = isAuthed ? "Connecté ✅" : "Non connecté";
+  if (hint) hint.textContent = isAuthed ? "Connecte" : "Non connecte";
 }
 
 function bindLogout() {
   const logoutLink = document.querySelector('[data-auth="logout"]');
   if (!logoutLink) return;
-  logoutLink.addEventListener("click", (e) => {
+  logoutLink.addEventListener("click", async (e) => {
     e.preventDefault();
-    clearTokens();
+    await serverLogout();
     syncAuthUI();
-    toast("Déconnecté (tokens supprimés).", "OK");
+    toast("Déconnecté.", "OK");
   });
 }
 
@@ -92,8 +92,8 @@ function makeTile(item) {
   return a;
 }
 
-async function fillTrack(trackEl, { q, type = "track", limit = 14 }) {
-  trackEl.innerHTML = `<small style="color:var(--muted)">Chargement Spotify…</small>`;
+async function fillTrack(trackEl, { q, type = "track", limit = 10 }) {
+  trackEl.innerHTML = `<small style="color:var(--muted)">Chargement Spotify...</small>`;
 
   try {
     const data = await apiFetch(
@@ -104,7 +104,7 @@ async function fillTrack(trackEl, { q, type = "track", limit = 14 }) {
 
     trackEl.innerHTML = "";
     if (!items.length) {
-      trackEl.innerHTML = `<small style="color:var(--muted)">Aucun résultat pour "${q}".</small>`;
+      trackEl.innerHTML = `<small style="color:var(--muted)">Aucun resultat pour "${q}".</small>`;
       return;
     }
 
@@ -166,7 +166,7 @@ async function main() {
 
   const sections = [
     { key: "trending", q: "Top hits", type: "track" },
-    { key: "rap", q: "Rap français", type: "track" },
+    { key: "rap", q: "Rap francais", type: "track" },
     { key: "afro", q: "Afrobeats", type: "track" },
     { key: "pop", q: "Pop hits", type: "track" },
   ];
@@ -174,8 +174,9 @@ async function main() {
   for (const s of sections) {
     enhanceCarousel(s.key);
     const trackEl = document.querySelector(`.carousel-track[data-track="${s.key}"]`);
-    if (trackEl) await fillTrack(trackEl, { q: s.q, type: s.type, limit: 16 });
+    if (trackEl) await fillTrack(trackEl, { q: s.q, type: s.type, limit: 10 });
   }
 }
 
 main();
+

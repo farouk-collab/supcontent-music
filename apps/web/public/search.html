@@ -1,9 +1,9 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Recherche — SUPCONTENT</title>
+  <title>Recherche â€” SUPCONTENT</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 <body>
@@ -25,7 +25,7 @@
         <h2>Recherche Spotify</h2>
         <form id="searchForm" class="form">
           <div>
-            <label>Requête</label>
+            <label>RequÃªte</label>
             <input class="input" name="q" required placeholder="daft punk" />
           </div>
           <div class="two">
@@ -39,16 +39,16 @@
             </div>
             <div>
               <label>Limit</label>
-              <input class="input" name="limit" type="number" min="1" max="50" value="12" />
+              <input class="input" name="limit" type="number" min="1" max="10" value="10" />
             </div>
           </div>
           <button class="btn primary" type="submit">Rechercher</button>
-          <small>Ça appelle <code>/search</code> côté backend (pas l’API Spotify directement).</small>
+          <small>Ã‡a appelle <code>/search</code> cÃ´tÃ© backend (pas lâ€™API Spotify directement).</small>
         </form>
       </div>
 
       <div class="card span8">
-        <h2>Résultats</h2>
+        <h2>RÃ©sultats</h2>
         <div id="results" class="results"></div>
         <small id="hint"></small>
       </div>
@@ -64,13 +64,21 @@
     const results = document.querySelector("#results");
     const hint = document.querySelector("#hint");
 
-    function pickImage(images){
-      if (!Array.isArray(images) || images.length === 0) return "";
-      return images[0]?.url || images[0] || "";
+    function pickItems(data){
+      return data?.items || data?.tracks?.items || data?.albums?.items || data?.artists?.items || [];
+    }
+
+    function pickImage(item){
+      const candidates = [
+        ...(Array.isArray(item?.images) ? item.images : []),
+        ...(Array.isArray(item?.album?.images) ? item.album.images : []),
+      ];
+      if (!candidates.length) return "";
+      return candidates[0]?.url || candidates[0] || "";
     }
 
     function renderItem(it){
-      const img = pickImage(it.images);
+      const img = pickImage(it);
       const name = it.name || "";
       const id = it.id;
       const type = it.type;
@@ -83,24 +91,25 @@
           <div class="meta">
             <div class="title">${escapeHtml(name)}</div>
             <div class="sub">${escapeHtml(sub)}</div>
-            <div class="badge">Ouvrir détail</div>
+            <div class="badge">Ouvrir dÃ©tail</div>
           </div>
         </a>
       `;
     }
 
     async function doSearch(q, type, limit){
-      results.innerHTML = `<small>Chargement…</small>`;
+      results.innerHTML = `<small>Chargementâ€¦</small>`;
       hint.textContent = "";
       try{
         const data = await apiFetch(`/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}&limit=${encodeURIComponent(limit)}`);
-        const items = data?.items || [];
+        const items = pickItems(data);
         if (!items.length){
-          results.innerHTML = `<small>Aucun résultat</small>`;
+          results.innerHTML = `<small>Aucun rÃ©sultat</small>`;
           return;
         }
         results.innerHTML = items.map(renderItem).join("");
-        hint.textContent = `Résultats: ${items.length}`;
+        const withImageCount = items.filter((it)=>Boolean(pickImage(it))).length;
+        hint.textContent = `RÃ©sultats: ${items.length} | Images: ${withImageCount}`;
       }catch(err){
         results.innerHTML = `<small style="color:#ffb0b0">Erreur: ${escapeHtml(err.message)}</small>`;
         toast(err.message, "Erreur recherche");
@@ -112,12 +121,13 @@
       const fd = new FormData(form);
       const q = String(fd.get("q")||"").trim();
       const type = String(fd.get("type")||"artist");
-      const limit = String(fd.get("limit")||"12");
+      const limit = String(fd.get("limit")||"10");
       doSearch(q, type, limit);
     });
 
     // auto demo
-    doSearch("daft punk", "artist", 12);
+    doSearch("daft punk", "artist", 10);
   </script>
 </body>
 </html>
+
