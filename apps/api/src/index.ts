@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -9,8 +9,11 @@ import path from "path";
 dotenv.config();
 
 import { pool, redis } from "./connections";
+import { ensureCollectionsTables } from "./db/collections";
+import { ensureSocialTables } from "./db/social";
 import { spotifyGet, spotifySearch } from "./services";
 import authRoutes from "./routes/auth";
+import collectionsRoutes from "./routes/collections";
 import usersRoutes from "./routes/users";
 import uploadRoutes from "./routes/uploads";
 
@@ -45,6 +48,7 @@ app.use(morgan("dev"));
    API ROUTES
 ====================== */
 app.use("/auth", authRoutes);
+app.use("/collections", collectionsRoutes);
 app.use("/users", usersRoutes);
 app.use("/upload", uploadRoutes);
 
@@ -98,9 +102,9 @@ app.get("/search", async (req, res) => {
       ? Math.min(SPOTIFY_SEARCH_MAX_LIMIT, Math.max(1, limitNum))
       : SPOTIFY_SEARCH_MAX_LIMIT;
 
-    if (!q) return res.status(400).json({ erreur: "Le paramètre 'q' est requis" });
+    if (!q) return res.status(400).json({ erreur: "Le paramÃ¨tre 'q' est requis" });
     if (!["track", "album", "artist"].includes(type)) {
-      return res.status(400).json({ erreur: "Le paramètre 'type' doit être track|album|artist" });
+      return res.status(400).json({ erreur: "Le paramÃ¨tre 'type' doit Ãªtre track|album|artist" });
     }
 
     // Ensure integers and safe ranges before calling Spotify
@@ -108,7 +112,7 @@ app.get("/search", async (req, res) => {
     const finalLimit = Math.max(1, Math.min(SPOTIFY_SEARCH_MAX_LIMIT, safeLimit));
     const finalOffset = Math.max(0, Math.trunc(Number((page - 1) * finalLimit) || 0));
 
-    console.log("🎯 /search final params:", { q, type, limit: finalLimit, offset: finalOffset, page });
+    console.log("ðŸŽ¯ /search final params:", { q, type, limit: finalLimit, offset: finalOffset, page });
 
     try {
       const data = await spotifySearch({ q, type, limit: finalLimit, offset: finalOffset });
@@ -119,7 +123,7 @@ app.get("/search", async (req, res) => {
       const errMessage =
         (errData && (errData.error?.message || errData.message)) || e?.message || "";
       if (statusCode === 400 && String(errMessage).includes("Invalid limit")) {
-        console.warn("Spotify returned Invalid limit — retrying with smaller limit=10");
+        console.warn("Spotify returned Invalid limit â€” retrying with smaller limit=10");
         const fallback = await spotifySearch({ q, type, limit: 10, offset: 0 });
         return res.json(fallback);
       }
@@ -133,7 +137,7 @@ app.get("/search", async (req, res) => {
     );
     const statusCode = e?.status ?? e?.response?.status ?? 500;
     return res.status(statusCode).json({
-      erreur: "échec de la recherche Spotify",
+      erreur: "Ã©chec de la recherche Spotify",
       status: e?.status ?? e?.response?.status ?? null,
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
     });
@@ -146,7 +150,7 @@ app.get("/media/:type/:id", async (req, res) => {
     const id = String(req.params.id || "").trim();
 
     if (!["track", "album", "artist"].includes(type)) {
-      return res.status(400).json({ erreur: "Le paramètre 'type' doit être track|album|artist" });
+      return res.status(400).json({ erreur: "Le paramÃ¨tre 'type' doit Ãªtre track|album|artist" });
     }
 
     const data = await spotifyGet(type, id);
@@ -159,7 +163,7 @@ app.get("/media/:type/:id", async (req, res) => {
     );
     const statusCode = e?.status ?? e?.response?.status ?? 500;
     return res.status(statusCode).json({
-      erreur: "échec de la récupération Spotify",
+      erreur: "Ã©chec de la rÃ©cupÃ©ration Spotify",
       status: e?.status ?? e?.response?.status ?? null,
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
     });
@@ -174,3 +178,12 @@ app.get("/", (_req, res) => {
 
 const PORT = process.env.PORT || 1234;
 app.listen(PORT, () => console.log(`🚀 API: http://localhost:${PORT}`));
+
+ensureCollectionsTables().catch((err) => {
+  console.error("Collections tables init failed (non-blocking):", err?.message || err);
+});
+
+ensureSocialTables().catch((err) => {
+  console.error("Social tables init failed (non-blocking):", err?.message || err);
+});
+
