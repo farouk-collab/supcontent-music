@@ -51,7 +51,7 @@ function makeTile(item) {
 
   const a = document.createElement("a");
   a.className = "tile";
-  a.href = id ? `/media?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}` : "#";
+  a.href = id ? `/media/media.html?type=${encodeURIComponent(type)}&id=${encodeURIComponent(id)}` : "#";
   a.style.textDecoration = "none";
   a.style.color = "inherit";
 
@@ -82,7 +82,7 @@ function makeTile(item) {
 function makeStoryTile(person) {
   const a = document.createElement("a");
   a.className = "tile story-tile";
-  a.href = person.href || "/profile.html";
+  a.href = person.href || "/profile/profile.html";
   a.style.textDecoration = "none";
   a.style.color = "inherit";
 
@@ -113,12 +113,12 @@ function fillStories(trackEl) {
   if (!trackEl) return;
 
   const followed = [
-    { name: "Ayoub", handle: "@ayoub93", avatar: "https://i.pravatar.cc/160?img=12", href: "/profile.html" },
-    { name: "Lea", handle: "@lea.music", avatar: "https://i.pravatar.cc/160?img=47", href: "/profile.html" },
-    { name: "Nora", handle: "@nora.vibes", avatar: "https://i.pravatar.cc/160?img=33", href: "/profile.html" },
-    { name: "Ibra", handle: "@ibra.flow", avatar: "https://i.pravatar.cc/160?img=53", href: "/profile.html" },
-    { name: "Maya", handle: "@maya.pop", avatar: "https://i.pravatar.cc/160?img=24", href: "/profile.html" },
-    { name: "Rayan", handle: "@rayan.rap", avatar: "https://i.pravatar.cc/160?img=61", href: "/profile.html" },
+    { name: "Ayoub", handle: "@ayoub93", avatar: "https://i.pravatar.cc/160?img=12", href: "/profile/profile.html" },
+    { name: "Lea", handle: "@lea.music", avatar: "https://i.pravatar.cc/160?img=47", href: "/profile/profile.html" },
+    { name: "Nora", handle: "@nora.vibes", avatar: "https://i.pravatar.cc/160?img=33", href: "/profile/profile.html" },
+    { name: "Ibra", handle: "@ibra.flow", avatar: "https://i.pravatar.cc/160?img=53", href: "/profile/profile.html" },
+    { name: "Maya", handle: "@maya.pop", avatar: "https://i.pravatar.cc/160?img=24", href: "/profile/profile.html" },
+    { name: "Rayan", handle: "@rayan.rap", avatar: "https://i.pravatar.cc/160?img=61", href: "/profile/profile.html" },
   ];
 
   trackEl.innerHTML = "";
@@ -126,7 +126,7 @@ function fillStories(trackEl) {
 }
 
 function renderReleaseCard(it) {
-  const href = it?.id ? `/media?type=album&id=${encodeURIComponent(it.id)}` : "#";
+  const href = it?.id ? `/media/media.html?type=album&id=${encodeURIComponent(it.id)}` : "#";
   const img = it?.image || "";
   const title = it?.name || "Sans titre";
   const artists = Array.isArray(it?.artists) ? it.artists.join(", ") : "";
@@ -144,7 +144,7 @@ function renderReleaseCard(it) {
 }
 
 function renderCommunityCard(it) {
-  const href = `/media?type=${encodeURIComponent(it.media_type)}&id=${encodeURIComponent(it.media_id)}`;
+  const href = `/media/media.html?type=${encodeURIComponent(it.media_type)}&id=${encodeURIComponent(it.media_id)}`;
   const mediaName = it?.media?.name || it.media_id;
   const mediaSub = it?.media?.subtitle || "";
   const img = it?.media?.image || "";

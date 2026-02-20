@@ -1,9 +1,9 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Connexion â€” SUPCONTENT</title>
+  <title>Connexion — SUPCONTENT</title>
   <link rel="stylesheet" href="/styles.css" />
 </head>
 
@@ -13,10 +13,10 @@
       <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
       <div class="menu">
         <a class="pill" href="/index.html">Accueil</a>
-        <a class="pill" href="/search.html">Recherche</a>
-        <a class="pill" href="/library.html">Bibliotheque</a>
-        <a class="pill" href="/auth.html" aria-current="page">Connexion</a>
-        <a class="pill" href="/profile.html">Profil</a>
+        <a class="pill" href="/search/search.html">Recherche</a>
+        <a class="pill" href="/library/library.html">Bibliotheque</a>
+        <a class="pill" href="/auth/auth.html" aria-current="page">Connexion</a>
+        <a class="pill" href="/profile/profile.html">Profil</a>
       </div>
     </div>
   </div>
@@ -24,9 +24,9 @@
   <div class="container">
     <div class="grid">
       <div class="card span6">
-        <h2>CrÃ©er un compte</h2>
+        <h2>Créer un compte</h2>
 
-        <!-- action=javascript:void(0) Ã©vite toute navigation mÃªme si JS crash -->
+        <!-- action=javascript:void(0) évite toute navigation même si JS crash -->
         <form id="registerForm" class="form" method="post" action="javascript:void(0)">
           <div class="two">
             <div>
@@ -34,18 +34,18 @@
               <input class="input" name="email" type="email" required placeholder="test@test.com" autocomplete="email" />
             </div>
             <div>
-              <label>Nom affichÃ©</label>
+              <label>Nom affiché</label>
               <input class="input" name="displayName" required placeholder="Farouk" autocomplete="nickname" />
             </div>
           </div>
 
           <div>
             <label>Mot de passe (min 8)</label>
-            <input class="input" name="password" type="password" minlength="8" required placeholder="Password123!" autocomplete="new-password" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}" title="8+ caractÃ¨res avec majuscule, minuscule, chiffre et caractÃ¨re spÃ©cial." />
+            <input class="input" name="password" type="password" minlength="8" required placeholder="Password123!" autocomplete="new-password" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}" title="8+ caractères avec majuscule, minuscule, chiffre et caractère spécial." />
           </div>
 
           <button class="btn primary" type="submit">S'inscrire</button>
-          <small>AprÃ¨s inscription, on stocke les tokens en localStorage. Mot de passe: 8+ caractÃ¨res avec majuscule, minuscule, chiffre, spÃ©cial.</small>
+          <small>Après inscription, on stocke les tokens en localStorage. Mot de passe: 8+ caractères avec majuscule, minuscule, chiffre, spécial.</small>
         </form>
       </div>
 
@@ -73,12 +73,12 @@
         <hr/>
 
         <div class="row">
-          <button id="logoutBtn" class="btn danger" type="button">DÃ©connexion (local)</button>
-          <a class="btn" href="/profile.html">Voir mon profil</a>
+          <button id="logoutBtn" class="btn danger" type="button">Déconnexion (local)</button>
+          <a class="btn" href="/profile/profile.html">Voir mon profil</a>
         </div>
 
         <small>
-          La dÃ©connexion invalide la session cÃ´tÃ© serveur puis efface les tokens cÃ´tÃ© navigateur.
+          La déconnexion invalide la session côté serveur puis efface les tokens côté navigateur.
         </small>
       </div>
     </div>
@@ -86,8 +86,8 @@
 
   <div id="toast" class="toast"></div>
 
-  <!-- âœ… script sÃ©parÃ© : tu verras maintenant GET /auth.js dans tes logs -->
-  <script type="module" src="/auth.js"></script>
+  <!-- ✅ script séparé : tu verras maintenant GET /auth/auth.js dans tes logs -->
+  <script type="module" src="/auth/auth.js"></script>
   <script type="module" src="/footer.js"></script>
 </body>
 </html>

@@ -50,7 +50,8 @@ export function toast(msg, title = "Info") {
 export async function apiFetch(path, opts = {}) {
   const doFetch = async (accessToken) => {
     const headers = new Headers(opts.headers || {});
-    if (!headers.has("Content-Type") && opts.body) headers.set("Content-Type", "application/json");
+    const isFormData = typeof FormData !== "undefined" && opts.body instanceof FormData;
+    if (!headers.has("Content-Type") && opts.body && !isFormData) headers.set("Content-Type", "application/json");
     if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
     return fetch(API + path, { ...opts, headers });
   };

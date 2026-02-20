@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Recherche - SUPCONTENT</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
+      <div class="menu">
+        <a class="pill" href="/index.html">Accueil</a>
+        <a class="pill" href="/search/search.html">Recherche</a>
+        <a class="pill" href="/library/library.html">Bibliotheque</a>
+        <a class="pill" href="/auth/auth.html">Connexion</a>
+        <a class="pill" href="/profile/profile.html">Profil</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card span4">
+        <h2>Recherche Spotify</h2>
+        <form id="searchForm" class="form">
+          <div>
+            <label>Requete</label>
+            <input class="input" name="q" required placeholder="daft punk" />
+          </div>
+          <div class="two">
+            <div>
+              <label>Type</label>
+              <select name="type">
+                <option value="artist">artist</option>
+                <option value="album">album</option>
+                <option value="track">track</option>
+              </select>
+            </div>
+            <div>
+              <label>Limit</label>
+              <input class="input" name="limit" type="number" min="1" max="10" value="10" />
+            </div>
+          </div>
+          <button class="btn primary" type="submit">Rechercher</button>
+          <small>Ca appelle <code>/search</code> cote backend (pas l'API Spotify directement).</small>
+        </form>
+      </div>
+
+      <div class="card span8">
+        <h2>Resultats</h2>
+        <div id="results" class="results"></div>
+        <small id="hint"></small>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script type="module" src="/search/search.js"></script>
+  <script type="module" src="/footer.js"></script>
+</body>
+</html>

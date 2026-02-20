@@ -16,6 +16,7 @@ import authRoutes from "./routes/auth";
 import collectionsRoutes from "./routes/collections";
 import usersRoutes from "./routes/users";
 import uploadRoutes from "./routes/uploads";
+import socialRoutes from "./routes/social";
 
 const app = express();
 
@@ -51,6 +52,7 @@ app.use("/auth", authRoutes);
 app.use("/collections", collectionsRoutes);
 app.use("/users", usersRoutes);
 app.use("/upload", uploadRoutes);
+app.use("/social", socialRoutes);
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 

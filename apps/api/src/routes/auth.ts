@@ -469,6 +469,24 @@ router.patch("/me", requireAuth, async (req: AuthedRequest, res) => {
   return res.json({ user: r.rows[0] });
 });
 
+router.delete("/me", requireAuth, async (req: AuthedRequest, res) => {
+  const userId = req.user!.id;
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query("DELETE FROM refresh_tokens WHERE user_id = $1", [userId]);
+    const del = await client.query("DELETE FROM users WHERE id = $1 RETURNING id", [userId]);
+    await client.query("COMMIT");
+    if (!del.rows[0]) return res.status(404).json({ erreur: "Utilisateur introuvable" });
+    return res.json({ ok: true });
+  } catch (e) {
+    await client.query("ROLLBACK");
+    throw e;
+  } finally {
+    client.release();
+  }
+});
+
 /**
  * Upload avatar/cover (pour ton profile.js)
  * POST /auth/upload/avatar  (multipart form-data, champ "file")

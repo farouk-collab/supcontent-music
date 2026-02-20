@@ -120,9 +120,9 @@ async function uploadImage(kind, file) {
 async function loadMe() {
   const t = updateTokenStats();
   if (!t.accessToken) {
-    previewBox.innerHTML = `<small style="color:#ffb0b0">Connexion requise. Va sur /auth.html</small>`;
+    previewBox.innerHTML = `<small style="color:#ffb0b0">Connexion requise. Va sur /auth/auth.html</small>`;
     setTimeout(() => {
-      window.location.href = "/auth.html";
+      window.location.href = "/auth/auth.html";
     }, 1200);
     return;
   }

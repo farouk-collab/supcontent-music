@@ -17,7 +17,7 @@ function afterAuth(r) {
   });
 
   toast("Connecte. Redirection...", "OK");
-  setTimeout(() => (window.location.href = "/profile.html"), 400);
+  setTimeout(() => (window.location.href = "/profile/profile.html"), 400);
 }
 
 function consumeOauthParams() {
@@ -34,7 +34,7 @@ function consumeOauthParams() {
   params.delete("oauth");
   const next = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""}`;
   window.history.replaceState({}, "", next);
-  setTimeout(() => (window.location.href = "/profile.html"), 300);
+  setTimeout(() => (window.location.href = "/profile/profile.html"), 300);
 }
 
 consumeOauthParams();

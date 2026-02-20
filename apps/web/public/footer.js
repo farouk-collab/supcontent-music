@@ -1,18 +1,18 @@
 const tabs = [
-  { href: "/index.html", icon: "⌂", label: "Accueil", key: "index" },
-  { href: "/search.html", icon: "⌕", label: "Recherche", key: "search" },
-  { href: "/chat.html", icon: "✉", label: "Chat", key: "chat" },
-  { href: "/library.html", icon: "☰", label: "Biblio", key: "library" },
-  { href: "/profile.html", icon: "☺", label: "Profil", key: "profile" },
+  { href: "/index.html", icon: "🏠", label: "Accueil", key: "index" },
+  { href: "/search/search.html", icon: "🔎", label: "Recherche", key: "search" },
+  { href: "/chat/chat.html", icon: "💬", label: "Chat", key: "chat" },
+  { href: "/library/library.html", icon: "📚", label: "Biblio", key: "library" },
+  { href: "/profile/profile.html", icon: "👤", label: "Profil", key: "profile" },
 ];
 
 function currentKey(pathname) {
   const p = String(pathname || "").toLowerCase();
   if (p.endsWith("/index.html") || p === "/" || p === "/index") return "index";
-  if (p.endsWith("/search.html") || p.endsWith("/search")) return "search";
-  if (p.endsWith("/chat.html") || p.endsWith("/chat")) return "chat";
-  if (p.endsWith("/library.html") || p.endsWith("/library")) return "library";
-  if (p.endsWith("/profile.html") || p.endsWith("/profile") || p.endsWith("/profile-edit.html")) return "profile";
+  if (p.endsWith("/search.html") || p.endsWith("/search/search.html")) return "search";
+  if (p.endsWith("/chat.html") || p.endsWith("/chat/chat.html")) return "chat";
+  if (p.endsWith("/library.html") || p.endsWith("/library/library.html")) return "library";
+  if (p.endsWith("/profile.html") || p.endsWith("/profile/profile.html") || p.endsWith("/profile-edit.html") || p.endsWith("/profile/profile-edit.html")) return "profile";
   return "";
 }
 

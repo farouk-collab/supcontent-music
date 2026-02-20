@@ -17,7 +17,7 @@ function statusLabel(code = "") {
 }
 
 function itemRow(collectionId, it) {
-  const href = `/media?type=${encodeURIComponent(it.media_type)}&id=${encodeURIComponent(it.media_id)}`;
+  const href = `/media/media.html?type=${encodeURIComponent(it.media_type)}&id=${encodeURIComponent(it.media_id)}`;
   const mediaName = it?.media?.name || it.media_id;
   const mediaSub = it?.media?.subtitle || "";
   const mediaImg = it?.media?.image || "";
