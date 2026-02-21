@@ -1,9 +1,17 @@
-import { apiFetch, toast, escapeHtml } from "/app.js";
+import { apiFetch, toast, escapeHtml, resolveMediaUrl } from "/core/app.js";
 
 const statusAddForm = document.querySelector("#statusAddForm");
 const createListForm = document.querySelector("#createListForm");
 const collectionsBox = document.querySelector("#collectionsBox");
 const refreshBtn = document.querySelector("#refreshBtn");
+
+function mediaHref(type, id) {
+  const safeType = String(type || "").trim();
+  const safeId = String(id || "").trim();
+  if (!safeType || !safeId) return "#";
+  const q = `type=${encodeURIComponent(safeType)}&id=${encodeURIComponent(safeId)}`;
+  return `/media/media.html?${q}#${q}`;
+}
 
 function statusLabel(code = "") {
   return (
@@ -17,10 +25,10 @@ function statusLabel(code = "") {
 }
 
 function itemRow(collectionId, it) {
-  const href = `/media/media.html?type=${encodeURIComponent(it.media_type)}&id=${encodeURIComponent(it.media_id)}`;
+  const href = mediaHref(it.media_type, it.media_id);
   const mediaName = it?.media?.name || it.media_id;
   const mediaSub = it?.media?.subtitle || "";
-  const mediaImg = it?.media?.image || "";
+  const mediaImg = resolveMediaUrl(it?.media?.image || "");
   const social = it?.social || {};
   const reviewCount = Number(social.review_count || 0);
   const likeCount = Number(social.like_count || 0);

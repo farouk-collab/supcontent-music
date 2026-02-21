@@ -1,0 +1,10 @@
+{
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/feed/feed", "destination": "/feed/feed.html" },
+    { "source": "/media/media", "destination": "/media/media.html" },
+    { "source": "/search/search", "destination": "/search/search.html" },
+    { "source": "/library/library", "destination": "/library/library.html" },
+    { "source": "/profile/profile", "destination": "/profile/profile.html" }
+  ]
+}

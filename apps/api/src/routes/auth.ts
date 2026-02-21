@@ -15,6 +15,8 @@ import {
 } from "../db/refreshTokens";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../auth/jwt";
 import { requireAuth, AuthedRequest } from "../middleware/requireAuth";
+import { getSpotifyLinkByUserId, upsertSpotifyLink } from "../db/spotifyLinks";
+import { exchangeSpotifyAuthCode, spotifyUserGet } from "../services";
 
 /* =========================
    Router
@@ -22,6 +24,7 @@ import { requireAuth, AuthedRequest } from "../middleware/requireAuth";
 const router = Router();
 const GITHUB_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 const oauthStateStore = new Map<string, number>();
+const SPOTIFY_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
 /* =========================
    Schemas
@@ -73,6 +76,11 @@ function hashToken(token: string) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
+function normalizeRedirectUri(raw: string | undefined, fallback: string) {
+  const v = String(raw || fallback).trim();
+  return v.replace(/^"(.*)"$/, "$1").replace(/^'(.*)'$/, "$1").trim();
+}
+
 function newOauthState() {
   const state = crypto.randomBytes(24).toString("hex");
   oauthStateStore.set(state, Date.now());
@@ -90,6 +98,52 @@ function cleanupOauthStates() {
   const now = Date.now();
   for (const [s, createdAt] of oauthStateStore.entries()) {
     if (now - createdAt > GITHUB_OAUTH_STATE_TTL_MS) oauthStateStore.delete(s);
+  }
+}
+
+function spotifyStateSecret() {
+  return process.env.JWT_ACCESS_SECRET || process.env.JWT_REFRESH_SECRET || "supcontent-dev-secret";
+}
+
+function signSpotifyState(payloadB64: string) {
+  return crypto.createHmac("sha256", spotifyStateSecret()).update(payloadB64).digest("base64url");
+}
+
+function newSpotifyOauthState(input: { userId: string; returnTo: string }) {
+  const payload = {
+    userId: input.userId,
+    returnTo: input.returnTo,
+    createdAt: Date.now(),
+    nonce: crypto.randomBytes(8).toString("hex"),
+  };
+  const payloadB64 = Buffer.from(JSON.stringify(payload), "utf8").toString("base64url");
+  const sig = signSpotifyState(payloadB64);
+  return `${payloadB64}.${sig}`;
+}
+
+function consumeSpotifyOauthState(rawState: string) {
+  const [payloadB64, sig] = String(rawState || "").split(".", 2);
+  if (!payloadB64 || !sig) return null;
+
+  const expectedSig = signSpotifyState(payloadB64);
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expectedSig);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+
+  try {
+    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8")) as {
+      userId?: string;
+      returnTo?: string;
+      createdAt?: number;
+    };
+    const createdAt = Number(payload?.createdAt || 0);
+    if (!createdAt || Date.now() - createdAt > SPOTIFY_OAUTH_STATE_TTL_MS) return null;
+    const userId = String(payload?.userId || "");
+    const returnTo = String(payload?.returnTo || "");
+    if (!userId || !returnTo) return null;
+    return { userId, returnTo };
+  } catch {
+    return null;
   }
 }
 
@@ -299,7 +353,7 @@ router.get("/oauth/github/callback", async (req, res) => {
     const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
     await storeRefreshToken({ userId: user.id, tokenHash: hashToken(refresh), expiresAt });
 
-    const redir = new URL("/auth.html", returnTo);
+    const redir = new URL("/auth/auth.html", returnTo);
     redir.searchParams.set("oauth", "github");
     redir.searchParams.set("accessToken", access);
     redir.searchParams.set("refreshToken", refresh);
@@ -308,6 +362,87 @@ router.get("/oauth/github/callback", async (req, res) => {
     console.error("OAuth GitHub error:", err?.message || err);
     return res.status(500).json({ erreur: "Erreur OAuth GitHub" });
   }
+});
+
+router.get("/oauth/spotify/url", requireAuth, async (req: AuthedRequest, res) => {
+  const userId = String(req.user?.id || "");
+  if (!userId) return res.status(401).json({ erreur: "Utilisateur non authentifie" });
+
+  const clientId = process.env.SPOTIFY_CLIENT_ID;
+  const redirectUri = normalizeRedirectUri(
+    process.env.SPOTIFY_REDIRECT_URI,
+    "http://localhost:1234/auth/oauth/spotify/callback"
+  );
+  if (!clientId) return res.status(503).json({ erreur: "SPOTIFY_CLIENT_ID manquant" });
+
+  const returnTo =
+    typeof req.query.returnTo === "string" && req.query.returnTo.trim()
+      ? req.query.returnTo.trim()
+      : process.env.FRONTEND_URL || "http://localhost:4173/feed/feed";
+
+  const state = newSpotifyOauthState({ userId, returnTo });
+
+  const query = new URLSearchParams({
+    client_id: clientId,
+    response_type: "code",
+    redirect_uri: redirectUri,
+    state,
+    scope: "user-top-read user-read-recently-played",
+    show_dialog: "true",
+  });
+
+  return res.json({ url: `https://accounts.spotify.com/authorize?${query.toString()}` });
+});
+
+router.get("/oauth/spotify/callback", async (req, res) => {
+  try {
+    const code = String(req.query.code || "");
+    const state = String(req.query.state || "");
+    if (!code || !state) return res.status(400).json({ erreur: "Callback Spotify invalide" });
+
+    const consumed = consumeSpotifyOauthState(state);
+    if (!consumed) return res.status(400).json({ erreur: "State Spotify invalide ou expire" });
+
+    const redirectUri = normalizeRedirectUri(
+      process.env.SPOTIFY_REDIRECT_URI,
+      "http://localhost:1234/auth/oauth/spotify/callback"
+    );
+    const tokenData = await exchangeSpotifyAuthCode(code, redirectUri);
+    if (!tokenData?.access_token) {
+      return res.status(401).json({ erreur: "Echec echange token Spotify" });
+    }
+
+    const me: any = await spotifyUserGet("/me", tokenData.access_token);
+    const spotifyUserId = String(me?.id || "");
+    if (!spotifyUserId) return res.status(401).json({ erreur: "Compte Spotify invalide" });
+
+    const refreshToken = String(tokenData?.refresh_token || "");
+    if (!refreshToken) return res.status(401).json({ erreur: "Refresh token Spotify manquant" });
+
+    await upsertSpotifyLink({
+      userId: consumed.userId,
+      spotifyUserId,
+      accessToken: String(tokenData.access_token),
+      refreshToken,
+      tokenType: String(tokenData.token_type || "Bearer"),
+      scope: String(tokenData.scope || ""),
+      expiresAt: new Date(Date.now() + Math.max(60, Number(tokenData.expires_in || 3600)) * 1000),
+    });
+
+    const redir = new URL(consumed.returnTo || (process.env.FRONTEND_URL || "http://localhost:4173/feed/feed"));
+    redir.searchParams.set("spotify", "connected");
+    return res.redirect(redir.toString());
+  } catch (err: any) {
+    console.error("OAuth Spotify error:", err?.response?.status, err?.response?.data || err?.message || err);
+    return res.status(500).json({ erreur: "Erreur OAuth Spotify" });
+  }
+});
+
+router.get("/spotify/status", requireAuth, async (req: AuthedRequest, res) => {
+  const userId = String(req.user?.id || "");
+  if (!userId) return res.status(401).json({ erreur: "Utilisateur non authentifie" });
+  const linked = await getSpotifyLinkByUserId(userId);
+  return res.json({ connected: Boolean(linked), spotify_user_id: linked?.spotify_user_id || null });
 });
 
 router.post("/register", async (req, res) => {

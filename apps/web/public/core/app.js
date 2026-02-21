@@ -109,12 +109,81 @@ export function escapeHtml(s = "") {
 export function resolveMediaUrl(url = "") {
   const s = String(url || "").trim();
   if (!s) return "";
-  if (s.startsWith("http://") || s.startsWith("https://") || s.startsWith("blob:") || s.startsWith("data:")) {
+  if (s.startsWith("http://") || s.startsWith("https://")) {
+    try {
+      const u = new URL(s);
+      if (u.pathname === "/media" || u.pathname === "/media/media") return "";
+    } catch {
+      return "";
+    }
     return s;
   }
-  if (s.startsWith("/")) return API + s;
-  return s;
+  if (s.startsWith("blob:") || s.startsWith("data:")) {
+    return s;
+  }
+  if (s.startsWith("/")) {
+    if (s === "/media" || s === "/media/media") return "";
+    if (s.startsWith("/uploads/")) return API + s;
+    return s;
+  }
+  if (s.startsWith("./") || s.startsWith("../")) {
+    const cleaned = s.replace(/^(\.\/|\.\.\/)+/, "");
+    if (!cleaned) return "";
+    if (cleaned.startsWith("uploads/")) return `${API}/${cleaned}`;
+    if (cleaned.startsWith("stk/")) return `/${cleaned}`;
+    if (cleaned === "media" || cleaned.startsWith("media/")) return "";
+    return "";
+  }
+  const normalized = s.replace(/^\/+/, "");
+  if (normalized === "media" || normalized.startsWith("media/")) return "";
+  if (normalized.startsWith("uploads/")) return `${API}/${normalized}`;
+  if (normalized.startsWith("stk/")) return `/${normalized}`;
+  return "";
 }
+
+function guardImageSrc(img) {
+  if (!img || typeof img.getAttribute !== "function") return;
+  const raw = String(img.getAttribute("src") || "").trim();
+  if (!raw) return;
+  const safe = resolveMediaUrl(raw);
+  if (!safe) {
+    img.removeAttribute("src");
+    return;
+  }
+  if (safe !== raw) img.setAttribute("src", safe);
+}
+
+function installImageSrcGuard() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (window.__supcontentImageGuardInstalled) return;
+  window.__supcontentImageGuardInstalled = true;
+
+  document.querySelectorAll("img[src]").forEach((img) => guardImageSrc(img));
+
+  const obs = new MutationObserver((mutations) => {
+    for (const m of mutations) {
+      if (m.type === "attributes" && m.target instanceof HTMLImageElement) {
+        guardImageSrc(m.target);
+        continue;
+      }
+      if (m.type === "childList") {
+        m.addedNodes.forEach((n) => {
+          if (n instanceof HTMLImageElement) guardImageSrc(n);
+          if (n instanceof HTMLElement) n.querySelectorAll("img[src]").forEach((img) => guardImageSrc(img));
+        });
+      }
+    }
+  });
+
+  obs.observe(document.documentElement || document.body, {
+    subtree: true,
+    childList: true,
+    attributes: true,
+    attributeFilter: ["src"],
+  });
+}
+
+installImageSrcGuard();
 
 export function qs(name) {
   const params = new URLSearchParams(window.location.search);

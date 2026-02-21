@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "concurrently -n api,web -c cyan,green \"npm run dev:api\" \"npm run dev:web\"",
     "dev:api": "npm --workspace apps/api run dev",
-    "dev:web": "npx serve apps/web/public -l 4173",
+    "dev:web": "npx serve -l 4173 -c serve.json apps/web/public",
     "build": "npm -ws run build"
   },
   "dependencies": {

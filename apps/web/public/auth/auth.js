@@ -1,4 +1,4 @@
-import { apiFetch, setTokens, serverLogout, toast, getTokens } from "/app.js";
+import { apiFetch, setTokens, serverLogout, toast, getTokens } from "/core/app.js";
 
 const API = "http://localhost:1234";
 

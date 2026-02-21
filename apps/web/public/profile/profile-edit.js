@@ -1,4 +1,4 @@
-import { apiFetch, toast, escapeHtml, getTokens, resolveMediaUrl } from "/app.js";
+import { apiFetch, toast, escapeHtml, getTokens, resolveMediaUrl } from "/core/app.js";
 
 const statusBadge = document.querySelector("#statusBadge");
 const accessLenEl = document.querySelector("#accessLen");

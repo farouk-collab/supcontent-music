@@ -1,4 +1,4 @@
-import { apiFetch, toast, escapeHtml, isLoggedIn, getTokens } from "/app.js";
+import { apiFetch, toast, escapeHtml, isLoggedIn, getTokens, resolveMediaUrl } from "/core/app.js";
 
 const API = "http://localhost:1234";
 
@@ -30,10 +30,9 @@ function formatAgo(rawDate) {
 }
 
 function renderSticker(v) {
-  const s = String(v || "").trim();
+  const s = resolveMediaUrl(String(v || "").trim());
   if (!s) return "";
-  if (s.startsWith("/")) return `<img class="cmt-sticker-img" src="${escapeHtml(s)}" alt="sticker" />`;
-  return "";
+  return `<img class="cmt-sticker-img" src="${escapeHtml(s)}" alt="sticker" />`;
 }
 
 function stickerPickerHtml() {
@@ -81,7 +80,11 @@ export function createSocialController({ socialBox, commentsSheet, commentsBackd
           <div class="cmt-meta"><strong>@${escapeHtml(author)}</strong> <span>${escapeHtml(formatAgo(comment.created_at))}</span></div>
           <div class="cmt-body">${escapeHtml(comment.body || "")}</div>
           ${renderSticker(comment.sticker)}
-          ${comment.image_url ? `<img class="cmt-image" src="${escapeHtml(comment.image_url)}" alt="image commentaire" />` : ""}
+          ${
+            resolveMediaUrl(comment.image_url)
+              ? `<img class="cmt-image" src="${escapeHtml(resolveMediaUrl(comment.image_url))}" alt="image commentaire" />`
+              : ""
+          }
           <div class="cmt-actions">
             <button class="cmt-action ${myVote === "up" ? "is-active" : ""}" data-vote-comment="up" data-cid="${escapeHtml(comment.id)}" type="button">👍 ${up}</button>
             <button class="cmt-action ${myVote === "down" ? "is-danger" : ""}" data-vote-comment="down" data-cid="${escapeHtml(comment.id)}" type="button">👎 ${down}</button>
@@ -108,7 +111,11 @@ export function createSocialController({ socialBox, commentsSheet, commentsBackd
           <div class="cmt-meta"><strong>@${escapeHtml(author)}</strong> <span>${escapeHtml(formatAgo(review.created_at))}</span></div>
           <div class="cmt-body">${escapeHtml(review.body || "")}</div>
           ${renderSticker(review.sticker)}
-          ${review.image_url ? `<img class="cmt-image" src="${escapeHtml(review.image_url)}" alt="image avis" />` : ""}
+          ${
+            resolveMediaUrl(review.image_url)
+              ? `<img class="cmt-image" src="${escapeHtml(resolveMediaUrl(review.image_url))}" alt="image avis" />`
+              : ""
+          }
           <div class="cmt-actions">
             <button class="cmt-action ${myVote === "up" ? "is-active" : ""}" data-vote-review="up" data-rid="${escapeHtml(review.id)}" type="button">👍 ${Number(
       review.likes_count || 0
