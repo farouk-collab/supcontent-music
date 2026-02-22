@@ -1,4 +1,4 @@
-import { apiFetch, toast, getTokens, escapeHtml, resolveMediaUrl } from "/core/app.js";
+import { apiFetch, toast, getTokens, escapeHtml, resolveMediaUrl } from "/noyau/app.js";
 
 function mediaHref(type, id) {
   const safeType = String(type || "").trim();
@@ -35,7 +35,7 @@ function renderNotifUserRows(items = [], emptyText = "Aucun element") {
           <div class="news-title">@${escapeHtml(String(u.username || "user"))}</div>
           <div class="news-sub">${escapeHtml(String(u.display_name || ""))}</div>
         </div>
-        <a class="btn" href="/profile/profile.html?user=${encodeURIComponent(String(u.id || ""))}">Voir</a>
+        <a class="btn" href="/profil/profil.html?user=${encodeURIComponent(String(u.id || ""))}">Voir</a>
       </div>
     `
     )
@@ -148,3 +148,4 @@ export function initHomeNotifications(onFollowSuccess) {
   backdrop?.addEventListener("click", closeNotifSheet);
   closeBtn?.addEventListener("click", closeNotifSheet);
 }
+

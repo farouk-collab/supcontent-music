@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Utilisateurs - SUPCONTENT</title>
+  <link rel="stylesheet" href="/noyau/styles.css" />
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
+      <div class="menu">
+        <a class="pill" href="/accueil/accueil.html">Accueil</a>
+        <a class="pill" href="/recherche/recherche.html">Recherche</a>
+        <a class="pill" href="/utilisateurs/utilisateurs.html">Utilisateurs</a>
+        <a class="pill" href="/bibliotheque/bibliotheque.html">Bibliotheque</a>
+        <a class="pill" href="/connexion/connexion.html">Connexion</a>
+        <a class="pill" href="/profil/profil.html">Profil</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card span12">
+        <div class="row" style="justify-content:space-between;align-items:center;gap:12px">
+          <h2 style="margin:0">Explorer les comptes</h2>
+          <small style="color:var(--muted)">Recherche par pseudo ou nom</small>
+        </div>
+        <form id="usersSearchForm" class="row" style="margin-top:12px;gap:8px">
+          <input class="input" name="q" placeholder="@pseudo ou nom affiché" required />
+          <button class="btn primary" type="submit">Rechercher</button>
+        </form>
+      </div>
+      <div class="card span12">
+        <div id="usersResults"><small>Fais une recherche pour commencer.</small></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script type="module" src="/utilisateurs/utilisateurs.js"></script>
+  <script type="module" src="/noyau/footer.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,112 @@
+<template id="tpl-social-loading">
+  <small>Chargement commentaires...</small>
+</template>
+
+<template id="tpl-social-error">
+  <small style="color:#ffb0b0">Erreur social: {{ERROR}}</small>
+</template>
+
+<template id="tpl-social-root">
+  <div class="cmt-header">
+    <div class="cmt-title">{{TOTAL_COUNT}} commentaires</div>
+    <div class="cmt-sort-wrap">
+      <button id="sortBtn" class="cmt-sort-btn" type="button">Trier par</button>
+      <div id="sortMenu" class="cmt-sort-menu" hidden>
+        <button class="cmt-sort-item" data-sort="popular" type="button">Les plus populaires</button>
+        <button class="cmt-sort-item" data-sort="recent" type="button">Les plus recents</button>
+      </div>
+    </div>
+  </div>
+
+  {{SAVED_MEDIA_SECTION}}
+
+  {{TOP_COMPOSER}}
+
+  <div class="cmt-list">
+    {{REVIEWS_HTML}}
+  </div>
+</template>
+
+<template id="tpl-top-composer-auth">
+  <form id="topCommentForm" class="cmt-compose">
+    <input type="hidden" name="rating" value="5" />
+    <input class="input" name="body" placeholder="Ajoute un commentaire..." />
+    <input type="hidden" name="image_url" value="" />
+    <input type="hidden" name="sticker" value="" />
+    <input type="file" name="image_file" accept="image/png,image/jpeg,image/webp" style="display:none" />
+    <div class="cmt-tools">
+      <button class="cmt-plus" data-add-image="1" type="button">+</button>
+      <button class="cmt-action" data-open-stickers="1" type="button">Sticker</button>
+      <button class="btn" type="submit">Publier</button>
+    </div>
+    <div class="composer-preview" data-preview="1"></div>
+    <div class="sticker-strip" data-stickers="1" hidden>{{STICKER_PICKER}}</div>
+  </form>
+</template>
+
+<template id="tpl-top-composer-guest">
+  <small style="display:block;margin-top:10px">Connecte-toi pour commenter.</small>
+</template>
+
+<template id="tpl-empty-state">
+  <small>Aucun commentaire pour le moment.</small>
+</template>
+
+<template id="tpl-review-item">
+  <div class="cmt-item">
+    <div class="cmt-avatar">{{AVATAR}}</div>
+    <div class="cmt-main">
+      <div class="cmt-meta"><strong>@{{AUTHOR}}</strong> <span>{{AGO}}</span></div>
+      <div class="cmt-body">{{BODY}}</div>
+      {{STICKER_HTML}}
+      {{IMAGE_HTML}}
+      <div class="cmt-actions">
+        <button class="cmt-action {{UP_CLASS}}" data-vote-review="up" data-rid="{{RID}}" type="button">&#128077; {{UP_COUNT}}</button>
+        <button class="cmt-action {{DOWN_CLASS}}" data-vote-review="down" data-rid="{{RID}}" type="button">&#128078; {{DOWN_COUNT}}</button>
+        <span class="cmt-action">{{RATING}}/5</span>
+        <button class="cmt-action" data-toggle-reply="{{RID}}" type="button">Repondre</button>
+        {{EDIT_REVIEW_BUTTON}}
+        {{DELETE_REVIEW_BUTTON}}
+      </div>
+
+      <form data-comment-form="1" data-rid="{{RID}}" class="cmt-compose cmt-compose-inline" hidden>
+        <input class="input" name="body" placeholder="Ajouter une reponse..." />
+        <input type="hidden" name="parent_comment_id" value="" />
+        <input type="hidden" name="image_url" value="" />
+        <input type="hidden" name="sticker" value="" />
+        <input type="file" name="image_file" accept="image/png,image/jpeg,image/webp" style="display:none" />
+        <div class="cmt-tools">
+          <button class="cmt-plus" data-add-image="1" type="button">+</button>
+          <button class="cmt-action" data-open-stickers="1" type="button">Sticker</button>
+          <button class="btn" type="submit">Envoyer</button>
+          <button class="cmt-action" data-cancel-reply="1" data-rid="{{RID}}" type="button">Annuler</button>
+        </div>
+        <div class="composer-preview" data-preview="1"></div>
+        <div class="sticker-strip" data-stickers="1" hidden>{{STICKER_PICKER}}</div>
+      </form>
+
+      <div class="cmt-replies-title">{{REPLIES_COUNT}} reponses</div>
+      <div class="cmt-replies">{{REPLIES_HTML}}</div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-reply-item">
+  <div class="cmt-reply" data-reply-offset="{{MARGIN_LEFT}}">
+    <div class="cmt-avatar">{{AVATAR}}</div>
+    <div class="cmt-main">
+      <div class="cmt-meta"><strong>@{{AUTHOR}}</strong> <span>{{AGO}}</span></div>
+      <div class="cmt-body">{{BODY}}</div>
+      {{STICKER_HTML}}
+      {{IMAGE_HTML}}
+      <div class="cmt-actions">
+        <button class="cmt-action {{UP_CLASS}}" data-vote-comment="up" data-cid="{{CID}}" type="button">&#128077; {{UP_COUNT}}</button>
+        <button class="cmt-action {{DOWN_CLASS}}" data-vote-comment="down" data-cid="{{CID}}" type="button">&#128078; {{DOWN_COUNT}}</button>
+        <button class="cmt-action" data-reply-comment="1" data-rid="{{RID}}" data-cid="{{CID}}" type="button">Repondre</button>
+        {{EDIT_COMMENT_BUTTON}}
+        {{DELETE_COMMENT_BUTTON}}
+      </div>
+      {{REPLIES_HTML}}
+    </div>
+  </div>
+</template>

@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Profil - SUPCONTENT</title>
+  <link rel="stylesheet" href="/noyau/styles.css" />
+</head>
+<body class="profile-page">
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
+      <div class="menu">
+        <a class="pill" href="/accueil/accueil.html">Accueil</a>
+        <a class="pill" href="/recherche/recherche.html">Recherche</a>
+        <a class="pill" href="/utilisateurs/utilisateurs.html">Utilisateurs</a>
+        <a class="pill" href="/bibliotheque/bibliotheque.html">Bibliotheque</a>
+        <a class="pill" href="/connexion/connexion.html">Connexion</a>
+        <a class="pill" href="/profil/profil.html">Profil</a>
+      </div>
+      <div class="profile-top-actions">
+        <button id="addContentBtn" class="btn" type="button" aria-label="Ajouter une story ou publication">+</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card span8">
+        <div class="row" style="justify-content:space-between;align-items:center;gap:12px">
+          <h2 style="margin:0">Mon profil</h2>
+          <div class="row" style="gap:10px;align-items:center">
+            <span id="statusBadge" class="badge">...</span>
+            <a id="editBtn" class="btn" href="/profil/profil-modifier.html" title="Parametres">⚙️</a>
+          </div>
+        </div>
+
+        <div id="profileView" style="margin-top:14px">
+          <small>Chargement...</small>
+        </div>
+        <div id="socialMeta" style="margin-top:12px"></div>
+        <div id="socialLists" style="margin-top:10px"></div>
+        <div id="profilePostsSection" style="margin-top:12px"></div>
+
+        <hr />
+
+        <div class="row" style="gap:10px;flex-wrap:wrap">
+          <button id="refreshBtn" class="btn" type="button">Rafraichir</button>
+          <button id="logoutBtn" class="btn danger" type="button">Deconnexion (local)</button>
+          <button id="deleteAccountBtn" class="btn danger" type="button">Supprimer mon compte</button>
+        </div>
+
+        <small style="display:block;margin-top:10px;color:var(--muted)">
+          Note: la deconnexion supprime seulement les tokens du navigateur.
+        </small>
+        <small style="display:block;margin-top:6px;color:#ffb0b0">
+          Attention: suppression definitive du compte.
+        </small>
+      </div>
+
+      <div class="card span4">
+        <h2>Diagnostic</h2>
+        <div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:10px">
+          <span class="badge">accessLen: <span id="accessLen">0</span></span>
+          <span class="badge">refreshLen: <span id="refreshLen">0</span></span>
+        </div>
+
+        <div id="diagBox" style="color:var(--muted)">
+          <small>...</small>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <div id="composerModal" class="comments-sheet" hidden>
+    <button id="composerBackdrop" class="comments-backdrop" type="button" aria-label="Fermer"></button>
+    <div class="comments-panel">
+      <div class="comments-handle"></div>
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h3 style="margin:0">Nouvelle story / publication</h3>
+        <button id="closeComposerBtn" class="btn" type="button">Fermer</button>
+      </div>
+      <form id="composerForm" class="form" style="margin-top:10px">
+        <div class="two">
+          <div>
+            <label>Type</label>
+            <select class="input" name="entry_type">
+              <option value="story">Story</option>
+              <option value="post">Publication</option>
+            </select>
+          </div>
+          <div>
+            <label>Media</label>
+            <input class="input" name="media_file" type="file" accept="image/*,video/*" required />
+          </div>
+        </div>
+        <div>
+          <label>Texte</label>
+          <textarea class="input" name="caption" rows="3" placeholder="Ton texte..."></textarea>
+        </div>
+        <div id="composerPreview" style="margin-top:8px"></div>
+        <button class="btn primary" type="submit">Publier</button>
+      </form>
+    </div>
+  </div>
+
+  <script type="module" src="/profil/profil.js?v=4"></script>
+  <script type="module" src="/noyau/footer.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Bibliotheque — SUPCONTENT</title>
+  <link rel="stylesheet" href="/noyau/styles.css" />
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
+      <div class="menu">
+        <a class="pill" href="/accueil/accueil.html">Accueil</a>
+        <a class="pill" href="/recherche/recherche.html">Recherche</a>
+        <a class="pill" href="/utilisateurs/utilisateurs.html">Utilisateurs</a>
+        <a class="pill" href="/bibliotheque/bibliotheque.html">Bibliotheque</a>
+        <a class="pill" href="/connexion/connexion.html">Connexion</a>
+        <a class="pill" href="/profil/profil.html">Profil</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card span4">
+        <h2>Ajouter une oeuvre</h2>
+        <form id="statusAddForm" class="form">
+          <div class="two">
+            <div>
+              <label>Type</label>
+              <select class="input" name="media_type">
+                <option value="track">track</option>
+                <option value="album">album</option>
+                <option value="artist">artist</option>
+              </select>
+            </div>
+            <div>
+              <label>Statut</label>
+              <select class="input" name="status">
+                <option value="a_voir">A voir</option>
+                <option value="en_cours">En cours</option>
+                <option value="termine">Termine</option>
+                <option value="abandonne">Abandonne</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label>Media ID</label>
+            <input class="input" name="media_id" required placeholder="spotify id" />
+          </div>
+          <button class="btn primary" type="submit">Ajouter</button>
+        </form>
+
+        <hr />
+
+        <h2>Nouvelle liste</h2>
+        <form id="createListForm" class="form">
+          <div>
+            <label>Nom</label>
+            <input class="input" name="name" required maxlength="80" placeholder="Mes albums chill" />
+          </div>
+          <div class="row">
+            <label style="display:flex;gap:8px;align-items:center">
+              <input type="checkbox" name="is_public" />
+              Publique
+            </label>
+          </div>
+          <button class="btn" type="submit">Creer la liste</button>
+        </form>
+      </div>
+
+      <div class="card span8">
+        <div class="row" style="justify-content:space-between">
+          <h2 style="margin:0">Mes collections</h2>
+          <button id="refreshBtn" class="btn" type="button">Rafraichir</button>
+        </div>
+        <div id="collectionsBox" style="margin-top:12px"><small>Chargement...</small></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script type="module" src="/bibliotheque/bibliotheque.js"></script>
+  <script type="module" src="/noyau/footer.js"></script>
+</body>
+</html>
+

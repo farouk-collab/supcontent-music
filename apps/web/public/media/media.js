@@ -1,4 +1,4 @@
-import { qs, toast, escapeHtml } from "/core/app.js";
+import { qs, toast, escapeHtml } from "/noyau/app.js";
 import { renderMediaDetails } from "/media/details.js";
 import { createSocialController } from "/media/social.js";
 
@@ -50,7 +50,7 @@ async function load(opts = {}) {
   if (!type || !id) {
     box.innerHTML = `
       <small>
-        Parametres manquants. Ouvre un media depuis <a href="/search/search.html">Recherche</a>.
+        Parametres manquants. Ouvre un media depuis <a href="/recherche/recherche.html">Recherche</a>.
         <br/>URL actuelle: <code>${escapeHtml(window.location.href)}</code>
       </small>
     `;
@@ -77,7 +77,7 @@ backBtn?.addEventListener("click", () => {
     window.history.back();
     return;
   }
-  window.location.href = "/feed/feed";
+  window.location.href = "/accueil/accueil";
 });
 
 refreshInfoBtn?.addEventListener("click", async () => {
@@ -91,3 +91,4 @@ refreshInfoBtn?.addEventListener("click", async () => {
     refreshInfoBtn.removeAttribute("disabled");
   }
 });
+

@@ -12,8 +12,7 @@ export async function ensureSocialTables() {
       image_url TEXT NULL,
       sticker TEXT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      CONSTRAINT uq_reviews_user_media UNIQUE (user_id, media_type, media_id)
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
 
@@ -21,6 +20,7 @@ export async function ensureSocialTables() {
   await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS body TEXT NULL`);
   await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS image_url TEXT NULL`);
   await pool.query(`ALTER TABLE reviews ADD COLUMN IF NOT EXISTS sticker TEXT NULL`);
+  await pool.query(`ALTER TABLE reviews DROP CONSTRAINT IF EXISTS uq_reviews_user_media`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS review_likes (
@@ -56,15 +56,19 @@ export async function ensureSocialTables() {
       user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       parent_comment_id UUID NULL REFERENCES review_comments(id) ON DELETE CASCADE,
       body TEXT NOT NULL,
+      content TEXT NULL,
       image_url TEXT NULL,
       sticker TEXT NULL,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
   await pool.query(`ALTER TABLE review_comments ADD COLUMN IF NOT EXISTS body TEXT`);
+  await pool.query(`ALTER TABLE review_comments ADD COLUMN IF NOT EXISTS content TEXT`);
   await pool.query(`ALTER TABLE review_comments ADD COLUMN IF NOT EXISTS parent_comment_id UUID NULL`);
   await pool.query(`ALTER TABLE review_comments ADD COLUMN IF NOT EXISTS image_url TEXT NULL`);
   await pool.query(`ALTER TABLE review_comments ADD COLUMN IF NOT EXISTS sticker TEXT NULL`);
+  await pool.query(`UPDATE review_comments SET body = COALESCE(body, content, '') WHERE body IS NULL`);
+  await pool.query(`UPDATE review_comments SET content = COALESCE(content, body, '') WHERE content IS NULL`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS comment_votes (

@@ -139,7 +139,7 @@ router.get("/media/:mediaType/:mediaId", async (req, res) => {
           rc.parent_comment_id,
           rc.user_id,
           u.display_name,
-          rc.body,
+          COALESCE(rc.body, rc.content, '') AS body,
           rc.image_url,
           rc.sticker,
           rc.created_at,
@@ -212,42 +212,15 @@ router.post("/media/:mediaType/:mediaId/reviews", requireAuth, async (req: Authe
   const imageUrl = String(parsedBody.data.image_url || "").trim();
   const sticker = String(parsedBody.data.sticker || "").trim();
 
-  const client = await pool.connect();
-  try {
-    await client.query("BEGIN");
-
-    const updated = await client.query(
-      `
-        UPDATE reviews
-        SET rating = $1, body = $2, image_url = $3, sticker = $4, updated_at = NOW()
-        WHERE user_id = $5 AND media_type = $6 AND media_id = $7
-        RETURNING id, user_id, media_type, media_id, rating, body, image_url, sticker, created_at, updated_at
-      `,
-      [rating, body || null, imageUrl || null, sticker || null, userId, mediaType, mediaId]
-    );
-
-    if (updated.rows[0]) {
-      await client.query("COMMIT");
-      return res.status(201).json({ review: updated.rows[0] });
-    }
-
-    const inserted = await client.query(
-      `
-        INSERT INTO reviews (id, user_id, media_type, media_id, rating, body, image_url, sticker)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING id, user_id, media_type, media_id, rating, body, image_url, sticker, created_at, updated_at
-      `,
-      [randomUUID(), userId, mediaType, mediaId, rating, body || null, imageUrl || null, sticker || null]
-    );
-
-    await client.query("COMMIT");
-    return res.status(201).json({ review: inserted.rows[0] });
-  } catch (e) {
-    await client.query("ROLLBACK");
-    throw e;
-  } finally {
-    client.release();
-  }
+  const inserted = await pool.query(
+    `
+      INSERT INTO reviews (id, user_id, media_type, media_id, rating, body, image_url, sticker)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id, user_id, media_type, media_id, rating, body, image_url, sticker, created_at, updated_at
+    `,
+    [randomUUID(), userId, mediaType, mediaId, rating, body || null, imageUrl || null, sticker || null]
+  );
+  return res.status(201).json({ review: inserted.rows[0] });
 });
 
 router.post("/reviews/:reviewId/like", requireAuth, async (req: AuthedRequest, res) => {
@@ -350,13 +323,40 @@ router.post("/reviews/:reviewId/comments", requireAuth, async (req: AuthedReques
 
   const r = await pool.query(
     `
-      INSERT INTO review_comments (id, review_id, user_id, parent_comment_id, body, image_url, sticker)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO review_comments (id, review_id, user_id, parent_comment_id, body, content, image_url, sticker)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING id, review_id, user_id, parent_comment_id, body, image_url, sticker, created_at
     `,
-    [randomUUID(), reviewId, userId, parentCommentId, body || "", imageUrl || null, sticker || null]
+    [randomUUID(), reviewId, userId, parentCommentId, body || "", body || "", imageUrl || null, sticker || null]
   );
   return res.status(201).json({ comment: r.rows[0] });
+});
+
+router.patch("/reviews/:reviewId", requireAuth, async (req: AuthedRequest, res) => {
+  const reviewId = String(req.params.reviewId || "");
+  if (!/^[0-9a-fA-F-]{36}$/.test(reviewId)) return res.status(400).json({ erreur: "reviewId invalide" });
+
+  const parsedBody = ReviewBodySchema.safeParse(req.body);
+  if (!parsedBody.success) return res.status(400).json({ erreur: "Donnees invalides" });
+
+  const userId = req.user!.id;
+  const { rating } = parsedBody.data;
+  const body = String(parsedBody.data.body || "").trim();
+  const imageUrl = String(parsedBody.data.image_url || "").trim();
+  const sticker = String(parsedBody.data.sticker || "").trim();
+
+  const updated = await pool.query(
+    `
+      UPDATE reviews
+      SET rating = $1, body = $2, image_url = $3, sticker = $4, updated_at = NOW()
+      WHERE id = $5 AND user_id = $6
+      RETURNING id, user_id, media_type, media_id, rating, body, image_url, sticker, created_at, updated_at
+    `,
+    [rating, body || null, imageUrl || null, sticker || null, reviewId, userId]
+  );
+
+  if (!updated.rows[0]) return res.status(403).json({ erreur: "Modification non autorisee" });
+  return res.json({ review: updated.rows[0] });
 });
 
 router.delete("/reviews/:reviewId", requireAuth, async (req: AuthedRequest, res) => {
@@ -436,7 +436,7 @@ router.patch("/comments/:commentId", requireAuth, async (req: AuthedRequest, res
   const updated = await pool.query(
     `
       UPDATE review_comments
-      SET body = $1
+      SET body = $1, content = $1
       WHERE id = $2 AND user_id = $3
       RETURNING id, review_id, user_id, parent_comment_id, body, image_url, sticker, created_at
     `,

@@ -1,4 +1,4 @@
-import { apiFetch, escapeHtml, resolveMediaUrl } from "/core/app.js";
+import { apiFetch, escapeHtml, resolveMediaUrl } from "/noyau/app.js";
 
 function pickImage(item) {
   const candidates = [
@@ -149,3 +149,4 @@ export async function renderMediaDetails(type, id, box, opts = {}) {
     }
   `;
 }
+

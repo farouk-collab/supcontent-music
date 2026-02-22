@@ -1,0 +1,363 @@
+
+> dev
+> concurrently -n api,web -c cyan,green "npm run dev:api" "npm run dev:web"
+
+[api] 
+[api] > dev:api
+[api] > npm --workspace apps/api run dev
+[api] 
+[web] 
+[web] > dev:web
+[web] > npx serve apps/web/public -l 4173
+[web] 
+[api] 
+[api] > api@1.0.0 dev
+[api] > ts-node-dev --respawn --transpile-only src/index.ts
+[api] 
+[api] [INFO] 03:35:53 ts-node-dev ver. 2.0.0 (using ts-node ver. 10.9.2, typescript ver. 5.9.3)
+[web]  INFO  Accepting connections at http://localhost:4173
+[api] ?? API: http://localhost:1234
+[web]  HTTP  21/02/2026 03:35:58 ::1 GET /feed/feed
+[web]  HTTP  21/02/2026 03:35:58 ::1 Returned 304 in 39 ms
+[web]  HTTP  21/02/2026 03:35:58 ::1 GET /core/styles.css
+[web]  HTTP  21/02/2026 03:35:58 ::1 Returned 304 in 5 ms
+[web]  HTTP  21/02/2026 03:35:58 ::1 GET /feed/feed.js
+[web]  HTTP  21/02/2026 03:35:58 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:35:58 ::1 GET /core/footer.js
+[web]  HTTP  21/02/2026 03:35:58 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:35:58 ::1 GET /core/app.js
+[web]  HTTP  21/02/2026 03:35:58 ::1 GET /notifications/notifications.js
+[web]  HTTP  21/02/2026 03:35:58 ::1 Returned 200 in 11 ms
+[web]  HTTP  21/02/2026 03:35:58 ::1 Returned 304 in 10 ms
+[api] [0mGET /auth/me [36m304[0m 21.091 ms - -[0m
+[api] [0mGET /follows/me?limit=30 [36m304[0m 7.575 ms - -[0m
+[api] [0mGET /uploads/2a157d5cd371150c001dfd2e.jpg [36m304[0m 5.565 ms - -[0m
+[api] [0mGET /feed/me?limit=12 [36m304[0m 12.568 ms - -[0m
+[api] Spotify token refreshed
+[api] Spotify NEW RELEASES error: 403 { error: { status: 403, message: 'Forbidden' } }
+[api] Spotify SEARCH params: {
+[api]   q: 'new music friday',
+[api]   type: 'album',
+[api]   limit: 6,
+[api]   offset: 0,
+[api]   limitType: 'number'
+[api] }
+[api] Spotify request URL: https://api.spotify.com/v1/search?q=new+music+friday&type=album&limit=6&offset=0&market=FR
+[api] Spotify SEARCH params: {
+[api]   q: 'nouveautes album',
+[api]   type: 'album',
+[api]   limit: 6,
+[api]   offset: 0,
+[api]   limitType: 'number'
+[api] }
+[api] Spotify request URL: https://api.spotify.com/v1/search?q=nouveautes+album&type=album&limit=6&offset=0&market=FR
+[api] Spotify SEARCH params: {
+[api]   q: 'sorties rap',
+[api]   type: 'album',
+[api]   limit: 6,
+[api]   offset: 0,
+[api]   limitType: 'number'
+[api] }
+[api] Spotify request URL: https://api.spotify.com/v1/search?q=sorties+rap&type=album&limit=6&offset=0&market=FR
+[api] Spotify SEARCH params: {
+[api]   q: 'pop nouveautes',
+[api]   type: 'album',
+[api]   limit: 6,
+[api]   offset: 0,
+[api]   limitType: 'number'
+[api] }
+[api] Spotify request URL: https://api.spotify.com/v1/search?q=pop+nouveautes&type=album&limit=6&offset=0&market=FR
+[api] Spotify SEARCH rate limited, cooling down for 120s
+[api] Spotify SEARCH error: 429 Too many requests
+[api] Spotify SEARCH rate limited, cooling down for 120s
+[api] Spotify SEARCH error: 429 Too many requests
+[api] Spotify SEARCH rate limited, cooling down for 120s
+[api] Spotify SEARCH error: 429 Too many requests
+[api] Spotify SEARCH rate limited, cooling down for 120s
+[api] Spotify SEARCH error: 429 Too many requests
+[api] [0mGET /music/news?limit=8 [32m200[0m 481.014 ms - 380[0m
+[api] 🎯 /search final params: { q: 'Top hits', type: 'track', limit: 10, offset: 0, page: 1 }
+[api] [0mGET /search?q=Top%20hits&type=track&page=1&limit=10 [32m200[0m 193.809 ms - 2440[0m
+[api] 🎯 /search final params: { q: 'Rap francais', type: 'artist', limit: 10, offset: 0, page: 1 }
+[api] [0mGET /search?q=Rap%20francais&type=artist&page=1&limit=10 [32m200[0m 106.079 ms - 2050[0m
+[api] 🎯 /search final params: { q: 'Afrobeats', type: 'track', limit: 10, offset: 0, page: 1 }
+[api] [0mGET /search?q=Afrobeats&type=track&page=1&limit=10 [32m200[0m 133.170 ms - 2389[0m
+[api] 🎯 /search final params: { q: 'Pop hits', type: 'track', limit: 10, offset: 0, page: 1 }
+[api] [0mGET /search?q=Pop%20hits&type=track&page=1&limit=10 [32m200[0m 82.464 ms - 2430[0m
+[api] [0mGET /notifications/me?limit=8 [36m304[0m 26.655 ms - -[0m
+[web]  HTTP  21/02/2026 03:36:35 ::1 GET /profile/profile
+[web]  HTTP  21/02/2026 03:36:35 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:36:35 ::1 GET /core/styles.css
+[web]  HTTP  21/02/2026 03:36:35 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:36:35 ::1 GET /profile/profile.js?v=4
+[web]  HTTP  21/02/2026 03:36:35 ::1 GET /core/footer.js
+[web]  HTTP  21/02/2026 03:36:35 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:36:35 ::1 Returned 304 in 6 ms
+[web]  HTTP  21/02/2026 03:36:35 ::1 GET /core/app.js
+[web]  HTTP  21/02/2026 03:36:35 ::1 Returned 304 in 1 ms
+[api] [0mGET /auth/me [36m304[0m 29.668 ms - -[0m
+[api] [0mGET /follows/me [36m304[0m 33.336 ms - -[0m
+[api] [0mGET /uploads/2a157d5cd371150c001dfd2e.jpg [36m304[0m 1.563 ms - -[0m
+[api] [0mGET /uploads/d017dcd45ef231e247a6208d.jpg [36m304[0m 1.219 ms - -[0m
+[web]  HTTP  21/02/2026 03:36:37 ::1 GET /library/library
+[web]  HTTP  21/02/2026 03:36:37 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:36:37 ::1 GET /core/styles.css
+[web]  HTTP  21/02/2026 03:36:37 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:36:37 ::1 GET /library/library.js
+[web]  HTTP  21/02/2026 03:36:37 ::1 GET /core/footer.js
+[web]  HTTP  21/02/2026 03:36:37 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:36:37 ::1 Returned 200 in 4 ms
+[web]  HTTP  21/02/2026 03:36:37 ::1 GET /core/app.js
+[web]  HTTP  21/02/2026 03:36:37 ::1 Returned 304 in 1 ms
+[api] [0mGET /collections/me?include_items=1 [36m304[0m 20.272 ms - -[0m
+[web]  HTTP  21/02/2026 03:36:39 ::1 GET /chat/chat
+[web]  HTTP  21/02/2026 03:36:39 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:36:39 ::1 GET /core/styles.css
+[web]  HTTP  21/02/2026 03:36:39 ::1 GET /core/footer.js
+[web]  HTTP  21/02/2026 03:36:39 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:36:39 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:36:40 ::1 GET /search/search
+[web]  HTTP  21/02/2026 03:36:40 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:36:40 ::1 GET /core/styles.css
+[web]  HTTP  21/02/2026 03:36:40 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:36:40 ::1 GET /search/search.js
+[web]  HTTP  21/02/2026 03:36:40 ::1 GET /core/footer.js
+[web]  HTTP  21/02/2026 03:36:40 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:36:40 ::1 Returned 200 in 5 ms
+[web]  HTTP  21/02/2026 03:36:40 ::1 GET /core/app.js
+[web]  HTTP  21/02/2026 03:36:40 ::1 Returned 304 in 2 ms
+[api] 🎯 /search final params: { q: 'daft punk', type: 'artist', limit: 10, offset: 0, page: 1 }
+[api] [0mGET /search?q=daft%20punk&type=artist&limit=10 [32m200[0m 180.620 ms - 2865[0m
+[web]  HTTP  21/02/2026 03:36:42 ::1 GET /feed/feed
+[web]  HTTP  21/02/2026 03:36:42 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:36:42 ::1 GET /core/styles.css
+[web]  HTTP  21/02/2026 03:36:42 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:36:42 ::1 GET /feed/feed.js
+[web]  HTTP  21/02/2026 03:36:42 ::1 Returned 304 in 0 ms
+[web]  HTTP  21/02/2026 03:36:42 ::1 GET /core/footer.js
+[web]  HTTP  21/02/2026 03:36:42 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:36:42 ::1 GET /core/app.js
+[web]  HTTP  21/02/2026 03:36:42 ::1 GET /notifications/notifications.js
+[web]  HTTP  21/02/2026 03:36:42 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:36:42 ::1 Returned 304 in 2 ms
+[api] [0mGET /auth/me [36m304[0m 4.223 ms - -[0m
+[api] [0mGET /follows/me?limit=30 [36m304[0m 5.299 ms - -[0m
+[api] [0mGET /feed/me?limit=12 [36m304[0m 8.618 ms - -[0m
+[api] [0mGET /uploads/2a157d5cd371150c001dfd2e.jpg [36m304[0m 2.901 ms - -[0m
+[api] Spotify NEW RELEASES error: 403 { error: { status: 403, message: 'Forbidden' } }
+[api] [0mGET /music/news?limit=8 [32m200[0m 90.608 ms - 380[0m
+[api] 🎯 /search final params: { q: 'Top hits', type: 'track', limit: 10, offset: 0, page: 1 }
+[api] [0mGET /search?q=Top%20hits&type=track&page=1&limit=10 [32m200[0m 198.543 ms - 2440[0m
+[api] 🎯 /search final params: { q: 'Rap francais', type: 'artist', limit: 10, offset: 0, page: 1 }
+[api] [0mGET /search?q=Rap%20francais&type=artist&page=1&limit=10 [32m200[0m 86.224 ms - 2050[0m
+[api] 🎯 /search final params: { q: 'Afrobeats', type: 'track', limit: 10, offset: 0, page: 1 }
+[api] [0mGET /search?q=Afrobeats&type=track&page=1&limit=10 [32m200[0m 114.383 ms - 2389[0m
+[api] 🎯 /search final params: { q: 'Pop hits', type: 'track', limit: 10, offset: 0, page: 1 }
+[api] [0mGET /search?q=Pop%20hits&type=track&page=1&limit=10 [32m200[0m 99.729 ms - 2430[0m
+[web]  HTTP  21/02/2026 03:37:02 ::1 GET /media/media.html?type=track&id=4fSIb4hdOQ151TILNsSEaF
+[web]  HTTP  21/02/2026 03:37:02 ::1 Returned 301 in 2 ms
+[web]  HTTP  21/02/2026 03:37:02 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:02 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:02 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:02 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:02 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:02 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:03 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:03 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 45 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:04 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:04 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:05 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:05 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 17 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:06 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:06 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:07 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:07 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:08 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:08 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 4 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:09 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:09 ::1 Returned 304 in 5 ms
+[web]  HTTP  21/02/2026 03:37:10 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:10 ::1 Returned 304 in 11 ms
+[web]  HTTP  21/02/2026 03:37:10 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:10 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:10 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:10 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:10 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:10 ::1 Returned 304 in 3 ms
+[web]  HTTP  21/02/2026 03:37:10 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:10 ::1 Returned 304 in 1 ms
+[web]  HTTP  21/02/2026 03:37:10 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:10 ::1 Returned 304 in 2 ms
+[web]  HTTP  21/02/2026 03:37:10 ::1 GET /media/media
+[web]  HTTP  21/02/2026 03:37:10 ::1 Returned 304 in 2 ms
+[web] ^C^CTerminer le programme de commandes (O/N)�? 
+[api] ^C^CTerminer le programme de commandes (O/N)�? ^CTerminer le programme de commandes (O/N)�? 
+[web] ^C
+[web] npm run dev:web exited with code 3221225786
+[api] npm run dev:api exited with code 3221225786
