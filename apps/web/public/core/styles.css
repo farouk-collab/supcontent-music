@@ -24,7 +24,19 @@ body{
 }
 
 body.has-mobile-footer{
-  padding-bottom: 92px;
+  padding-bottom: calc(160px + env(safe-area-inset-bottom));
+}
+
+/* Extra breathing room so last form buttons/messages are never hidden behind footer */
+body.has-mobile-footer .container{
+  padding-bottom: calc(72px + env(safe-area-inset-bottom));
+}
+
+/* Ensure each page can scroll past the last content block above the fixed footer */
+body.has-mobile-footer .container::after{
+  content: "";
+  display: block;
+  height: calc(56px + env(safe-area-inset-bottom));
 }
 
 a{color:inherit; text-decoration:none}
@@ -236,7 +248,7 @@ label{font-size:.9rem; color: var(--muted)}
 .toast strong{display:block}
 
 body.has-mobile-footer .toast{
-  bottom: 104px;
+  bottom: calc(164px + env(safe-area-inset-bottom));
 }
 hr{border:none; border-top:1px solid var(--border); margin:14px 0}
 /* ===== HOME CAROUSELS ===== */
