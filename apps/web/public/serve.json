@@ -1,10 +1,14 @@
 {
   "cleanUrls": false,
   "rewrites": [
+    { "source": "/auth/auth", "destination": "/auth/auth.html" },
+    { "source": "/chat/chat", "destination": "/chat/chat.html" },
     { "source": "/feed/feed", "destination": "/feed/feed.html" },
+    { "source": "/users/users", "destination": "/users/users.html" },
     { "source": "/media/media", "destination": "/media/media.html" },
     { "source": "/search/search", "destination": "/search/search.html" },
     { "source": "/library/library", "destination": "/library/library.html" },
-    { "source": "/profile/profile", "destination": "/profile/profile.html" }
+    { "source": "/profile/profile", "destination": "/profile/profile.html" },
+    { "source": "/profile/profile-edit", "destination": "/profile/profile-edit.html" }
   ]
 }
