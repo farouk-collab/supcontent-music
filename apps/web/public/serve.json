@@ -1,6 +1,15 @@
 {
   "cleanUrls": false,
   "rewrites": [
+    { "source": "/", "destination": "/feed/feed.html" },
+    { "source": "/feed", "destination": "/feed/feed.html" },
+    { "source": "/search", "destination": "/search/search.html" },
+    { "source": "/chat", "destination": "/chat/chat.html" },
+    { "source": "/library", "destination": "/library/library.html" },
+    { "source": "/profile", "destination": "/profile/profile.html" },
+    { "source": "/auth", "destination": "/auth/auth.html" },
+    { "source": "/users", "destination": "/users/users.html" },
+    { "source": "/media", "destination": "/media/media.html" },
     { "source": "/auth/auth", "destination": "/auth/auth.html" },
     { "source": "/chat/chat", "destination": "/chat/chat.html" },
     { "source": "/feed/feed", "destination": "/feed/feed.html" },
