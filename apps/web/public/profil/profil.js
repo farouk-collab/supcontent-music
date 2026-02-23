@@ -20,6 +20,7 @@ const closeComposerBtn = document.querySelector("#closeComposerBtn");
 const composerForm = document.querySelector("#composerForm");
 const composerPreview = document.querySelector("#composerPreview");
 const publicationMetaFields = document.querySelector("#publicationMetaFields");
+const storyMetaFields = document.querySelector("#storyMetaFields");
 const profileMediaModal = document.querySelector("#profileMediaModal");
 const profileMediaBackdrop = document.querySelector("#profileMediaBackdrop");
 const profileMediaBody = document.querySelector("#profileMediaBody");
@@ -31,9 +32,29 @@ let pendingUploadType = "";
 let composerBound = false;
 let composerUserId = "";
 let profilePostsTab = "publications";
+const STORY_TTL_MS = 24 * 60 * 60 * 1000;
 
 function qs(name) {
   return new URLSearchParams(window.location.search).get(name) || "";
+}
+
+function isBirthdayToday(birthDateRaw) {
+  const raw = String(birthDateRaw || "").trim();
+  if (!raw) return false;
+
+  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (isoMatch) {
+    const mm = Number(isoMatch[2]);
+    const dd = Number(isoMatch[3]);
+    if (!Number.isFinite(mm) || !Number.isFinite(dd)) return false;
+    const now = new Date();
+    return now.getMonth() + 1 === mm && now.getDate() === dd;
+  }
+
+  const parsed = new Date(raw);
+  if (!Number.isFinite(parsed.getTime())) return false;
+  const now = new Date();
+  return now.getMonth() === parsed.getMonth() && now.getDate() === parsed.getDate();
 }
 
 function updateTokenStats() {
@@ -78,6 +99,7 @@ function renderProfileCard(u, opts = {}) {
   const followersCount = Number(opts.followersCount || 0);
   const location = String(u.location || "").trim();
   const birthDate = String(u.birth_date || "").trim();
+  const birthdayToday = isBirthdayToday(birthDate);
   const gender = String(u.gender || "").trim();
   const website = String(u.website || "").trim();
   const infoBadges = [
@@ -92,6 +114,20 @@ function renderProfileCard(u, opts = {}) {
   profileView.innerHTML = `
     <section class="snap-profile">
       <div class="snap-hero" style="${coverStyle}">
+        ${
+          birthdayToday
+            ? `<div class="birthday-burst" aria-hidden="true">
+                <span class="birthday-emoji e1">🎁</span>
+                <span class="birthday-emoji e2">🎉</span>
+                <span class="birthday-emoji e3">🎂</span>
+                <span class="birthday-emoji e4">🎊</span>
+                <span class="birthday-emoji e5">🥳</span>
+                <span class="birthday-emoji e6">🎈</span>
+                <span class="birthday-emoji e7">🎁</span>
+                <span class="birthday-emoji e8">🎉</span>
+              </div>`
+            : ""
+        }
         <div class="snap-topbar">
           <div></div>
           <div class="row" style="gap:8px">
@@ -109,6 +145,11 @@ function renderProfileCard(u, opts = {}) {
         </div>
       </div>
       <div class="snap-profile-main">
+        ${
+          birthdayToday
+            ? `<div class="birthday-pill">Joyeux anniversaire 🎉🎂🎁</div>`
+            : ""
+        }
         <div class="row" style="gap:10px;flex-wrap:wrap">
           ${showFollow ? followBtn : `<button class="btn" type="button">Mon compte</button>`}
           ${isSelf ? `<a class="btn" href="/parametres/parametres.html">Parametres</a>` : ""}
@@ -187,6 +228,28 @@ function normalizeMediaKind(value) {
   return v === "video" ? "video" : "image";
 }
 
+function toIsoMs(iso) {
+  const ms = new Date(String(iso || "")).getTime();
+  return Number.isFinite(ms) ? ms : NaN;
+}
+
+function isSavedStory(entry) {
+  return normalizeEntryType(entry?.entry_type) === "story" && Boolean(entry?.meta?.saved_to_profile);
+}
+
+function isStoryExpired(entry) {
+  if (normalizeEntryType(entry?.entry_type) !== "story") return false;
+  const createdMs = toIsoMs(entry?.created_at);
+  if (!Number.isFinite(createdMs)) return false;
+  return Date.now() - createdMs > STORY_TTL_MS;
+}
+
+function storyLabel(entry) {
+  const raw = String(entry?.caption || "").trim();
+  if (raw) return raw.slice(0, 18);
+  return "Story";
+}
+
 function normalizePostMeta(raw) {
   const tagsRaw = Array.isArray(raw?.tags) ? raw.tags : String(raw?.tags || "").split(",");
   const tags = tagsRaw
@@ -199,6 +262,7 @@ function normalizePostMeta(raw) {
     visibility: String(raw?.visibility || "public") === "followers" ? "followers" : "public",
     allow_likes: raw?.allow_likes !== false,
     allow_comments: raw?.allow_comments !== false,
+    saved_to_profile: raw?.saved_to_profile === true,
   };
 }
 
@@ -207,7 +271,10 @@ function normalizePostEntry(raw) {
   const mediaKind = normalizeMediaKind(raw?.media_kind);
   const caption = String(raw?.caption || raw?.description || "").trim();
   const comments = Array.isArray(raw?.comments) ? raw.comments : [];
-  const meta = normalizePostMeta(raw?.meta || raw);
+  const meta = normalizePostMeta({
+    ...(raw?.meta || raw || {}),
+    saved_to_profile: raw?.meta?.saved_to_profile ?? raw?.saved_to_profile ?? raw?.story_saved,
+  });
   return {
     id: String(raw?.id || crypto.randomUUID()),
     user_id: String(raw?.user_id || ""),
@@ -220,6 +287,7 @@ function normalizePostEntry(raw) {
     comments_count: Number(raw?.comments_count || comments.length || 0),
     comments,
     meta,
+    saved_to_profile: entryType === "story" ? Boolean(meta.saved_to_profile) : false,
     created_at: raw?.created_at || new Date().toISOString(),
   };
 }
@@ -228,7 +296,11 @@ function readPosts(userId) {
   try {
     const raw = localStorage.getItem(postStorageKey(userId));
     const parsed = raw ? JSON.parse(raw) : [];
-    return Array.isArray(parsed) ? parsed.map((p) => normalizePostEntry(p)) : [];
+    if (!Array.isArray(parsed)) return [];
+    const normalized = parsed.map((p) => normalizePostEntry(p));
+    const active = normalized.filter((p) => !(isStoryExpired(p) && !isSavedStory(p)));
+    if (active.length !== normalized.length) writePosts(userId, active);
+    return active;
   } catch {
     return [];
   }
@@ -266,6 +338,7 @@ function openProfileMediaModal(post, opts = {}) {
     : `<img alt="" src="${escapeHtml(post.media_data || "")}" class="snap-viewer-media" />`;
   const canEdit = canManage && post.entry_type === "publication";
   const meta = normalizePostMeta(post?.meta || {});
+  const storySaved = isSavedStory(post);
   const tagsLabel = meta.tags.length ? `#${meta.tags.join(" #")}` : "";
 
   profileMediaBody.innerHTML = `
@@ -292,6 +365,13 @@ function openProfileMediaModal(post, opts = {}) {
       canManage
         ? `<div class="row" style="gap:8px;margin-top:12px">
             ${canEdit ? `<button id="editPostBtn" class="btn" type="button">Modifier</button>` : ""}
+            ${
+              post.entry_type === "story"
+                ? `<button id="toggleStorySaveBtn" class="btn" type="button">${
+                    storySaved ? "Retirer des highlights" : "Enregistrer en highlight"
+                  }</button>`
+                : ""
+            }
             <button id="deletePostBtn" class="btn danger" type="button">Supprimer</button>
             <button id="closePostModalBtn" class="btn" type="button">Fermer</button>
           </div>`
@@ -345,6 +425,26 @@ function openProfileMediaModal(post, opts = {}) {
     closeProfileMediaModal();
     toast("Contenu supprime.", "OK");
   });
+  profileMediaBody.querySelector("#toggleStorySaveBtn")?.addEventListener("click", () => {
+    if (!currentProfileUserId || post.entry_type !== "story") return;
+    const next = readPosts(currentProfileUserId).map((p) => {
+      if (String(p.id || "") !== String(post.id || "")) return p;
+      const nextMeta = normalizePostMeta({
+        ...(p.meta || {}),
+        saved_to_profile: !isSavedStory(p),
+      });
+      return {
+        ...p,
+        meta: nextMeta,
+        saved_to_profile: Boolean(nextMeta.saved_to_profile),
+      };
+    });
+    writePosts(currentProfileUserId, next);
+    const updated = next.find((p) => String(p.id || "") === String(post.id || ""));
+    renderProfilePosts({ id: currentProfileUserId }, { canCreate: isOwnProfile, canManage: isOwnProfile });
+    if (updated) openProfileMediaModal(updated, opts);
+    toast(updated && isSavedStory(updated) ? "Story enregistree en highlight." : "Story retiree des highlights.", "OK");
+  });
 
   const editBtn = profileMediaBody.querySelector("#editPostBtn");
   const editForm = profileMediaBody.querySelector("#editPostForm");
@@ -385,9 +485,33 @@ function openProfileMediaModal(post, opts = {}) {
 }
 
 function filterPostsByTab(posts, tab) {
-  if (tab === "stories") return posts.filter((p) => p.entry_type === "story");
+  if (tab === "stories") return posts.filter((p) => p.entry_type === "story" && !isStoryExpired(p));
   if (tab === "reels") return posts.filter((p) => p.entry_type === "publication" && p.media_kind === "video");
   return posts.filter((p) => p.entry_type === "publication" && p.media_kind !== "video");
+}
+
+function renderSavedStoriesSection(savedStories = []) {
+  if (!savedStories.length) return "";
+  return `
+    <section class="snap-highlights">
+      <div class="snap-highlights-title">Stories enregistrees</div>
+      <div class="snap-highlights-track">
+        ${savedStories
+          .map((p) => {
+            const media = escapeHtml(p.media_data || "");
+            return `
+              <button class="snap-highlight-item" type="button" data-open-post-id="${escapeHtml(String(p.id || ""))}">
+                <span class="snap-highlight-ring">
+                  <img alt="" src="${media}" class="snap-highlight-media" />
+                </span>
+                <span class="snap-highlight-label">${escapeHtml(storyLabel(p))}</span>
+              </button>
+            `;
+          })
+          .join("")}
+      </div>
+    </section>
+  `;
 }
 
 function renderProfilePosts(user, opts = {}) {
@@ -403,11 +527,16 @@ function renderProfilePosts(user, opts = {}) {
   const canManage = Boolean(opts.canManage);
   const publicationsCount = posts.filter((p) => p.entry_type === "publication" && p.media_kind !== "video").length;
   const reelsCount = posts.filter((p) => p.entry_type === "publication" && p.media_kind === "video").length;
-  const storiesCount = posts.filter((p) => p.entry_type === "story").length;
+  const storiesCount = posts.filter((p) => p.entry_type === "story" && !isStoryExpired(p)).length;
+  const savedStories = posts
+    .filter((p) => p.entry_type === "story" && isSavedStory(p))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 20);
   const filtered = filterPostsByTab(posts, profilePostsTab);
 
   const header = `
     <section class="snap-media-section">
+      ${renderSavedStoriesSection(savedStories)}
       <div class="snap-media-tabs">
         <button class="snap-tab ${profilePostsTab === "publications" ? "is-active" : ""}" type="button" data-tab="publications">Publications <small>(${publicationsCount})</small></button>
         <button class="snap-tab ${profilePostsTab === "reels" ? "is-active" : ""}" type="button" data-tab="reels">Reels <small>(${reelsCount})</small></button>
@@ -492,6 +621,7 @@ function toggleComposerMetaVisibility() {
   if (!composerForm || !publicationMetaFields) return;
   const typeField = composerForm.elements.namedItem("entry_type");
   const entryType = String(typeField?.value || "publication");
+  if (storyMetaFields) storyMetaFields.hidden = entryType !== "story";
   publicationMetaFields.hidden = entryType !== "publication";
 }
 
@@ -557,14 +687,17 @@ function bindComposer(user) {
     const visibilityField = composerForm.elements.namedItem("meta_visibility");
     const allowLikesField = composerForm.elements.namedItem("meta_allow_likes");
     const allowCommentsField = composerForm.elements.namedItem("meta_allow_comments");
+    const saveStoryField = composerForm.elements.namedItem("story_save_profile");
     const entryType = String(typeField?.value || "publication") === "story" ? "story" : "publication";
     const caption = String(captionField?.value || "").trim().slice(0, 600);
+    const saveStoryToProfile = entryType === "story" ? Boolean(saveStoryField?.checked) : false;
     const meta = normalizePostMeta({
       location: String(locationField?.value || ""),
       tags: String(tagsField?.value || ""),
       visibility: String(visibilityField?.value || "public"),
       allow_likes: Boolean(allowLikesField?.checked),
       allow_comments: Boolean(allowCommentsField?.checked),
+      saved_to_profile: saveStoryToProfile,
     });
     const current = readPosts(composerUserId);
     const next = [
@@ -580,6 +713,7 @@ function bindComposer(user) {
         comments_count: 0,
         comments: [],
         meta,
+        saved_to_profile: saveStoryToProfile,
         created_at: new Date().toISOString()
       },
       ...current
@@ -588,7 +722,7 @@ function bindComposer(user) {
     writePosts(composerUserId, next);
     renderProfilePosts({ id: composerUserId }, { canCreate: true, canManage: true });
     closeComposer();
-    toast("Publication ajoutee au profil.", "OK");
+    toast(entryType === "story" ? "Story publiee (24h)." : "Publication ajoutee au profil.", "OK");
   });
 }
 

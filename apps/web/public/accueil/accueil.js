@@ -2,6 +2,7 @@ import { apiFetch, toast, getTokens, serverLogout, escapeHtml, resolveMediaUrl }
 import { initHomeNotifications } from "/notifications/notifications.js";
 
 console.log("INDEX JS LOADED");
+const STORY_TTL_MS = 24 * 60 * 60 * 1000;
 
 function syncAuthUI() {
   const t = getTokens();
@@ -137,6 +138,11 @@ function readUserStories(userId) {
     if (!Array.isArray(all)) return [];
     return all
       .filter((x) => String(x?.entry_type || "") === "story" && x?.media_data)
+      .filter((x) => {
+        const createdMs = new Date(String(x?.created_at || "")).getTime();
+        if (!Number.isFinite(createdMs)) return false;
+        return Date.now() - createdMs <= STORY_TTL_MS;
+      })
       .sort((a, b) => new Date(String(b?.created_at || 0)).getTime() - new Date(String(a?.created_at || 0)).getTime());
   } catch {
     return [];
