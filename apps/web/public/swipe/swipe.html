@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Swipes - SUPCONTENT</title>
+  <link rel="stylesheet" href="/noyau/styles.css" />
+</head>
+<body>
+  <div class="nav">
+    <div class="nav-inner">
+      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
+      <div class="menu">
+        <a class="pill" href="/accueil/accueil.html" data-i18n="home">Accueil</a>
+        <a class="pill" href="/recherche/recherche.html" data-i18n="search">Recherche</a>
+        <a class="pill" href="/discussion/discussion.html" data-i18n="chat">Chat</a>
+        <a class="pill" href="/profil/profil.html" data-i18n="profile">Profil</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <h2 style="margin:0" data-i18n="swipe_title">Swipes</h2>
+        <div class="row" style="gap:8px">
+          <button id="modeProfilesBtn" class="btn primary" type="button" data-i18n="profiles">Profils</button>
+          <button id="modeMusicBtn" class="btn" type="button" data-i18n="musics">Musiques</button>
+        </div>
+      </div>
+      <small style="color:var(--muted);display:block;margin-top:6px" data-i18n="swipe_intro">
+        Like profil = follow automatique. Chat direct seulement si follow mutuel.
+      </small>
+
+      <div id="swipeCardWrap" class="swipe-card-wrap" style="margin-top:12px">
+        <div id="swipeHintPass" class="swipe-hint swipe-hint-pass">❌</div>
+        <div id="swipeHintLike" class="swipe-hint swipe-hint-like">✅</div>
+        <div id="swipeCard" class="swipe-card"><small>Chargement...</small></div>
+      </div>
+
+      <div id="profileActions" style="margin-top:10px">
+        <div id="suggestedMsgRow" class="row" style="gap:8px;flex-wrap:wrap;margin-bottom:8px">
+          <button class="pill" data-suggested-msg="Salut, ton profil m'a plu." type="button">Salut 👋</button>
+          <button class="pill" data-suggested-msg="On a les memes gouts musicaux ?" type="button">Meme gouts ? 🎵</button>
+          <button class="pill" data-suggested-msg="Tu veux discuter un peu ?" type="button">Discuter ? 💬</button>
+          <button class="pill" data-suggested-msg="J'aime bien ton energie." type="button">Bonne vibe ✨</button>
+        </div>
+        <div class="row" style="gap:8px;align-items:center">
+          <input id="inviteMessageInput" class="input" maxlength="180" placeholder="Message d'invitation (optionnel, 180 max)" data-i18n-placeholder="invite_placeholder" />
+          <button id="passBtn" class="btn swipe-pass-btn" type="button" aria-label="Je n'aime pas" title="Je n'aime pas">❌</button>
+          <button id="likeBtn" class="btn swipe-like-btn" type="button" aria-label="J'aime" title="J'aime">✅</button>
+        </div>
+        <small id="inviteMessageCount" style="display:block;margin-top:6px;color:var(--muted)">0 / 180</small>
+      </div>
+
+      <div id="musicActions" style="margin-top:10px" hidden>
+        <div class="row" style="gap:8px;align-items:center">
+          <button id="musicPassBtn" class="btn swipe-pass-btn" type="button" aria-label="Je n'aime pas" title="Je n'aime pas">❌</button>
+          <button id="musicLikeBtn" class="btn swipe-like-btn" type="button" aria-label="J'aime" title="J'aime">✅</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="swipeFiltersBackdrop" class="swipe-filters-backdrop" hidden></div>
+  <section id="profileFilters" class="swipe-filters-panel card" hidden>
+    <div class="swipe-filters-head">
+      <strong data-i18n="filters_profiles">Filtres profils</strong>
+      <button id="closeProfileFiltersBtn" class="btn" type="button" aria-label="Fermer les filtres" data-i18n-aria-label="close_filters">✕</button>
+    </div>
+
+    <div class="swipe-filters-block">
+      <div class="swipe-gender-grid">
+        <label class="pill"><input type="checkbox" name="swipeGenderPref" value="male" /> male</label>
+        <label class="pill"><input type="checkbox" name="swipeGenderPref" value="female" /> female</label>
+        <label class="pill"><input type="checkbox" name="swipeGenderPref" value="other" /> other</label>
+        <label class="pill"><input type="checkbox" name="swipeGenderPref" value="prefer_not_to_say" /> discret</label>
+      </div>
+    </div>
+
+    <div class="swipe-filters-block">
+      <div class="swipe-options-row">
+        <label class="swipe-checkline"><input id="swipeUseDistanceFilter" type="checkbox" /> <span data-i18n="distance">distance</span></label>
+        <label class="swipe-checkline"><input id="swipeLiveLocation" type="checkbox" /> <span data-i18n="live_location">localisation live</span></label>
+      </div>
+      <div class="swipe-age-row">
+        <label class="swipe-age-input">
+          <span data-i18n="age_min">age min</span>
+          <input id="swipeMinAge" class="input" type="number" min="13" max="99" value="18" />
+        </label>
+        <label class="swipe-age-input">
+          <span data-i18n="age_max">age max</span>
+          <input id="swipeMaxAge" class="input" type="number" min="13" max="99" value="99" />
+        </label>
+      </div>
+      <small id="swipeAgeRuleInfo" class="swipe-rule-note"></small>
+    </div>
+
+    <div class="swipe-filters-block">
+      <div class="swipe-location-row">
+        <input id="swipeMaxDistanceKm" class="input" type="number" min="1" max="500" value="50" />
+        <button id="swipeUseLocationBtn" class="btn" type="button" data-i18n="my_position">Ma position</button>
+        <button id="swipeClearLocationBtn" class="btn" type="button" data-i18n="clear">Effacer</button>
+      </div>
+      <small id="swipeLocationInfo" data-i18n="position_undefined">Position: non definie</small>
+    </div>
+
+    <div class="swipe-filters-actions">
+      <button id="applyProfileFiltersBtn" class="btn primary" type="button" data-i18n="apply">Appliquer</button>
+    </div>
+  </section>
+  <button id="swipeFiltersFab" class="swipe-filters-fab" type="button" aria-controls="profileFilters" aria-expanded="false" aria-label="Filtres profils" title="Filtres profils">&#127919;</button>
+  <div id="toast" class="toast"></div>
+  <script type="module" src="/swipe/swipe.js"></script>
+  <script type="module" src="/noyau/footer.js"></script>
+</body>
+</html>

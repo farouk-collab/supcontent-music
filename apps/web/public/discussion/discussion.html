@@ -11,27 +11,34 @@
     <div class="nav-inner">
       <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
       <div class="menu">
-        <a class="pill" href="/accueil/accueil.html">Accueil</a>
-        <a class="pill" href="/recherche/recherche.html">Recherche</a>
-        <a class="pill" href="/bibliotheque/bibliotheque.html">Bibliotheque</a>
+        <a class="pill" href="/accueil/accueil.html" data-i18n="home">Accueil</a>
+        <a class="pill" href="/recherche/recherche.html" data-i18n="search">Recherche</a>
+        <a class="pill" href="/bibliotheque/bibliotheque.html" data-i18n="library">Bibliotheque</a>
         <a class="pill" href="/connexion/connexion.html">Connexion</a>
-        <a class="pill" href="/profil/profil.html">Profil</a>
+        <a class="pill" href="/profil/profil.html" data-i18n="profile">Profil</a>
       </div>
     </div>
   </div>
 
   <div class="container">
     <div class="card">
-      <h2>Chats</h2>
-      <p>Espace chat en cours de construction.</p>
+      <h2 data-i18n="chats">Chats</h2>
+      <p data-i18n="chat_wip">Espace chat en cours de construction.</p>
+      <div class="row" style="margin-top:10px;gap:8px">
+        <a class="btn primary" href="/swipe/swipe.html" data-i18n="open_swipes">Ouvrir Swipes</a>
+      </div>
+      <hr />
+      <h3 style="margin:0 0 8px 0" data-i18n="invitations">Invitations</h3>
+      <div id="invitesBox"><small data-i18n="loading_invitations">Chargement invitations...</small></div>
       <div class="row" style="margin-top:12px">
-        <a class="btn" href="/profil/profil.html">Voir profil</a>
-        <a class="btn primary" href="/recherche/recherche.html">Trouver de la musique</a>
+        <a class="btn" href="/profil/profil.html" data-i18n="view_profile">Voir profil</a>
+        <a class="btn primary" href="/recherche/recherche.html" data-i18n="find_music">Trouver de la musique</a>
       </div>
     </div>
   </div>
 
   <div id="toast" class="toast"></div>
+  <script type="module" src="/discussion/discussion.js"></script>
   <script type="module" src="/noyau/footer.js"></script>
 </body>
 </html>

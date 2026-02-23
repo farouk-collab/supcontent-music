@@ -1,9 +1,12 @@
+import { getLanguage, t } from "/noyau/i18n.js";
+
 const tabs = [
-  { href: "/accueil", icon: "&#127968;", label: "Accueil", key: "index" },
-  { href: "/recherche", icon: "&#128269;", label: "Recherche", key: "search" },
-  { href: "/discussion", icon: "&#128172;", label: "Chat", key: "chat" },
-  { href: "/bibliotheque", icon: "&#128218;", label: "Biblio", key: "library" },
-  { href: "/profil", icon: "&#128100;", label: "Profil", key: "profile" },
+  { href: "/accueil", icon: "&#127968;", labelKey: "home", key: "index" },
+  { href: "/recherche", icon: "&#128269;", labelKey: "search", key: "search" },
+  { href: "/swipe/swipe.html", icon: "&#127183;", labelKey: "swipe", key: "swipe" },
+  { href: "/discussion", icon: "&#128172;", labelKey: "chat", key: "chat" },
+  { href: "/bibliotheque", icon: "&#128218;", labelKey: "library", key: "library" },
+  { href: "/profil", icon: "&#128100;", labelKey: "profile", key: "profile" },
 ];
 
 function isAuthed() {
@@ -32,6 +35,7 @@ function currentKey(pathname) {
     return "index";
   }
   if (p.endsWith("/search") || p.endsWith("/recherche") || p.endsWith("/search.html") || p.endsWith("/recherche/recherche.html")) return "search";
+  if (p.endsWith("/swipe") || p.endsWith("/swipe/swipe.html")) return "swipe";
   if (p.endsWith("/chat") || p.endsWith("/discussion") || p.endsWith("/chat.html") || p.endsWith("/discussion/discussion.html")) return "chat";
   if (p.endsWith("/library") || p.endsWith("/bibliotheque") || p.endsWith("/library.html") || p.endsWith("/bibliotheque/bibliotheque.html")) return "library";
   if (
@@ -52,16 +56,17 @@ function injectFooter() {
 
   const active = currentKey(window.location.pathname);
   const el = document.createElement("footer");
+  const lang = getLanguage();
   el.className = "mobile-footer";
-  el.setAttribute("aria-label", "Navigation rapide");
+  el.setAttribute("aria-label", lang === "en" ? "Quick navigation" : "Navigation rapide");
   el.innerHTML = `
     <nav class="mobile-footer-inner">
       ${tabs
         .map(
-          (t) => `
-        <a class="mobile-tab ${active === t.key ? "is-active" : ""}" href="${t.href}" aria-label="${t.label}">
-          <span class="ico" aria-hidden="true">${t.icon}</span>
-          <span class="txt">${t.label}</span>
+          (tab) => `
+        <a class="mobile-tab ${active === tab.key ? "is-active" : ""}" href="${tab.href}" aria-label="${t(tab.labelKey)}">
+          <span class="ico" aria-hidden="true">${tab.icon}</span>
+          <span class="txt">${t(tab.labelKey)}</span>
         </a>
       `
         )
