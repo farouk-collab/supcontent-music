@@ -1,6 +1,4 @@
-import { apiFetch, setTokens, serverLogout, toast, getTokens } from "/noyau/app.js";
-
-const API = "http://localhost:1234";
+import { apiFetch, setTokens, serverLogout, toast, getTokens, API_BASE } from "/noyau/app.js";
 
 const rf = document.querySelector("#registerForm");
 const lf = document.querySelector("#loginForm");
@@ -72,6 +70,6 @@ logoutBtn?.addEventListener("click", async () => {
 
 githubLoginBtn?.addEventListener("click", () => {
   const returnTo = window.location.origin;
-  window.location.href = `${API}/auth/oauth/github/start?returnTo=${encodeURIComponent(returnTo)}`;
+  window.location.href = `${API_BASE}/auth/oauth/github/start?returnTo=${encodeURIComponent(returnTo)}`;
 });
 

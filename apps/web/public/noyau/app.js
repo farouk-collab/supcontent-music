@@ -1,4 +1,8 @@
-const API = "http://localhost:1234";
+export const API_BASE = String(
+  window.__API_BASE_URL__ ||
+    window.localStorage?.getItem("SUPCONTENT_API_BASE") ||
+    "http://localhost:1234"
+).replace(/\/+$/, "");
 const LS = { access: "supcontent_access", refresh: "supcontent_refresh" };
 
 export function getTokens() {
@@ -22,7 +26,7 @@ export async function serverLogout() {
   const { refreshToken } = getTokens();
   try {
     if (refreshToken) {
-      await fetch(API + "/auth/logout", {
+      await fetch(API_BASE + "/auth/logout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refreshToken }),
@@ -53,7 +57,7 @@ export async function apiFetch(path, opts = {}) {
     const isFormData = typeof FormData !== "undefined" && opts.body instanceof FormData;
     if (!headers.has("Content-Type") && opts.body && !isFormData) headers.set("Content-Type", "application/json");
     if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
-    return fetch(API + path, { ...opts, headers });
+    return fetch(API_BASE + path, { ...opts, headers });
   };
 
   const { accessToken, refreshToken } = getTokens();
@@ -66,7 +70,7 @@ export async function apiFetch(path, opts = {}) {
 
   // Si 401 -> on tente un refresh (si refreshToken existe)
   if (res.status === 401 && refreshToken) {
-    const refreshed = await fetch(API + "/auth/refresh", {
+    const refreshed = await fetch(API_BASE + "/auth/refresh", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refreshToken }),
@@ -123,20 +127,20 @@ export function resolveMediaUrl(url = "") {
   }
   if (s.startsWith("/")) {
     if (s === "/media" || s === "/media/media") return "";
-    if (s.startsWith("/uploads/")) return API + s;
+    if (s.startsWith("/uploads/")) return API_BASE + s;
     return s;
   }
   if (s.startsWith("./") || s.startsWith("../")) {
     const cleaned = s.replace(/^(\.\/|\.\.\/)+/, "");
     if (!cleaned) return "";
-    if (cleaned.startsWith("uploads/")) return `${API}/${cleaned}`;
+    if (cleaned.startsWith("uploads/")) return `${API_BASE}/${cleaned}`;
     if (cleaned.startsWith("stk/")) return `/${cleaned}`;
     if (cleaned === "media" || cleaned.startsWith("media/")) return "";
     return "";
   }
   const normalized = s.replace(/^\/+/, "");
   if (normalized === "media" || normalized.startsWith("media/")) return "";
-  if (normalized.startsWith("uploads/")) return `${API}/${normalized}`;
+  if (normalized.startsWith("uploads/")) return `${API_BASE}/${normalized}`;
   if (normalized.startsWith("stk/")) return `/${normalized}`;
   return "";
 }

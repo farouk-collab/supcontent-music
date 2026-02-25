@@ -1,4 +1,4 @@
-import { apiFetch, toast, escapeHtml, getTokens, resolveMediaUrl } from "/noyau/app.js";
+import { apiFetch, toast, escapeHtml, getTokens, resolveMediaUrl, API_BASE } from "/noyau/app.js";
 
 const statusBadge = document.querySelector("#statusBadge");
 const accessLenEl = document.querySelector("#accessLen");
@@ -95,7 +95,7 @@ async function uploadImage(kind, file) {
   const fd = new FormData();
   fd.append("file", file);
 
-  const res = await fetch(`http://localhost:1234/upload/${encodeURIComponent(kind)}`, {
+  const res = await fetch(`${API_BASE}/upload/${encodeURIComponent(kind)}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${accessToken}` },
     body: fd,

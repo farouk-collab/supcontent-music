@@ -1,6 +1,4 @@
-import { apiFetch, toast, escapeHtml, isLoggedIn, getTokens, resolveMediaUrl } from "/noyau/app.js";
-
-const API = "http://localhost:1234";
+import { apiFetch, toast, escapeHtml, isLoggedIn, getTokens, resolveMediaUrl, API_BASE } from "/noyau/app.js";
 
 const STICKERS = [
   { id: "heart", url: "/autocollants/heart.svg" },
@@ -333,7 +331,7 @@ export function createSocialController({ socialBox, commentsSheet, commentsBackd
     const form = new FormData();
     form.append("file", file);
     const { accessToken } = getTokens();
-    const res = await fetch(`${API}/upload/social`, {
+    const res = await fetch(`${API_BASE}/upload/social`, {
       method: "POST",
       headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
       body: form,
