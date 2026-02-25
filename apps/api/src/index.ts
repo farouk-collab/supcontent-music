@@ -31,6 +31,7 @@ import notificationsRoutes from "./routes/notifications";
 import { AuthedRequest, requireAuth } from "./middleware/requireAuth";
 
 const app = express();
+app.set("trust proxy", 1);
 
 app.use(
   helmet({
@@ -44,7 +45,7 @@ app.use(
         frameAncestors: ["'self'"],
         imgSrc: ["'self'", "data:", "blob:", "https://i.scdn.co", "https://mosaic.scdn.co"],
         objectSrc: ["'none'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: ["'self'", "https:"],
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'", "https:", "'unsafe-inline'"],
         upgradeInsecureRequests: [],
@@ -57,6 +58,111 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
+const buildOpenApiSpec = (baseUrl: string) => ({
+  openapi: "3.0.3",
+  info: {
+    title: "Supcontent API",
+    version: "1.0.0",
+    description: "API documentation for Supcontent music backend.",
+  },
+  servers: [{ url: baseUrl }],
+  tags: [
+    { name: "System" },
+    { name: "Auth" },
+    { name: "Users" },
+    { name: "Collections" },
+    { name: "Social" },
+    { name: "Follows" },
+    { name: "Feed" },
+    { name: "Notifications" },
+    { name: "Upload" },
+  ],
+  paths: {
+    "/": { get: { tags: ["System"], summary: "Service info", responses: { "200": { description: "OK" } } } },
+    "/health": { get: { tags: ["System"], summary: "Health check", responses: { "200": { description: "OK" } } } },
+    "/env-check": { get: { tags: ["System"], summary: "Environment flags", responses: { "200": { description: "OK" } } } },
+    "/db-test": { get: { tags: ["System"], summary: "Database connectivity test", responses: { "200": { description: "OK" } } } },
+    "/redis-test": { get: { tags: ["System"], summary: "Redis connectivity test", responses: { "200": { description: "OK" } } } },
+    "/search": {
+      get: {
+        tags: ["System"],
+        summary: "Spotify search proxy",
+        parameters: [
+          { in: "query", name: "q", required: true, schema: { type: "string" } },
+          { in: "query", name: "type", required: false, schema: { type: "string", enum: ["track", "album", "artist"] } },
+          { in: "query", name: "page", required: false, schema: { type: "integer", minimum: 1 } },
+          { in: "query", name: "limit", required: false, schema: { type: "integer", minimum: 1, maximum: 10 } },
+        ],
+        responses: { "200": { description: "OK" } },
+      },
+    },
+    "/auth/{path}": {
+      get: {
+        tags: ["Auth"],
+        summary: "Auth endpoints group",
+        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "Depends on endpoint" } },
+      },
+    },
+    "/users/{path}": {
+      get: {
+        tags: ["Users"],
+        summary: "Users endpoints group",
+        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "Depends on endpoint" } },
+      },
+    },
+    "/collections/{path}": {
+      get: {
+        tags: ["Collections"],
+        summary: "Collections endpoints group",
+        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "Depends on endpoint" } },
+      },
+    },
+    "/social/{path}": {
+      get: {
+        tags: ["Social"],
+        summary: "Social endpoints group",
+        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "Depends on endpoint" } },
+      },
+    },
+    "/follows/{path}": {
+      get: {
+        tags: ["Follows"],
+        summary: "Follows endpoints group",
+        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "Depends on endpoint" } },
+      },
+    },
+    "/feed/{path}": {
+      get: {
+        tags: ["Feed"],
+        summary: "Feed endpoints group",
+        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "Depends on endpoint" } },
+      },
+    },
+    "/notifications/{path}": {
+      get: {
+        tags: ["Notifications"],
+        summary: "Notifications endpoints group",
+        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "Depends on endpoint" } },
+      },
+    },
+    "/upload/{path}": {
+      post: {
+        tags: ["Upload"],
+        summary: "Upload endpoints group",
+        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
+        responses: { "200": { description: "Depends on endpoint" } },
+      },
+    },
+  },
+});
+
 /* ======================
    API ROUTES
 ====================== */
@@ -68,6 +174,36 @@ app.use("/social", socialRoutes);
 app.use("/follows", followsRoutes);
 app.use("/feed", feedRoutes);
 app.use("/notifications", notificationsRoutes);
+
+app.get("/openapi.json", (req, res) => {
+  const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "https");
+  const host = String(req.headers["x-forwarded-host"] || req.get("host") || "");
+  const baseUrl = host ? `${proto}://${host}` : "";
+  return res.json(buildOpenApiSpec(baseUrl));
+});
+
+app.get("/docs", (_req, res) => {
+  res.type("html").send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Supcontent API Docs</title>
+    <script type="module" src="https://unpkg.com/rapidoc/dist/rapidoc-min.js"></script>
+  </head>
+  <body style="margin:0;background:#111;">
+    <rapi-doc
+      spec-url="/openapi.json"
+      theme="dark"
+      render-style="read"
+      show-header="true"
+      allow-try="false"
+      sort-tags="true"
+      sort-endpoints-by="method"
+    ></rapi-doc>
+  </body>
+</html>`);
+});
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
