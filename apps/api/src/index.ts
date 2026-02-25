@@ -1,4 +1,5 @@
 import express from "express";
+import "express-async-errors";
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -1225,6 +1226,12 @@ app.get("/music/news", async (req, res) => {
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
     });
   }
+});
+
+app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  console.error("Unhandled API error:", err?.message || err);
+  if (res.headersSent) return;
+  return res.status(500).json({ erreur: "Erreur serveur" });
 });
 
 app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
