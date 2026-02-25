@@ -17,6 +17,7 @@ import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../auth/j
 import { requireAuth, AuthedRequest } from "../middleware/requireAuth";
 import { getSpotifyLinkByUserId, upsertSpotifyLink } from "../db/spotifyLinks";
 import { exchangeSpotifyAuthCode, spotifyUserGet } from "../services";
+import { isSupportedImageMime, storeUploadedImage } from "../services/mediaStorage";
 
 /* =========================
    Router
@@ -628,43 +629,49 @@ router.delete("/me", requireAuth, async (req: AuthedRequest, res) => {
  * POST /auth/upload/cover
  * -> { url: "/uploads/xxxx.jpg" }
  */
+/**
+ * Upload avatar/cover (pour ton profile.js)
+ * POST /auth/upload/avatar  (multipart form-data, champ "file")
+ * POST /auth/upload/cover
+ * -> { url: "..." }
+ */
 router.post("/upload/:kind", requireAuth, async (req: AuthedRequest, res) => {
   const kind = String(req.params.kind || "");
   if (!["avatar", "cover"].includes(kind)) {
-    return res.status(400).json({ erreur: "kind doit être avatar|cover" });
+    return res.status(400).json({ erreur: "kind doit etre avatar|cover" });
   }
 
   try {
     const { file } = await parseMultipart(req);
     if (!file) return res.status(400).json({ erreur: "Fichier manquant (field 'file')" });
 
-    const ext = extFromMime(file.mime);
-    if (!ext) return res.status(400).json({ erreur: "Format non supporté (png/jpg/webp)" });
+    if (!isSupportedImageMime(file.mime, false)) {
+      return res.status(400).json({ erreur: "Format non supporte (png/jpg/webp)" });
+    }
 
-    // max 3MB
     const max = 3 * 1024 * 1024;
     if (file.buffer.length > max) return res.status(400).json({ erreur: "Fichier trop lourd (max 3MB)" });
 
-    const dir = ensureUploadsDir();
-    const filename = `${kind}_${req.user!.id}_${randomUUID()}${ext}`;
-    const abs = path.join(dir, filename);
-    fs.writeFileSync(abs, file.buffer);
+    const stored = await storeUploadedImage({
+      buffer: file.buffer,
+      mime: file.mime,
+      purpose: kind as "avatar" | "cover",
+      userId: req.user!.id,
+    });
 
-    const url = `/uploads/${filename}`;
-
-    // on met à jour en DB
     const col = kind === "avatar" ? "avatar_url" : "cover_url";
     const r = await pool.query(
       `UPDATE users SET ${col} = $1 WHERE id = $2
        RETURNING id, email, display_name, username, avatar_url, cover_url, bio, website, location, gender, birth_date, created_at`,
-      [url, req.user!.id]
+      [stored.url, req.user!.id]
     );
 
-    return res.json({ url, user: r.rows[0] });
+    return res.json({ url: stored.url, user: r.rows[0] });
   } catch (e: any) {
-    console.error("Upload error:", e?.message);
-    return res.status(500).json({ erreur: "Upload échoué" });
+    console.error("Upload error:", e?.message || e);
+    return res.status(500).json({ erreur: "Upload echoue" });
   }
 });
 
 export default router;
+
