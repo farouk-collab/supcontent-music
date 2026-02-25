@@ -10,6 +10,7 @@
   --radius:18px;
   --max:1100px;
   --mobile-footer-height: 84px;
+  --brand-logo-url: url("/assets/logo-supconnect.svg");
 }
 
 *{box-sizing:border-box}
@@ -58,9 +59,17 @@ code{background:rgba(255,255,255,.08); padding:.15rem .35rem; border-radius:8px}
 }
 .brand{display:flex; gap:10px; align-items:center; font-weight:800; letter-spacing:.2px}
 .brand .dot{
-  width:12px; height:12px; border-radius:50%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  width:30px;
+  height:30px;
+  border-radius:10px;
+  background-color: rgba(124,92,255,.2);
+  background-image: var(--brand-logo-url);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  border: 1px solid rgba(255,255,255,.22);
   box-shadow:0 0 0 4px rgba(124,92,255,.15);
+  flex: 0 0 auto;
 }
 .menu{display:flex; gap:14px; align-items:center; flex-wrap:wrap}
 .pill{
@@ -1884,6 +1893,12 @@ button.btn[data-car-prev], button.btn[data-car-next]{
 
   .nav-inner .brand{
     font-size: 14px;
+  }
+
+  .brand .dot{
+    width:24px;
+    height:24px;
+    border-radius:8px;
   }
 
   .card{

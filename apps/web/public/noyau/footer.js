@@ -9,6 +9,26 @@ const tabs = [
   { href: "/profil", icon: "&#128100;", labelKey: "profile", key: "profile" },
 ];
 
+function ensureBrandFavicon() {
+  const href = "/assets/logo-supconnect.svg";
+  let icon = document.querySelector('link[rel="icon"]');
+  if (!icon) {
+    icon = document.createElement("link");
+    icon.setAttribute("rel", "icon");
+    document.head.appendChild(icon);
+  }
+  icon.setAttribute("type", "image/svg+xml");
+  icon.setAttribute("href", href);
+
+  let apple = document.querySelector('link[rel="apple-touch-icon"]');
+  if (!apple) {
+    apple = document.createElement("link");
+    apple.setAttribute("rel", "apple-touch-icon");
+    document.head.appendChild(apple);
+  }
+  apple.setAttribute("href", href);
+}
+
 function isAuthed() {
   try {
     return Boolean(localStorage.getItem("supcontent_access"));
@@ -80,10 +100,12 @@ function injectFooter() {
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
+    ensureBrandFavicon();
     injectFooter();
     syncHeaderAuthLinks();
   });
 } else {
+  ensureBrandFavicon();
   injectFooter();
   syncHeaderAuthLinks();
 }
