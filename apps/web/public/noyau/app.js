@@ -120,6 +120,10 @@ export function resolveMediaUrl(url = "") {
   if (s.startsWith("http://") || s.startsWith("https://")) {
     try {
       const u = new URL(s);
+      // Migrate old local absolute media URLs to current API host in production.
+      if ((u.hostname === "localhost" || u.hostname === "127.0.0.1") && u.pathname.startsWith("/uploads/")) {
+        return `${API_BASE}${u.pathname}`;
+      }
       if (u.pathname === "/media" || u.pathname === "/media/media") return "";
     } catch {
       return "";
