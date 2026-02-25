@@ -47,153 +47,158 @@ function optionalUserIdFromAuthHeader(authHeader: string | undefined) {
 }
 
 router.get("/media/:mediaType/:mediaId", async (req, res) => {
-  const parsedType = MediaTypeSchema.safeParse(String(req.params.mediaType || ""));
-  if (!parsedType.success) return res.status(400).json({ erreur: "mediaType invalide" });
+  try {
+    const parsedType = MediaTypeSchema.safeParse(String(req.params.mediaType || ""));
+    if (!parsedType.success) return res.status(400).json({ erreur: "mediaType invalide" });
 
-  const mediaType = parsedType.data;
-  const mediaId = String(req.params.mediaId || "").trim();
-  if (!mediaId) return res.status(400).json({ erreur: "mediaId manquant" });
+    const mediaType = parsedType.data;
+    const mediaId = String(req.params.mediaId || "").trim();
+    if (!mediaId) return res.status(400).json({ erreur: "mediaId manquant" });
 
-  const currentUserId = optionalUserIdFromAuthHeader(req.headers.authorization);
+    const currentUserId = optionalUserIdFromAuthHeader(req.headers.authorization);
 
-  const summaryRes = await pool.query(
-    `
-      WITH base_reviews AS (
-        SELECT id, rating
-        FROM reviews
-        WHERE media_type = $1 AND media_id = $2
-      ),
-      likes_cte AS (
-        SELECT COUNT(*) FILTER (WHERE rv.vote_type = 'up')::int AS like_count
-        FROM review_votes rv
-        JOIN base_reviews br ON br.id = rv.review_id
-      ),
-      comments_cte AS (
-        SELECT COUNT(*)::int AS comment_count
-        FROM review_comments rc
-        JOIN base_reviews br ON br.id = rc.review_id
-      )
-      SELECT
-        (SELECT COUNT(*)::int FROM base_reviews) AS review_count,
-        (SELECT COALESCE(ROUND(AVG(rating)::numeric, 2), 0)::float8 FROM base_reviews) AS avg_rating,
-        (SELECT like_count FROM likes_cte) AS like_count,
-        (SELECT comment_count FROM comments_cte) AS comment_count
-    `,
-    [mediaType, mediaId]
-  );
-
-  const reviewsRes = await pool.query(
-    `
-      SELECT
-        r.id,
-        r.user_id,
-        u.display_name,
-        r.rating,
-        r.body,
-        r.image_url,
-        r.sticker,
-        r.created_at,
-        r.updated_at,
-        COALESCE(vc.votes_up, 0)::int AS likes_count,
-        COALESCE(vc.votes_down, 0)::int AS dislikes_count,
-        COALESCE(cc.comments_count, 0)::int AS comments_count,
-        CASE
-          WHEN $3::uuid IS NULL THEN NULL
-          ELSE (
-            SELECT vote_type
-            FROM review_votes rv
-            WHERE rv.review_id = r.id AND rv.user_id = $3::uuid
-            LIMIT 1
-          )
-        END AS my_vote
-      FROM reviews r
-      JOIN users u ON u.id = r.user_id
-      LEFT JOIN (
+    const summaryRes = await pool.query(
+      `
+        WITH base_reviews AS (
+          SELECT id, rating
+          FROM reviews
+          WHERE media_type = $1 AND media_id = $2
+        ),
+        likes_cte AS (
+          SELECT COUNT(*) FILTER (WHERE rv.vote_type = 'up')::int AS like_count
+          FROM review_votes rv
+          JOIN base_reviews br ON br.id = rv.review_id
+        ),
+        comments_cte AS (
+          SELECT COUNT(*)::int AS comment_count
+          FROM review_comments rc
+          JOIN base_reviews br ON br.id = rc.review_id
+        )
         SELECT
-          review_id,
-          COUNT(*) FILTER (WHERE vote_type = 'up')::int AS votes_up,
-          COUNT(*) FILTER (WHERE vote_type = 'down')::int AS votes_down
-        FROM review_votes
-        GROUP BY review_id
-      ) vc ON vc.review_id = r.id
-      LEFT JOIN (
-        SELECT review_id, COUNT(*)::int AS comments_count
-        FROM review_comments
-        GROUP BY review_id
-      ) cc ON cc.review_id = r.id
-      WHERE r.media_type = $1 AND r.media_id = $2
-      ORDER BY r.created_at DESC
-    `,
-    [mediaType, mediaId, currentUserId || null]
-  );
+          (SELECT COUNT(*)::int FROM base_reviews) AS review_count,
+          (SELECT COALESCE(ROUND(AVG(rating)::numeric, 2), 0)::float8 FROM base_reviews) AS avg_rating,
+          (SELECT like_count FROM likes_cte) AS like_count,
+          (SELECT comment_count FROM comments_cte) AS comment_count
+      `,
+      [mediaType, mediaId]
+    );
 
-  const reviewIds = reviewsRes.rows.map((r: any) => r.id);
-  let commentsByReview = new Map<string, any[]>();
-  if (reviewIds.length > 0) {
-    const commentsRes = await pool.query(
+    const reviewsRes = await pool.query(
       `
         SELECT
-          rc.id,
-          rc.review_id,
-          r.user_id AS review_user_id,
-          rc.parent_comment_id,
-          rc.user_id,
+          r.id,
+          r.user_id,
           u.display_name,
-          COALESCE(rc.body, rc.content, '') AS body,
-          rc.image_url,
-          rc.sticker,
-          rc.created_at,
-          COALESCE(cv.votes_up, 0)::int AS votes_up,
-          COALESCE(cv.votes_down, 0)::int AS votes_down,
+          r.rating,
+          r.body,
+          r.image_url,
+          r.sticker,
+          r.created_at,
+          r.updated_at,
+          COALESCE(vc.votes_up, 0)::int AS likes_count,
+          COALESCE(vc.votes_down, 0)::int AS dislikes_count,
+          COALESCE(cc.comments_count, 0)::int AS comments_count,
           CASE
-            WHEN $2::uuid IS NULL THEN NULL
+            WHEN $3::uuid IS NULL THEN NULL
             ELSE (
               SELECT vote_type
-              FROM comment_votes cvi
-              WHERE cvi.comment_id = rc.id AND cvi.user_id = $2::uuid
+              FROM review_votes rv
+              WHERE rv.review_id = r.id AND rv.user_id = $3::uuid
               LIMIT 1
             )
           END AS my_vote
-        FROM review_comments rc
-        JOIN reviews r ON r.id = rc.review_id
-        JOIN users u ON u.id = rc.user_id
+        FROM reviews r
+        JOIN users u ON u.id = r.user_id
         LEFT JOIN (
           SELECT
-            comment_id,
+            review_id,
             COUNT(*) FILTER (WHERE vote_type = 'up')::int AS votes_up,
             COUNT(*) FILTER (WHERE vote_type = 'down')::int AS votes_down
-          FROM comment_votes
-          GROUP BY comment_id
-        ) cv ON cv.comment_id = rc.id
-        WHERE rc.review_id = ANY($1::uuid[])
-        ORDER BY rc.created_at ASC
+          FROM review_votes
+          GROUP BY review_id
+        ) vc ON vc.review_id = r.id
+        LEFT JOIN (
+          SELECT review_id, COUNT(*)::int AS comments_count
+          FROM review_comments
+          GROUP BY review_id
+        ) cc ON cc.review_id = r.id
+        WHERE r.media_type = $1 AND r.media_id = $2
+        ORDER BY r.created_at DESC
       `,
-      [reviewIds, currentUserId || null]
+      [mediaType, mediaId, currentUserId || null]
     );
 
-    commentsByReview = new Map<string, any[]>();
-    for (const c of commentsRes.rows) {
-      const arr = commentsByReview.get(c.review_id) || [];
-      arr.push(c);
-      commentsByReview.set(c.review_id, arr);
+    const reviewIds = reviewsRes.rows.map((r: any) => r.id);
+    let commentsByReview = new Map<string, any[]>();
+    if (reviewIds.length > 0) {
+      const commentsRes = await pool.query(
+        `
+          SELECT
+            rc.id,
+            rc.review_id,
+            r.user_id AS review_user_id,
+            rc.parent_comment_id,
+            rc.user_id,
+            u.display_name,
+            COALESCE(rc.body, rc.content, '') AS body,
+            rc.image_url,
+            rc.sticker,
+            rc.created_at,
+            COALESCE(cv.votes_up, 0)::int AS votes_up,
+            COALESCE(cv.votes_down, 0)::int AS votes_down,
+            CASE
+              WHEN $2::uuid IS NULL THEN NULL
+              ELSE (
+                SELECT vote_type
+                FROM comment_votes cvi
+                WHERE cvi.comment_id = rc.id AND cvi.user_id = $2::uuid
+                LIMIT 1
+              )
+            END AS my_vote
+          FROM review_comments rc
+          JOIN reviews r ON r.id = rc.review_id
+          JOIN users u ON u.id = rc.user_id
+          LEFT JOIN (
+            SELECT
+              comment_id,
+              COUNT(*) FILTER (WHERE vote_type = 'up')::int AS votes_up,
+              COUNT(*) FILTER (WHERE vote_type = 'down')::int AS votes_down
+            FROM comment_votes
+            GROUP BY comment_id
+          ) cv ON cv.comment_id = rc.id
+          WHERE rc.review_id = ANY($1::uuid[])
+          ORDER BY rc.created_at ASC
+        `,
+        [reviewIds, currentUserId || null]
+      );
+
+      commentsByReview = new Map<string, any[]>();
+      for (const c of commentsRes.rows) {
+        const arr = commentsByReview.get(c.review_id) || [];
+        arr.push(c);
+        commentsByReview.set(c.review_id, arr);
+      }
     }
+
+    const reviews = reviewsRes.rows.map((r: any) => ({
+      ...r,
+      comments: commentsByReview.get(r.id) || [],
+    }));
+
+    return res.json({
+      current_user_id: currentUserId,
+      summary: summaryRes.rows[0] || {
+        review_count: 0,
+        avg_rating: 0,
+        like_count: 0,
+        comment_count: 0,
+      },
+      reviews,
+    });
+  } catch (e: any) {
+    console.error("Social media feed error:", e?.message || e);
+    return res.status(500).json({ erreur: "impossible de charger les commentaires" });
   }
-
-  const reviews = reviewsRes.rows.map((r: any) => ({
-    ...r,
-    comments: commentsByReview.get(r.id) || [],
-  }));
-
-  return res.json({
-    current_user_id: currentUserId,
-    summary: summaryRes.rows[0] || {
-      review_count: 0,
-      avg_rating: 0,
-      like_count: 0,
-      comment_count: 0,
-    },
-    reviews,
-  });
 });
 
 router.post("/media/:mediaType/:mediaId/reviews", requireAuth, async (req: AuthedRequest, res) => {
