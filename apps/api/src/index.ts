@@ -1239,7 +1239,8 @@ app.use((err: any, _req: express.Request, res: express.Response, _next: express.
   return res.status(500).json({ erreur: "Erreur serveur" });
 });
 
-app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
+// Serve uploads from the same directory used by local upload fallback.
+app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
 
 app.get("/", (_req, res) => {
   res.json({ ok: true, service: "supcontent-api" });
