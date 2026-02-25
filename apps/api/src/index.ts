@@ -45,7 +45,7 @@ app.use(
         frameAncestors: ["'self'"],
         imgSrc: ["'self'", "data:", "blob:", "https://i.scdn.co", "https://mosaic.scdn.co"],
         objectSrc: ["'none'"],
-        scriptSrc: ["'self'", "https:"],
+        scriptSrc: ["'self'", "https:", "'unsafe-inline'"],
         scriptSrcAttr: ["'none'"],
         styleSrc: ["'self'", "https:", "'unsafe-inline'"],
         upgradeInsecureRequests: [],
@@ -58,110 +58,125 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(morgan("dev"));
 
-const buildOpenApiSpec = (baseUrl: string) => ({
-  openapi: "3.0.3",
-  info: {
-    title: "Supcontent API",
-    version: "1.0.0",
-    description: "API documentation for Supcontent music backend.",
-  },
-  servers: [{ url: baseUrl }],
-  tags: [
-    { name: "System" },
-    { name: "Auth" },
-    { name: "Users" },
-    { name: "Collections" },
-    { name: "Social" },
-    { name: "Follows" },
-    { name: "Feed" },
-    { name: "Notifications" },
-    { name: "Upload" },
-  ],
-  paths: {
-    "/": { get: { tags: ["System"], summary: "Service info", responses: { "200": { description: "OK" } } } },
-    "/health": { get: { tags: ["System"], summary: "Health check", responses: { "200": { description: "OK" } } } },
-    "/env-check": { get: { tags: ["System"], summary: "Environment flags", responses: { "200": { description: "OK" } } } },
-    "/db-test": { get: { tags: ["System"], summary: "Database connectivity test", responses: { "200": { description: "OK" } } } },
-    "/redis-test": { get: { tags: ["System"], summary: "Redis connectivity test", responses: { "200": { description: "OK" } } } },
-    "/search": {
-      get: {
-        tags: ["System"],
-        summary: "Spotify search proxy",
-        parameters: [
-          { in: "query", name: "q", required: true, schema: { type: "string" } },
-          { in: "query", name: "type", required: false, schema: { type: "string", enum: ["track", "album", "artist"] } },
-          { in: "query", name: "page", required: false, schema: { type: "integer", minimum: 1 } },
-          { in: "query", name: "limit", required: false, schema: { type: "integer", minimum: 1, maximum: 10 } },
-        ],
-        responses: { "200": { description: "OK" } },
+type Method = "get" | "post" | "put" | "patch" | "delete";
+type EndpointDef = { method: Method; path: string; tag: string; auth?: boolean; summary?: string };
+
+const endpointCatalog: EndpointDef[] = [
+  { method: "get", path: "/", tag: "System", summary: "Service info" },
+  { method: "get", path: "/health", tag: "System", summary: "Health check" },
+  { method: "get", path: "/env-check", tag: "System", summary: "Environment flags" },
+  { method: "get", path: "/db-test", tag: "System", summary: "Database connectivity test" },
+  { method: "get", path: "/redis-test", tag: "System", summary: "Redis connectivity test" },
+  { method: "get", path: "/search", tag: "System", summary: "Spotify search proxy" },
+  { method: "get", path: "/auth/ping", tag: "Auth" },
+  { method: "get", path: "/auth/oauth/github/start", tag: "Auth" },
+  { method: "get", path: "/auth/oauth/github/callback", tag: "Auth" },
+  { method: "get", path: "/auth/oauth/spotify/url", tag: "Auth", auth: true },
+  { method: "get", path: "/auth/oauth/spotify/callback", tag: "Auth" },
+  { method: "get", path: "/auth/spotify/status", tag: "Auth", auth: true },
+  { method: "post", path: "/auth/register", tag: "Auth" },
+  { method: "post", path: "/auth/login", tag: "Auth" },
+  { method: "post", path: "/auth/refresh", tag: "Auth" },
+  { method: "post", path: "/auth/logout", tag: "Auth" },
+  { method: "get", path: "/auth/me", tag: "Auth", auth: true },
+  { method: "patch", path: "/auth/me", tag: "Auth", auth: true },
+  { method: "delete", path: "/auth/me", tag: "Auth", auth: true },
+  { method: "post", path: "/auth/upload/{kind}", tag: "Auth", auth: true },
+  { method: "get", path: "/users/search", tag: "Users" },
+  { method: "patch", path: "/users/me", tag: "Users", auth: true },
+  { method: "get", path: "/collections/me", tag: "Collections", auth: true },
+  { method: "post", path: "/collections", tag: "Collections", auth: true },
+  { method: "patch", path: "/collections/{id}", tag: "Collections", auth: true },
+  { method: "delete", path: "/collections/{id}", tag: "Collections", auth: true },
+  { method: "post", path: "/collections/{id}/items", tag: "Collections", auth: true },
+  { method: "delete", path: "/collections/{id}/items/{mediaType}/{mediaId}", tag: "Collections", auth: true },
+  { method: "post", path: "/collections/status/{status}/items", tag: "Collections", auth: true },
+  { method: "post", path: "/collections/init", tag: "Collections" },
+  { method: "post", path: "/upload/avatar", tag: "Upload", auth: true },
+  { method: "post", path: "/upload/cover", tag: "Upload", auth: true },
+  { method: "post", path: "/upload/social", tag: "Upload", auth: true },
+  { method: "get", path: "/social/media/{mediaType}/{mediaId}", tag: "Social" },
+  { method: "post", path: "/social/media/{mediaType}/{mediaId}/reviews", tag: "Social", auth: true },
+  { method: "post", path: "/social/reviews/{reviewId}/like", tag: "Social", auth: true },
+  { method: "delete", path: "/social/reviews/{reviewId}/like", tag: "Social", auth: true },
+  { method: "post", path: "/social/reviews/{reviewId}/vote", tag: "Social", auth: true },
+  { method: "delete", path: "/social/reviews/{reviewId}/vote", tag: "Social", auth: true },
+  { method: "post", path: "/social/reviews/{reviewId}/comments", tag: "Social", auth: true },
+  { method: "patch", path: "/social/reviews/{reviewId}", tag: "Social", auth: true },
+  { method: "delete", path: "/social/reviews/{reviewId}", tag: "Social", auth: true },
+  { method: "patch", path: "/social/comments/{commentId}", tag: "Social", auth: true },
+  { method: "post", path: "/social/comments/{commentId}/vote", tag: "Social", auth: true },
+  { method: "delete", path: "/social/comments/{commentId}/vote", tag: "Social", auth: true },
+  { method: "delete", path: "/social/comments/{commentId}", tag: "Social", auth: true },
+  { method: "get", path: "/follows/settings/me", tag: "Follows", auth: true },
+  { method: "put", path: "/follows/settings/me", tag: "Follows", auth: true },
+  { method: "get", path: "/follows/settings/blocked", tag: "Follows", auth: true },
+  { method: "post", path: "/follows/settings/blocked/{targetUserId}", tag: "Follows", auth: true },
+  { method: "delete", path: "/follows/settings/blocked/{targetUserId}", tag: "Follows", auth: true },
+  { method: "get", path: "/follows/swipe/preferences", tag: "Follows", auth: true },
+  { method: "put", path: "/follows/swipe/preferences", tag: "Follows", auth: true },
+  { method: "get", path: "/follows/swipe/profiles", tag: "Follows", auth: true },
+  { method: "post", path: "/follows/swipe/profiles/{targetUserId}", tag: "Follows", auth: true },
+  { method: "get", path: "/follows/swipe/music", tag: "Follows", auth: true },
+  { method: "post", path: "/follows/swipe/music", tag: "Follows", auth: true },
+  { method: "get", path: "/follows/swipe/invitations/me", tag: "Follows", auth: true },
+  { method: "get", path: "/follows/can-chat/{targetUserId}", tag: "Follows", auth: true },
+  { method: "post", path: "/follows/{targetUserId}", tag: "Follows", auth: true },
+  { method: "delete", path: "/follows/{targetUserId}", tag: "Follows", auth: true },
+  { method: "get", path: "/follows/me", tag: "Follows", auth: true },
+  { method: "get", path: "/follows/users/{userId}", tag: "Follows" },
+  { method: "get", path: "/feed/me", tag: "Feed", auth: true },
+  { method: "get", path: "/notifications/me", tag: "Notifications", auth: true },
+];
+
+const buildOpenApiSpec = (baseUrl: string) => {
+  const paths: Record<string, any> = {};
+  for (const ep of endpointCatalog) {
+    if (!paths[ep.path]) paths[ep.path] = {};
+    paths[ep.path][ep.method] = {
+      tags: [ep.tag],
+      summary: ep.summary || `${ep.method.toUpperCase()} ${ep.path}`,
+      security: ep.auth ? [{ bearerAuth: [] }] : undefined,
+      responses: {
+        "200": { description: "OK" },
+        "400": { description: "Bad request" },
+        "401": { description: "Unauthorized" },
+        "500": { description: "Server error" },
+      },
+    };
+  }
+
+  return {
+    openapi: "3.0.3",
+    info: {
+      title: "Supcontent API",
+      version: "1.0.0",
+      description: "API documentation for Supcontent music backend.",
+    },
+    servers: [{ url: baseUrl }],
+    tags: [
+      { name: "System" },
+      { name: "Auth" },
+      { name: "Users" },
+      { name: "Collections" },
+      { name: "Social" },
+      { name: "Follows" },
+      { name: "Feed" },
+      { name: "Notifications" },
+      { name: "Upload" },
+    ],
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT",
+        },
       },
     },
-    "/auth/{path}": {
-      get: {
-        tags: ["Auth"],
-        summary: "Auth endpoints group",
-        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
-        responses: { "200": { description: "Depends on endpoint" } },
-      },
-    },
-    "/users/{path}": {
-      get: {
-        tags: ["Users"],
-        summary: "Users endpoints group",
-        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
-        responses: { "200": { description: "Depends on endpoint" } },
-      },
-    },
-    "/collections/{path}": {
-      get: {
-        tags: ["Collections"],
-        summary: "Collections endpoints group",
-        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
-        responses: { "200": { description: "Depends on endpoint" } },
-      },
-    },
-    "/social/{path}": {
-      get: {
-        tags: ["Social"],
-        summary: "Social endpoints group",
-        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
-        responses: { "200": { description: "Depends on endpoint" } },
-      },
-    },
-    "/follows/{path}": {
-      get: {
-        tags: ["Follows"],
-        summary: "Follows endpoints group",
-        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
-        responses: { "200": { description: "Depends on endpoint" } },
-      },
-    },
-    "/feed/{path}": {
-      get: {
-        tags: ["Feed"],
-        summary: "Feed endpoints group",
-        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
-        responses: { "200": { description: "Depends on endpoint" } },
-      },
-    },
-    "/notifications/{path}": {
-      get: {
-        tags: ["Notifications"],
-        summary: "Notifications endpoints group",
-        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
-        responses: { "200": { description: "Depends on endpoint" } },
-      },
-    },
-    "/upload/{path}": {
-      post: {
-        tags: ["Upload"],
-        summary: "Upload endpoints group",
-        parameters: [{ in: "path", name: "path", required: true, schema: { type: "string" } }],
-        responses: { "200": { description: "Depends on endpoint" } },
-      },
-    },
-  },
-});
+    paths,
+  };
+};
 
 /* ======================
    API ROUTES
@@ -201,6 +216,33 @@ app.get("/docs", (_req, res) => {
       sort-tags="true"
       sort-endpoints-by="method"
     ></rapi-doc>
+  </body>
+</html>`);
+});
+
+app.get("/swagger", (_req, res) => {
+  res.type("html").send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Supcontent Swagger UI</title>
+    <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+    <style>
+      html, body, #swagger-ui { height: 100%; margin: 0; }
+    </style>
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script>
+      window.ui = SwaggerUIBundle({
+        url: "/openapi.json",
+        dom_id: "#swagger-ui",
+        deepLinking: true,
+        displayRequestDuration: true,
+      });
+    </script>
   </body>
 </html>`);
 });
