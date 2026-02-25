@@ -1,7 +1,11 @@
+const DEFAULT_API_BASE = (() => {
+  const h = String(window.location.hostname || "").toLowerCase();
+  if (h === "localhost" || h === "127.0.0.1") return "http://localhost:1234";
+  return "https://supcontent-api.onrender.com";
+})();
+
 export const API_BASE = String(
-  window.__API_BASE_URL__ ||
-    window.localStorage?.getItem("SUPCONTENT_API_BASE") ||
-    "http://localhost:1234"
+  window.__API_BASE_URL__ || window.localStorage?.getItem("SUPCONTENT_API_BASE") || DEFAULT_API_BASE
 ).replace(/\/+$/, "");
 const LS = { access: "supcontent_access", refresh: "supcontent_refresh" };
 
