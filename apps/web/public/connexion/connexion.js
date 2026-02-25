@@ -3,7 +3,6 @@ import { apiFetch, setTokens, serverLogout, toast, getTokens, API_BASE } from "/
 const rf = document.querySelector("#registerForm");
 const lf = document.querySelector("#loginForm");
 const logoutBtn = document.querySelector("#logoutBtn");
-const githubLoginBtn = document.querySelector("#githubLoginBtn");
 const googleLoginBtn = document.querySelector("#googleLoginBtn");
 const forgotPasswordBtn = document.querySelector("#forgotPasswordBtn");
 
@@ -92,11 +91,6 @@ lf?.addEventListener("submit", async (e) => {
 logoutBtn?.addEventListener("click", async () => {
   await serverLogout();
   toast("Deconnecte.", "OK");
-});
-
-githubLoginBtn?.addEventListener("click", () => {
-  const returnTo = window.location.origin;
-  window.location.href = `${API_BASE}/auth/oauth/github/start?returnTo=${encodeURIComponent(returnTo)}`;
 });
 
 googleLoginBtn?.addEventListener("click", () => {
