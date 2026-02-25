@@ -14,6 +14,7 @@ import { ensureCollectionsTables } from "./db/collections";
 import { ensureSocialTables } from "./db/social";
 import { ensureFollowTables } from "./db/follows";
 import { ensureSpotifyLinksTable, getSpotifyLinkByUserId, upsertSpotifyLink } from "./db/spotifyLinks";
+import { ensurePasswordResetTable } from "./db/passwordResets";
 import {
   spotifyGet,
   spotifyNewReleases,
@@ -72,11 +73,15 @@ const endpointCatalog: EndpointDef[] = [
   { method: "get", path: "/auth/ping", tag: "Auth" },
   { method: "get", path: "/auth/oauth/github/start", tag: "Auth" },
   { method: "get", path: "/auth/oauth/github/callback", tag: "Auth" },
+  { method: "get", path: "/auth/oauth/google/start", tag: "Auth" },
+  { method: "get", path: "/auth/oauth/google/callback", tag: "Auth" },
   { method: "get", path: "/auth/oauth/spotify/url", tag: "Auth", auth: true },
   { method: "get", path: "/auth/oauth/spotify/callback", tag: "Auth" },
   { method: "get", path: "/auth/spotify/status", tag: "Auth", auth: true },
   { method: "post", path: "/auth/register", tag: "Auth" },
   { method: "post", path: "/auth/login", tag: "Auth" },
+  { method: "post", path: "/auth/password/forgot", tag: "Auth" },
+  { method: "post", path: "/auth/password/reset", tag: "Auth" },
   { method: "post", path: "/auth/refresh", tag: "Auth" },
   { method: "post", path: "/auth/logout", tag: "Auth" },
   { method: "get", path: "/auth/me", tag: "Auth", auth: true },
@@ -1257,5 +1262,9 @@ ensureFollowTables().catch((err) => {
 
 ensureSpotifyLinksTable().catch((err) => {
   console.error("Spotify links table init failed (non-blocking):", err?.message || err);
+});
+
+ensurePasswordResetTable().catch((err) => {
+  console.error("Password reset table init failed (non-blocking):", err?.message || err);
 });
 

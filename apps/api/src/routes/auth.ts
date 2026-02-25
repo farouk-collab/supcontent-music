@@ -13,6 +13,11 @@ import {
   findRefreshToken,
   deleteRefreshTokensForUser,
 } from "../db/refreshTokens";
+import {
+  createPasswordReset,
+  findValidPasswordResetByHash,
+  markPasswordResetUsed,
+} from "../db/passwordResets";
 import { signAccessToken, signRefreshToken, verifyRefreshToken } from "../auth/jwt";
 import { requireAuth, AuthedRequest } from "../middleware/requireAuth";
 import { getSpotifyLinkByUserId, upsertSpotifyLink } from "../db/spotifyLinks";
@@ -45,6 +50,21 @@ const RegisterSchema = z.object({
 const LoginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
+});
+
+const ForgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+const ResetPasswordSchema = z.object({
+  token: z.string().min(16),
+  newPassword: z
+    .string()
+    .min(8)
+    .regex(/[A-Z]/, "Le mot de passe doit contenir une majuscule")
+    .regex(/[a-z]/, "Le mot de passe doit contenir une minuscule")
+    .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre")
+    .regex(/[^A-Za-z0-9]/, "Le mot de passe doit contenir un caractere special"),
 });
 
 /**
@@ -354,7 +374,7 @@ router.get("/oauth/github/callback", async (req, res) => {
     const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
     await storeRefreshToken({ userId: user.id, tokenHash: hashToken(refresh), expiresAt });
 
-    const redir = new URL("/auth/auth.html", returnTo);
+    const redir = new URL("/connexion/connexion.html", returnTo);
     redir.searchParams.set("oauth", "github");
     redir.searchParams.set("accessToken", access);
     redir.searchParams.set("refreshToken", refresh);
@@ -362,6 +382,116 @@ router.get("/oauth/github/callback", async (req, res) => {
   } catch (err: any) {
     console.error("OAuth GitHub error:", err?.message || err);
     return res.status(500).json({ erreur: "Erreur OAuth GitHub" });
+  }
+});
+
+router.get("/oauth/google/start", (req, res) => {
+  const clientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
+  const redirectUri =
+    process.env.GOOGLE_REDIRECT_URI || "http://localhost:1234/auth/oauth/google/callback";
+  if (!clientId) return res.status(503).json({ erreur: "GOOGLE_CLIENT_ID manquant" });
+
+  cleanupOauthStates();
+  const state = newOauthState();
+  const returnTo =
+    typeof req.query.returnTo === "string" && req.query.returnTo.trim()
+      ? req.query.returnTo.trim()
+      : process.env.FRONTEND_URL || "http://localhost:4173";
+  const payload = Buffer.from(JSON.stringify({ returnTo }), "utf8").toString("base64url");
+
+  const query = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "openid email profile",
+    state: `${state}.${payload}`,
+    access_type: "offline",
+    prompt: "consent",
+  });
+  return res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${query.toString()}`);
+});
+
+router.get("/oauth/google/callback", async (req, res) => {
+  try {
+    const clientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
+    const clientSecret = String(process.env.GOOGLE_CLIENT_SECRET || "").trim();
+    const redirectUri =
+      process.env.GOOGLE_REDIRECT_URI || "http://localhost:1234/auth/oauth/google/callback";
+    if (!clientId || !clientSecret) {
+      return res.status(503).json({ erreur: "OAuth Google non configure" });
+    }
+
+    const code = String(req.query.code || "");
+    const stateRaw = String(req.query.state || "");
+    const [state, encodedPayload] = stateRaw.split(".", 2);
+    if (!code || !state || !consumeOauthState(state)) {
+      return res.status(400).json({ erreur: "State OAuth invalide ou expire" });
+    }
+
+    let returnTo = process.env.FRONTEND_URL || "http://localhost:4173";
+    try {
+      if (encodedPayload) {
+        const decoded = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+        if (decoded?.returnTo && typeof decoded.returnTo === "string") returnTo = decoded.returnTo;
+      }
+    } catch {
+      // fallback
+    }
+
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: "authorization_code",
+      }),
+    });
+    const tokenData = (await tokenRes.json()) as { access_token?: string };
+    if (!tokenRes.ok || !tokenData?.access_token) {
+      return res.status(401).json({ erreur: "Echec echange token Google" });
+    }
+
+    const meRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const me = (await meRes.json()) as {
+      email?: string;
+      verified_email?: boolean;
+      name?: string;
+      picture?: string;
+    };
+    const email = String(me?.email || "").trim().toLowerCase();
+    if (!email) return res.status(400).json({ erreur: "Aucun email Google exploitable" });
+
+    const displayName = String(me?.name || "Google User").slice(0, 30);
+    let user = await findUserByEmail(email);
+    if (!user) {
+      const randomPassword = crypto.randomBytes(24).toString("hex");
+      const password_hash = await bcrypt.hash(randomPassword, 12);
+      const created = await createUser({ email, password_hash, display_name: displayName });
+      if (me?.picture) {
+        await pool.query("UPDATE users SET avatar_url = $1 WHERE id = $2", [String(me.picture), created.id]);
+      }
+      user = await findUserByEmail(email);
+    }
+    if (!user) return res.status(500).json({ erreur: "Echec creation/chargement utilisateur OAuth" });
+
+    const access = signAccessToken({ sub: user.id, email: user.email });
+    const refresh = signRefreshToken({ sub: user.id, email: user.email });
+    const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
+    await storeRefreshToken({ userId: user.id, tokenHash: hashToken(refresh), expiresAt });
+
+    const redir = new URL("/connexion/connexion.html", returnTo);
+    redir.searchParams.set("oauth", "google");
+    redir.searchParams.set("accessToken", access);
+    redir.searchParams.set("refreshToken", refresh);
+    return res.redirect(redir.toString());
+  } catch (err: any) {
+    console.error("OAuth Google error:", err?.message || err);
+    return res.status(500).json({ erreur: "Erreur OAuth Google" });
   }
 });
 
@@ -495,6 +625,47 @@ router.post("/login", async (req, res) => {
   );
 
   return res.json({ user: r.rows[0], accessToken: access, refreshToken: refresh });
+});
+
+router.post("/password/forgot", async (req, res) => {
+  const parsed = ForgotPasswordSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ erreur: "Donnees invalides" });
+
+  const email = String(parsed.data.email || "").toLowerCase().trim();
+  const user = await findUserByEmail(email);
+  // Do not leak whether email exists.
+  if (!user) return res.json({ ok: true });
+
+  const rawToken = crypto.randomBytes(32).toString("hex");
+  const tokenHash = hashToken(rawToken);
+  const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+  await createPasswordReset({
+    id: randomUUID(),
+    userId: user.id,
+    tokenHash,
+    expiresAt,
+  });
+
+  const frontendBase = String(process.env.FRONTEND_URL || "http://localhost:4173").trim();
+  const resetUrl = `${frontendBase}/connexion/connexion.html?resetToken=${encodeURIComponent(rawToken)}`;
+  // In production, branch this to email provider (Resend/Sendgrid) and remove token from response.
+  return res.json({ ok: true, resetToken: rawToken, resetUrl, expiresInSec: 900 });
+});
+
+router.post("/password/reset", async (req, res) => {
+  const parsed = ResetPasswordSchema.safeParse(req.body);
+  if (!parsed.success) return res.status(400).json({ erreur: "Donnees invalides" });
+
+  const token = String(parsed.data.token || "").trim();
+  const tokenHash = hashToken(token);
+  const row = await findValidPasswordResetByHash(tokenHash);
+  if (!row) return res.status(400).json({ erreur: "Token invalide ou expire" });
+
+  const newPasswordHash = await bcrypt.hash(parsed.data.newPassword, 12);
+  await pool.query("UPDATE users SET password_hash = $1 WHERE id = $2", [newPasswordHash, row.user_id]);
+  await markPasswordResetUsed(String(row.id));
+  await deleteRefreshTokensForUser(String(row.user_id));
+  return res.json({ ok: true });
 });
 
 router.post("/refresh", async (req, res) => {

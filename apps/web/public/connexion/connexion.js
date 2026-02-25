@@ -4,6 +4,8 @@ const rf = document.querySelector("#registerForm");
 const lf = document.querySelector("#loginForm");
 const logoutBtn = document.querySelector("#logoutBtn");
 const githubLoginBtn = document.querySelector("#githubLoginBtn");
+const googleLoginBtn = document.querySelector("#googleLoginBtn");
+const forgotPasswordBtn = document.querySelector("#forgotPasswordBtn");
 
 function afterAuth(r) {
   setTokens({ accessToken: r.accessToken, refreshToken: r.refreshToken });
@@ -22,10 +24,11 @@ function consumeOauthParams() {
   const params = new URLSearchParams(window.location.search);
   const accessToken = params.get("accessToken");
   const refreshToken = params.get("refreshToken");
+  const provider = params.get("oauth");
   if (!accessToken || !refreshToken) return;
 
   setTokens({ accessToken, refreshToken });
-  toast("Connexion GitHub reussie.", "OK");
+  toast(`Connexion ${provider || "OAuth"} reussie.`, "OK");
 
   params.delete("accessToken");
   params.delete("refreshToken");
@@ -36,6 +39,29 @@ function consumeOauthParams() {
 }
 
 consumeOauthParams();
+
+async function consumeResetTokenFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const resetToken = String(params.get("resetToken") || "").trim();
+  if (!resetToken) return;
+
+  const nextPassword = window.prompt("Nouveau mot de passe (8+ chars, maj/min/chiffre/special):", "");
+  if (!nextPassword) return;
+  try {
+    await apiFetch("/auth/password/reset", {
+      method: "POST",
+      body: JSON.stringify({ token: resetToken, newPassword: nextPassword }),
+    });
+    toast("Mot de passe reinitialise. Connecte-toi.", "OK");
+    params.delete("resetToken");
+    const next = `${window.location.pathname}${params.toString() ? "?" + params.toString() : ""}`;
+    window.history.replaceState({}, "", next);
+  } catch (err) {
+    toast(err?.message || "Reinitialisation impossible", "Erreur");
+  }
+}
+
+consumeResetTokenFromUrl();
 
 rf?.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -71,5 +97,29 @@ logoutBtn?.addEventListener("click", async () => {
 githubLoginBtn?.addEventListener("click", () => {
   const returnTo = window.location.origin;
   window.location.href = `${API_BASE}/auth/oauth/github/start?returnTo=${encodeURIComponent(returnTo)}`;
+});
+
+googleLoginBtn?.addEventListener("click", () => {
+  const returnTo = window.location.origin;
+  window.location.href = `${API_BASE}/auth/oauth/google/start?returnTo=${encodeURIComponent(returnTo)}`;
+});
+
+forgotPasswordBtn?.addEventListener("click", async () => {
+  const email = window.prompt("Entre ton email pour recevoir un lien de reinitialisation:", "");
+  if (!email) return;
+  try {
+    const r = await apiFetch("/auth/password/forgot", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+    if (r?.resetUrl) {
+      toast("Lien de reset genere (dev). Ouverture...", "OK");
+      window.location.href = r.resetUrl;
+      return;
+    }
+    toast("Si l'email existe, un lien de reset a ete genere.", "OK");
+  } catch (err) {
+    toast(err?.message || "Impossible de lancer la reinitialisation", "Erreur");
+  }
 });
 
