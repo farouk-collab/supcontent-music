@@ -228,7 +228,8 @@ function renderMeta(meta) {
   modeBtn.setAttribute("aria-label", modeBtn.title);
 
   if (expandBtn) {
-    expandBtn.hidden = mode !== "video";
+    // Keep fullscreen access even in audio mode for YouTube playback recovery.
+    expandBtn.hidden = false;
   }
 }
 
@@ -373,6 +374,18 @@ async function playYouTube(state) {
               // ignore
             }
           }, 350);
+
+          // Extra retry for playlist URLs (list=...) that initialize slower.
+          window.setTimeout(() => {
+            try {
+              const st = Number(ytPlayer?.getPlayerState?.() ?? -1);
+              if (st === 1 || st === 3) return;
+              ytPlayer?.playVideo?.();
+              snapshot();
+            } catch {
+              // ignore
+            }
+          }, 1200);
         };
 
         // Give playlist load a tiny head start when URL has only list=...
@@ -538,7 +551,7 @@ function toggleMode() {
 }
 
 function toggleExpanded() {
-  if (!current || current.mode !== "video") return;
+  if (!current) return;
   setExpanded(!expanded);
 }
 
