@@ -13,6 +13,10 @@
   padding: 8px 12px calc(8px + env(safe-area-inset-bottom)) 12px;
 }
 
+body.has-mobile-footer .spotify-player{
+  bottom: calc(var(--mobile-footer-height) + env(safe-area-inset-bottom));
+}
+
 .spotify-player .gmp-left{
   display: flex;
   align-items: center;

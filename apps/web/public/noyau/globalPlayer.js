@@ -527,6 +527,27 @@ function stop() {
   document.body.classList.remove("has-global-player");
 }
 
+function disposeDomOnly() {
+  if (root) root.remove();
+  root = null;
+  coverEl = null;
+  titleEl = null;
+  subEl = null;
+  playPauseBtn = null;
+  prevBtn = null;
+  nextBtn = null;
+  modeBtn = null;
+  expandBtn = null;
+  closeBtn = null;
+  backBtn = null;
+  hostEl = null;
+  fileMediaEl = null;
+  seekEl = null;
+  volEl = null;
+  curEl = null;
+  durEl = null;
+}
+
 function restore() {
   if (isDismissed()) return;
   if (!root) buildUi();
@@ -557,6 +578,13 @@ function bindUiEvents() {
   };
   closeBtn?.addEventListener("click", hardClose);
   closeBtn?.addEventListener("pointerdown", hardClose);
+  root?.addEventListener("click", (ev) => {
+    const target = ev.target;
+    if (!(target instanceof Element)) return;
+    if (target.closest("#gmpClose")) {
+      hardClose(ev);
+    }
+  });
 
   seekEl?.addEventListener("input", () => {
     if (!current) return;
@@ -692,6 +720,15 @@ function buildUi() {
 }
 
 export function initGlobalPlayer() {
+  buildUi();
+
+  // If user closed the player previously, force hidden state on boot.
+  if (isDismissed()) {
+    clearState();
+    destroyEngines();
+    disposeDomOnly();
+  }
+
   buildUi();
   restore();
 

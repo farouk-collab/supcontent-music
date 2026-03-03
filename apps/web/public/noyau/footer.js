@@ -1,5 +1,6 @@
 import { getLanguage, t } from "/noyau/i18n.js";
 import { initGlobalPlayer } from "/noyau/globalPlayer.js";
+const PLAYER_DISMISS_KEY = "supcontent_global_player_dismissed_v1";
 
 const tabs = [
   { href: "/accueil/accueil.html", icon: "&#127968;", labelKey: "home", key: "index" },
@@ -112,19 +113,47 @@ function injectFooter() {
   document.body.classList.add("has-mobile-footer");
 }
 
+function isPlayerDismissed() {
+  try {
+    return localStorage.getItem(PLAYER_DISMISS_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function forceHideGlobalPlayer() {
+  try {
+    document.body.classList.remove("has-global-player");
+    const existing = document.querySelector("#globalMiniPlayer");
+    if (existing) existing.remove();
+  } catch {
+    // ignore
+  }
+}
+
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     ensureExtraStyles();
     ensureBrandFavicon();
     injectFooter();
     syncHeaderAuthLinks();
+    if (isPlayerDismissed()) forceHideGlobalPlayer();
     initGlobalPlayer();
+    if (isPlayerDismissed()) {
+      forceHideGlobalPlayer();
+      window.supcontentPlayer?.stop?.();
+    }
   });
 } else {
   ensureExtraStyles();
   ensureBrandFavicon();
   injectFooter();
   syncHeaderAuthLinks();
+  if (isPlayerDismissed()) forceHideGlobalPlayer();
   initGlobalPlayer();
+  if (isPlayerDismissed()) {
+    forceHideGlobalPlayer();
+    window.supcontentPlayer?.stop?.();
+  }
 }
 
