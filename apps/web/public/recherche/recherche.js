@@ -66,7 +66,7 @@ function externalYouTubeHref(url) {
 function playYouTubeInline(url, title = "YouTube", subtitle = "") {
   const player = window.supcontentPlayer;
   if (!player?.playYouTube) return false;
-  player.playYouTube({ url, title, subtitle, mode: "video" });
+  player.playYouTube({ url, title, subtitle, mode: "audio" });
   return true;
 }
 

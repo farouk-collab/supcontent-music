@@ -221,7 +221,7 @@ function renderMeta(meta) {
     coverEl.innerHTML = "";
   }
 
-  const mode = String(meta?.mode || "video");
+  const mode = String(meta?.mode || "audio");
   root.classList.toggle("audio-only", mode === "audio");
   modeBtn.textContent = mode === "audio" ? "🎵" : "🎬";
   modeBtn.title = mode === "audio" ? "Mode audio" : "Mode video";
@@ -319,21 +319,65 @@ async function playYouTube(state) {
     playerVars,
     events: {
       onReady: () => {
-        if (listId && !videoId && ytPlayer?.loadPlaylist) {
+        const targetVolume = Math.round(Math.max(0, Math.min(1, Number(volEl?.value || 1))) * 100);
+        if (ytPlayer?.setVolume) {
           try {
-            ytPlayer.loadPlaylist(listId, 0, Math.max(0, Math.floor(Number(state.time || 0))));
+            ytPlayer.setVolume(targetVolume);
           } catch {
             // ignore
           }
         }
 
-        if (state.playing && ytPlayer?.playVideo) {
+        if (listId && !videoId && ytPlayer?.loadPlaylist) {
+          try {
+            ytPlayer.loadPlaylist({
+              list: listId,
+              listType: "playlist",
+              index: 0,
+              startSeconds: Math.max(0, Math.floor(Number(state.time || 0))),
+            });
+          } catch {
+            try {
+              ytPlayer.loadPlaylist(listId, 0, Math.max(0, Math.floor(Number(state.time || 0))));
+            } catch {
+              // ignore
+            }
+          }
+        }
+
+        const tryStartPlayback = () => {
+          if (!state.playing || !ytPlayer?.playVideo) return;
           try {
             ytPlayer.playVideo();
           } catch {
             // ignore
           }
-        }
+
+          // Autoplay may be blocked on some browsers; muted retry usually unlocks start.
+          window.setTimeout(() => {
+            try {
+              const st = Number(ytPlayer?.getPlayerState?.() ?? -1);
+              if (st === 1 || st === 3) return;
+              ytPlayer?.mute?.();
+              ytPlayer?.playVideo?.();
+              window.setTimeout(() => {
+                try {
+                  ytPlayer?.unMute?.();
+                  ytPlayer?.setVolume?.(targetVolume);
+                } catch {
+                  // ignore
+                }
+                snapshot();
+              }, 300);
+            } catch {
+              // ignore
+            }
+          }, 350);
+        };
+
+        // Give playlist load a tiny head start when URL has only list=...
+        if (listId && !videoId) window.setTimeout(tryStartPlayback, 250);
+        else tryStartPlayback();
       },
       onStateChange: () => snapshot(),
     },
@@ -733,7 +777,7 @@ export function initGlobalPlayer() {
   restore();
 
   window.supcontentPlayer = {
-    playYouTube({ url, title = "YouTube", subtitle = "", cover = "", mode = "video" }) {
+    playYouTube({ url, title = "YouTube", subtitle = "", cover = "", mode = "audio" }) {
       start({ provider: "youtube", url, title, subtitle, cover, mode, playing: true });
     },
     playMedia({ url, title = "Media", subtitle = "", cover = "", mode = "video" }) {

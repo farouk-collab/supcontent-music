@@ -109,7 +109,7 @@ async function load(opts = {}) {
   if (ext === "youtube" && rawUrl) {
     const globalPlayer = window.supcontentPlayer;
     if (globalPlayer?.playYouTube) {
-      globalPlayer.playYouTube({ url: rawUrl, title: "YouTube", subtitle: "Lecture en cours", mode: "video" });
+      globalPlayer.playYouTube({ url: rawUrl, title: "YouTube", subtitle: "Lecture en cours", mode: "audio" });
       box.innerHTML = `
         <div style="display:grid;gap:10px">
           <h2 style="margin:0">Lecture YouTube lancée</h2>

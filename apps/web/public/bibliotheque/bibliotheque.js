@@ -83,7 +83,7 @@ function playRowInline(row) {
     title: String(row?.name || "YouTube"),
     subtitle: String(row?.subtitle || row?.collectionName || ""),
     cover: String(row?.image || ""),
-    mode: "video",
+    mode: "audio",
   });
   return true;
 }
