@@ -33,6 +33,7 @@ let composerBound = false;
 let composerUserId = "";
 let profilePostsTab = "publications";
 const STORY_TTL_MS = 24 * 60 * 60 * 1000;
+const profilePostsCache = new Map();
 
 function qs(name) {
   return new URLSearchParams(window.location.search).get(name) || "";
@@ -73,7 +74,6 @@ function updateTokenStats() {
 function renderNeedAuth(msg) {
   profileView.innerHTML = `
     <div style="color:#ffb0b0"><strong>Connexion requise</strong></div>
-    <div style="color:var(--muted);margin-top:6px">${escapeHtml(msg || "")}</div>
     <div style="margin-top:10px"><a class="btn primary" href="/connexion/connexion.html">Se connecter</a></div>
   `;
   socialMeta.innerHTML = "";
@@ -271,6 +271,8 @@ function normalizePostEntry(raw) {
   const mediaKind = normalizeMediaKind(raw?.media_kind);
   const caption = String(raw?.caption || raw?.description || "").trim();
   const comments = Array.isArray(raw?.comments) ? raw.comments : [];
+  const rawMedia = String(raw?.media_data || "").trim();
+  const mediaData = resolveMediaUrl(rawMedia) || rawMedia;
   const meta = normalizePostMeta({
     ...(raw?.meta || raw || {}),
     saved_to_profile: raw?.meta?.saved_to_profile ?? raw?.saved_to_profile ?? raw?.story_saved,
@@ -280,7 +282,7 @@ function normalizePostEntry(raw) {
     user_id: String(raw?.user_id || ""),
     entry_type: entryType,
     media_kind: mediaKind,
-    media_data: String(raw?.media_data || ""),
+    media_data: mediaData,
     caption,
     description: caption,
     likes_count: Number(raw?.likes_count || 0),
@@ -293,22 +295,78 @@ function normalizePostEntry(raw) {
 }
 
 function readPosts(userId) {
+  const key = String(userId || "");
+  const cached = profilePostsCache.get(key);
+  if (!Array.isArray(cached)) return [];
+  return cached;
+}
+
+function writePosts(userId, entries) {
+  const normalized = Array.isArray(entries) ? entries.map((p) => normalizePostEntry(p)) : [];
+  const active = normalized.filter((p) => !(isStoryExpired(p) && !isSavedStory(p)));
+  const key = String(userId || "");
+  profilePostsCache.set(key, active);
+  try {
+    localStorage.setItem(postStorageKey(userId), JSON.stringify(active));
+  } catch {
+    // ignore
+  }
+}
+
+function readLegacyLocalPosts(userId) {
   try {
     const raw = localStorage.getItem(postStorageKey(userId));
     const parsed = raw ? JSON.parse(raw) : [];
     if (!Array.isArray(parsed)) return [];
-    const normalized = parsed.map((p) => normalizePostEntry(p));
-    const active = normalized.filter((p) => !(isStoryExpired(p) && !isSavedStory(p)));
-    if (active.length !== normalized.length) writePosts(userId, active);
-    return active;
+    return parsed.map((p) => normalizePostEntry(p));
   } catch {
     return [];
   }
 }
 
-function writePosts(userId, entries) {
-  const normalized = Array.isArray(entries) ? entries.map((p) => normalizePostEntry(p)) : [];
-  localStorage.setItem(postStorageKey(userId), JSON.stringify(normalized));
+async function fetchRemotePosts(userId, isSelf) {
+  if (!userId) return [];
+  const path = isSelf ? "/profile-posts/me" : `/profile-posts/users/${encodeURIComponent(String(userId))}`;
+  const data = await apiFetch(path);
+  const items = Array.isArray(data?.items) ? data.items.map((p) => normalizePostEntry(p)) : [];
+  writePosts(userId, items);
+  return items;
+}
+
+async function migrateLegacyPostsIfNeeded(userId) {
+  if (!userId) return;
+  const remote = readPosts(userId);
+  if (remote.length > 0) return;
+  const legacy = readLegacyLocalPosts(userId);
+  if (!legacy.length) return;
+
+  for (const entry of legacy) {
+    try {
+      await apiFetch("/profile-posts", {
+        method: "POST",
+        body: JSON.stringify({
+          entry_type: entry.entry_type,
+          media_kind: entry.media_kind,
+          media_data: entry.media_data,
+          caption: entry.caption || "",
+          likes_count: Number(entry.likes_count || 0),
+          comments_count: Number(entry.comments_count || 0),
+          comments: Array.isArray(entry.comments) ? entry.comments : [],
+          meta: normalizePostMeta(entry.meta || {}),
+          created_at: entry.created_at,
+        }),
+      });
+    } catch {
+      // keep going
+    }
+  }
+
+  try {
+    localStorage.removeItem(postStorageKey(userId));
+  } catch {
+    // ignore
+  }
+  await fetchRemotePosts(userId, true);
 }
 
 function formatRelativeFromIso(iso) {
@@ -334,7 +392,7 @@ function openProfileMediaModal(post, opts = {}) {
   const canManage = Boolean(opts.canManage);
   const title = post.entry_type === "story" ? "Story" : post.media_kind === "video" ? "Reel" : "Publication";
   const mediaNode = post.media_kind === "video"
-    ? `<video controls autoplay preload="metadata" src="${escapeHtml(post.media_data || "")}" class="snap-viewer-media"></video>`
+    ? `<video id="profileModalVideo" controls autoplay playsinline preload="metadata" src="${escapeHtml(post.media_data || "")}" class="snap-viewer-media"></video>`
     : `<img alt="" src="${escapeHtml(post.media_data || "")}" class="snap-viewer-media" />`;
   const canEdit = canManage && post.entry_type === "publication";
   const meta = normalizePostMeta(post?.meta || {});
@@ -415,17 +473,22 @@ function openProfileMediaModal(post, opts = {}) {
   `;
 
   profileMediaBody.querySelector("#closePostModalBtn")?.addEventListener("click", closeProfileMediaModal);
-  profileMediaBody.querySelector("#deletePostBtn")?.addEventListener("click", () => {
+  profileMediaBody.querySelector("#deletePostBtn")?.addEventListener("click", async () => {
     if (!currentProfileUserId) return;
     const ok = window.confirm("Supprimer ce contenu ?");
     if (!ok) return;
-    const next = readPosts(currentProfileUserId).filter((p) => String(p.id || "") !== String(post.id || ""));
-    writePosts(currentProfileUserId, next);
-    renderProfilePosts({ id: currentProfileUserId }, { canCreate: isOwnProfile, canManage: isOwnProfile });
-    closeProfileMediaModal();
-    toast("Contenu supprime.", "OK");
+    try {
+      await apiFetch(`/profile-posts/${encodeURIComponent(String(post.id || ""))}`, { method: "DELETE" });
+      const next = readPosts(currentProfileUserId).filter((p) => String(p.id || "") !== String(post.id || ""));
+      writePosts(currentProfileUserId, next);
+      renderProfilePosts({ id: currentProfileUserId }, { canCreate: isOwnProfile, canManage: isOwnProfile });
+      closeProfileMediaModal();
+      toast("Contenu supprime.", "OK");
+    } catch (err) {
+      toast(err?.message || "Suppression impossible", "Erreur");
+    }
   });
-  profileMediaBody.querySelector("#toggleStorySaveBtn")?.addEventListener("click", () => {
+  profileMediaBody.querySelector("#toggleStorySaveBtn")?.addEventListener("click", async () => {
     if (!currentProfileUserId || post.entry_type !== "story") return;
     const next = readPosts(currentProfileUserId).map((p) => {
       if (String(p.id || "") !== String(post.id || "")) return p;
@@ -439,11 +502,24 @@ function openProfileMediaModal(post, opts = {}) {
         saved_to_profile: Boolean(nextMeta.saved_to_profile),
       };
     });
-    writePosts(currentProfileUserId, next);
     const updated = next.find((p) => String(p.id || "") === String(post.id || ""));
-    renderProfilePosts({ id: currentProfileUserId }, { canCreate: isOwnProfile, canManage: isOwnProfile });
-    if (updated) openProfileMediaModal(updated, opts);
-    toast(updated && isSavedStory(updated) ? "Story enregistree en highlight." : "Story retiree des highlights.", "OK");
+    if (!updated) return;
+    try {
+      const r = await apiFetch(`/profile-posts/${encodeURIComponent(String(post.id || ""))}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          meta: normalizePostMeta(updated.meta || {}),
+        }),
+      });
+      const serverItem = normalizePostEntry(r?.item || updated);
+      const merged = next.map((p) => (String(p.id || "") === String(serverItem.id || "") ? serverItem : p));
+      writePosts(currentProfileUserId, merged);
+      renderProfilePosts({ id: currentProfileUserId }, { canCreate: isOwnProfile, canManage: isOwnProfile });
+      openProfileMediaModal(serverItem, opts);
+      toast(isSavedStory(serverItem) ? "Story enregistree en highlight." : "Story retiree des highlights.", "OK");
+    } catch (err) {
+      toast(err?.message || "Maj story impossible", "Erreur");
+    }
   });
 
   const editBtn = profileMediaBody.querySelector("#editPostBtn");
@@ -451,7 +527,7 @@ function openProfileMediaModal(post, opts = {}) {
   const cancelEditBtn = profileMediaBody.querySelector("#cancelEditPostBtn");
   editBtn?.addEventListener("click", () => editForm?.removeAttribute("hidden"));
   cancelEditBtn?.addEventListener("click", () => editForm?.setAttribute("hidden", ""));
-  editForm?.addEventListener("submit", (e) => {
+  editForm?.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!currentProfileUserId || post.entry_type !== "publication") return;
     const input = profileMediaBody.querySelector("#editPostCaptionInput");
@@ -473,15 +549,41 @@ function openProfileMediaModal(post, opts = {}) {
         ? { ...p, caption: nextCaption, description: nextCaption, meta: nextMeta }
         : p
     );
-    writePosts(currentProfileUserId, next);
-    const updated = next.find((p) => String(p.id || "") === String(post.id || ""));
-    renderProfilePosts({ id: currentProfileUserId }, { canCreate: isOwnProfile, canManage: isOwnProfile });
-    if (updated) openProfileMediaModal(updated, opts);
-    toast("Publication modifiee.", "OK");
+    try {
+      const r = await apiFetch(`/profile-posts/${encodeURIComponent(String(post.id || ""))}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          caption: nextCaption,
+          meta: nextMeta,
+        }),
+      });
+      const fallbackUpdated = next.find((p) => String(p.id || "") === String(post.id || ""));
+      if (!fallbackUpdated && !r?.item) {
+        throw new Error("Mise a jour introuvable");
+      }
+      const updated = normalizePostEntry(r?.item || fallbackUpdated);
+      const merged = next.map((p) => (String(p.id || "") === String(updated.id || "") ? updated : p));
+      writePosts(currentProfileUserId, merged);
+      renderProfilePosts({ id: currentProfileUserId }, { canCreate: isOwnProfile, canManage: isOwnProfile });
+      openProfileMediaModal(updated, opts);
+      toast("Publication modifiee.", "OK");
+    } catch (err) {
+      toast(err?.message || "Modification impossible", "Erreur");
+    }
   });
 
   profileMediaModal?.removeAttribute("hidden");
   document.body.classList.add("comments-open");
+
+  // On some browsers autoplay can silently fail; retry once after mount.
+  if (post.media_kind === "video") {
+    const modalVideo = profileMediaBody.querySelector("#profileModalVideo");
+    if (modalVideo?.play) {
+      modalVideo.play().catch(() => {
+        // keep controls visible for manual play
+      });
+    }
+  }
 }
 
 function filterPostsByTab(posts, tab) {
@@ -669,7 +771,7 @@ function bindComposer(user) {
     reader.readAsDataURL(file);
   });
 
-  composerForm.addEventListener("submit", (e) => {
+  composerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     if (!isOwnProfile) {
       toast("Creation reservee a ton profil.", "Info");
@@ -699,43 +801,45 @@ function bindComposer(user) {
       allow_comments: Boolean(allowCommentsField?.checked),
       saved_to_profile: saveStoryToProfile,
     });
-    const current = readPosts(composerUserId);
-    const next = [
-      {
-        id: crypto.randomUUID(),
-        user_id: composerUserId,
-        entry_type: entryType,
-        media_kind: pendingUploadType || "image",
-        media_data: pendingUploadDataUrl,
-        caption,
-        description: caption,
-        likes_count: 0,
-        comments_count: 0,
-        comments: [],
-        meta,
-        saved_to_profile: saveStoryToProfile,
-        created_at: new Date().toISOString()
-      },
-      ...current
-    ].slice(0, 60);
-
-    writePosts(composerUserId, next);
-    renderProfilePosts({ id: composerUserId }, { canCreate: true, canManage: true });
-    closeComposer();
-    toast(entryType === "story" ? "Story publiee (24h)." : "Publication ajoutee au profil.", "OK");
+    try {
+      const r = await apiFetch("/profile-posts", {
+        method: "POST",
+        body: JSON.stringify({
+          entry_type: entryType,
+          media_kind: pendingUploadType || "image",
+          media_data: pendingUploadDataUrl,
+          caption,
+          likes_count: 0,
+          comments_count: 0,
+          comments: [],
+          meta,
+          created_at: new Date().toISOString(),
+        }),
+      });
+      const created = normalizePostEntry(r?.item || {});
+      const current = readPosts(composerUserId);
+      writePosts(composerUserId, [created, ...current].slice(0, 60));
+      renderProfilePosts({ id: composerUserId }, { canCreate: true, canManage: true });
+      closeComposer();
+      toast(entryType === "story" ? "Story publiee (24h)." : "Publication ajoutee au profil.", "OK");
+    } catch (err) {
+      toast(err?.message || "Publication impossible", "Erreur");
+    }
   });
 }
 
 async function loadSelfProfile() {
   const t = updateTokenStats();
   if (!t.accessToken) {
-    renderNeedAuth("Aucun token trouve dans le navigateur. Connecte-toi sur /auth.");
+    renderNeedAuth("");
     return;
   }
 
   const [meData, followData] = await Promise.all([apiFetch("/auth/me"), apiFetch("/follows/me")]);
   currentProfileUserId = String(meData?.user?.id || "");
   isOwnProfile = true;
+  await fetchRemotePosts(currentProfileUserId, true);
+  await migrateLegacyPostsIfNeeded(currentProfileUserId);
   renderProfileCard(meData.user, { showFollow: false, followersCount: Number(followData?.followers_count || 0) });
   renderSocialMeta(followData);
   renderSocialLists(followData);
@@ -749,6 +853,7 @@ async function loadPublicProfile(viewUserId) {
   const data = await apiFetch(`/follows/users/${encodeURIComponent(viewUserId)}`);
   currentProfileUserId = String(data?.user?.id || "");
   isOwnProfile = false;
+  await fetchRemotePosts(currentProfileUserId, false);
   renderProfileCard(data.user, {
     showFollow: Boolean(t.accessToken),
     following: Boolean(data.is_following),

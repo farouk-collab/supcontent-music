@@ -1,0 +1,112 @@
+body.has-global-player{
+  padding-bottom: calc(var(--mobile-footer-height) + 102px + env(safe-area-inset-bottom));
+}
+
+body.has-global-player .container{
+  padding-bottom: calc(120px + env(safe-area-inset-bottom));
+}
+
+body.has-global-player .toast{
+  bottom: calc(var(--mobile-footer-height) + 112px + env(safe-area-inset-bottom));
+}
+
+.spotify-player{
+  background: #0a0a0a;
+  border-top: 1px solid rgba(255,255,255,.1);
+  box-shadow: 0 -12px 28px rgba(0,0,0,.45);
+}
+
+.spotify-player .gmp-cover{
+  border: 1px solid rgba(255,255,255,.16);
+  box-shadow: 0 8px 18px rgba(0,0,0,.36);
+  background: rgba(255,255,255,.06);
+}
+
+.spotify-player .gmp-title{
+  color: #f8fafc;
+  letter-spacing: -.01em;
+}
+
+.spotify-player .gmp-sub{
+  color: #b7c0d8;
+  font-size: 13px;
+  line-height: 1.2;
+  letter-spacing: -.01em;
+}
+
+.spotify-player .btn.icon{
+  background: rgba(255,255,255,.04);
+  border: 1px solid rgba(255,255,255,.14);
+  color: #e6ebf8;
+}
+
+.spotify-player .gmp-video-back{
+  background: rgba(5, 9, 18, 0.9);
+  border-color: rgba(255,255,255,.22);
+}
+
+.spotify-player .btn.icon.main{
+  background: #ffffff;
+  color: #0b0f19;
+  border-color: rgba(255,255,255,.9);
+  box-shadow: 0 8px 20px rgba(0,0,0,.4);
+}
+
+.spotify-player .btn.icon:hover{
+  border-color: rgba(255,255,255,.35);
+}
+
+.spotify-player .btn.danger.icon{
+  background: rgba(190,24,93,.14);
+  border-color: rgba(244,63,94,.5);
+  color: #fda4af;
+}
+
+.spotify-player .gmp-seek,
+.spotify-player .gmp-vol{
+  background: rgba(255,255,255,.22);
+}
+
+.spotify-player .gmp-seek::-webkit-slider-thumb,
+.spotify-player .gmp-vol::-webkit-slider-thumb{
+  background: #ffffff;
+}
+
+.spotify-player .gmp-seek::-moz-range-thumb,
+.spotify-player .gmp-vol::-moz-range-thumb{
+  background: #ffffff;
+}
+
+.spotify-player .gmp-progress small{
+  color: #c6d0ea;
+}
+
+.spotify-player.audio-only .gmp-title{
+  font-size: 20px;
+}
+
+.spotify-player.audio-only .gmp-sub{
+  font-size: 13px;
+}
+
+@media (max-width: 960px){
+  body.has-global-player{
+    padding-bottom: calc(var(--mobile-footer-height) + 152px + env(safe-area-inset-bottom));
+  }
+
+  .spotify-player .gmp-title{
+    font-size: 15px;
+  }
+
+  .spotify-player .gmp-sub{
+    font-size: 12px;
+  }
+
+  .spotify-player.audio-only .gmp-title{
+    font-size: 16px;
+  }
+
+  .spotify-player.audio-only .gmp-sub{
+    font-size: 12px;
+  }
+}

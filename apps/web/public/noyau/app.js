@@ -47,7 +47,27 @@ export function isLoggedIn() {
   return getTokens().accessToken.length > 0;
 }
 
+export function requireLogin({
+  title = "Connexion requise",
+  message = "Connecte-toi d'abord pour utiliser cette fonctionnalite.",
+  redirect = true,
+  next = `${window.location.pathname}${window.location.search || ""}${window.location.hash || ""}`,
+} = {}) {
+  if (isLoggedIn()) return true;
+  toast(message, title);
+  if (redirect) {
+    const target = `/connexion/connexion.html?next=${encodeURIComponent(next)}`;
+    window.setTimeout(() => {
+      window.location.href = target;
+    }, 220);
+  }
+  return false;
+}
+
 export function toast(msg, title = "Info") {
+  const level = String(title || "Info").trim().toLowerCase();
+  // Keep UI quiet: skip non-essential informational toasts.
+  if (level === "info") return;
   const el = document.querySelector("#toast");
   if (!el) return;
   el.innerHTML = `<strong>${title}</strong><div style="color:var(--muted);margin-top:4px">${escapeHtml(msg)}</div>`;

@@ -1,0 +1,62 @@
+#composerModal .comments-panel{
+  background: linear-gradient(180deg, #0b1222 0%, #081325 100%);
+  color: #eaf0ff;
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  border: 1px solid rgba(255,255,255,.12);
+  box-shadow: 0 -20px 50px rgba(0,0,0,.5);
+}
+
+#composerModal .comments-handle{
+  background: rgba(203,213,225,.65);
+}
+
+#composerModal label{
+  color: #9fb0d0;
+  font-weight: 700;
+}
+
+#composerModal .input,
+#composerModal textarea,
+#composerModal select{
+  background: rgba(255,255,255,.08);
+  color: #f8fbff;
+  border-color: rgba(255,255,255,.15);
+}
+
+#composerModal .input::placeholder,
+#composerModal textarea::placeholder{
+  color: #afbdd8;
+}
+
+#composerModal .btn{
+  background: rgba(255,255,255,.07);
+  border-color: rgba(255,255,255,.16);
+  color: #eef3ff;
+}
+
+#composerModal .btn.primary{
+  background: linear-gradient(135deg, #7c5cff, #2ee59d);
+  border-color: transparent;
+  color: #f8fbff;
+  font-weight: 900;
+}
+
+#composerModal #storyMetaFields{
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+#composerModal #publicationMetaFields{
+  background: rgba(255,255,255,.03);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+#composerModal #composerPreview{
+  border-top: 1px solid rgba(255,255,255,.08);
+  padding-top: 10px;
+}

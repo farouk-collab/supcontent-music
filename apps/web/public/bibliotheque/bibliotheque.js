@@ -1,9 +1,45 @@
-import { apiFetch, toast, escapeHtml, resolveMediaUrl } from "/noyau/app.js";
+import { apiFetch, toast, escapeHtml, resolveMediaUrl, requireLogin } from "/noyau/app.js";
 
-const statusAddForm = document.querySelector("#statusAddForm");
-const createListForm = document.querySelector("#createListForm");
 const collectionsBox = document.querySelector("#collectionsBox");
 const refreshBtn = document.querySelector("#refreshBtn");
+const newListBtn = document.querySelector("#newListBtn");
+const playHeroBtn = document.querySelector("#playHeroBtn");
+const heroTitle = document.querySelector("#heroTitle");
+const heroDesc = document.querySelector("#heroDesc");
+const heroCover = document.querySelector("#heroCover");
+const chips = Array.from(document.querySelectorAll(".library-chip[data-filter]"));
+const nowPlayingCover = document.querySelector("#nowPlayingCover");
+const nowPlayingTitle = document.querySelector("#nowPlayingTitle");
+const nowPlayingSub = document.querySelector("#nowPlayingSub");
+const openNowBtn = document.querySelector("#openNowBtn");
+const favoriteNowBtn = document.querySelector("#favoriteNowBtn");
+const similarBox = document.querySelector("#similarBox");
+const mergePlaylistsBtn = document.querySelector("#mergePlaylistsBtn");
+const playMusicBtn = document.querySelector("#playMusicBtn");
+const syncPlatformsBtn = document.querySelector("#syncPlatformsBtn");
+const favoritesOnlyBtn = document.querySelector("#favoritesOnlyBtn");
+const FAV_STORAGE_KEY = "supcontent_library_favs_v1";
+
+let currentFilter = "all";
+let allRows = [];
+let currentNow = null;
+let mergedMode = false;
+let showFavoritesOnly = false;
+const favorites = new Set(readFavorites());
+
+function readFavorites() {
+  try {
+    const raw = localStorage.getItem(FAV_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.map((x) => String(x || "")).filter(Boolean) : [];
+  } catch {
+    return [];
+  }
+}
+
+function persistFavorites() {
+  localStorage.setItem(FAV_STORAGE_KEY, JSON.stringify(Array.from(favorites)));
+}
 
 function mediaHref(type, id) {
   const safeType = String(type || "").trim();
@@ -13,215 +49,283 @@ function mediaHref(type, id) {
   return `/media/media.html?${q}#${q}`;
 }
 
-function statusLabel(code = "") {
-  return (
-    {
-      a_voir: "A voir",
-      en_cours: "En cours",
-      termine: "Termine",
-      abandonne: "Abandonne",
-    }[code] || code
-  );
+function isYouTubeUrl(url) {
+  const s = String(url || "").toLowerCase();
+  return s.includes("youtube.com") || s.includes("youtu.be") || s.includes("music.youtube.com");
 }
 
-function itemRow(collectionId, it) {
-  const href = mediaHref(it.media_type, it.media_id);
-  const mediaName = it?.media?.name || it.media_id;
-  const mediaSub = it?.media?.subtitle || "";
-  const mediaImg = resolveMediaUrl(it?.media?.image || "");
-  const social = it?.social || {};
-  const reviewCount = Number(social.review_count || 0);
-  const likeCount = Number(social.like_count || 0);
-  const commentCount = Number(social.comment_count || 0);
-  const avgRating = social.avg_rating == null ? null : Number(social.avg_rating);
-  return `
-    <div class="row" style="justify-content:space-between;border:1px solid var(--border);padding:8px 10px;border-radius:10px">
-      <a class="row" href="${href}" style="gap:10px;align-items:center;min-width:0">
-        <div style="width:44px;height:44px;border-radius:8px;overflow:hidden;border:1px solid var(--border);background:rgba(255,255,255,.04);display:flex;align-items:center;justify-content:center;flex:none">
-          ${
-            mediaImg
-              ? `<img src="${escapeHtml(mediaImg)}" alt="" style="width:100%;height:100%;object-fit:cover" />`
-              : `<span class="badge">${escapeHtml(it.media_type)}</span>`
-          }
-        </div>
-        <div style="min-width:0">
-          <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${escapeHtml(mediaName)}</div>
-          <div style="color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-            ${escapeHtml(mediaSub || it.media_id)}
-          </div>
-          <div class="row" style="gap:6px;margin-top:4px;flex-wrap:wrap">
-            <span class="badge">reviews: ${reviewCount}</span>
-            <span class="badge">likes: ${likeCount}</span>
-            <span class="badge">commentaires: ${commentCount}</span>
-            ${avgRating == null ? "" : `<span class="badge">note: ${escapeHtml(avgRating.toFixed(2))}/5</span>`}
-          </div>
-        </div>
-      </a>
-      <button class="btn danger" data-del-item="1" data-cid="${escapeHtml(collectionId)}" data-type="${escapeHtml(
-    it.media_type
-  )}" data-id="${escapeHtml(it.media_id)}" type="button">Retirer</button>
-    </div>
-  `;
+function externalYouTubeHref(url) {
+  const safeUrl = String(url || "").trim();
+  if (!safeUrl) return "#";
+  const q = `ext=youtube&url=${encodeURIComponent(safeUrl)}`;
+  return `/media/media.html?${q}#${q}`;
 }
 
-function listCard(col) {
-  const isStatus = Boolean(col.status_code);
-  return `
-    <div class="card" style="margin-top:10px">
-      <div class="row" style="justify-content:space-between">
-        <div class="row">
-          <strong>${escapeHtml(col.name)}</strong>
-          ${col.status_code ? `<span class="badge">${escapeHtml(statusLabel(col.status_code))}</span>` : ""}
-          ${col.is_public ? `<span class="badge">Public</span>` : `<span class="badge">Prive</span>`}
+function mediaTargetHref(row) {
+  const yt =
+    String(row?.youtube_url || "").trim() ||
+    String(row?.source_url || "").trim() ||
+    String(row?.spotify_url || "").trim();
+  if (yt && isYouTubeUrl(yt)) return externalYouTubeHref(yt);
+  return row?.href || "#";
+}
+
+function playRowInline(row) {
+  const player = window.supcontentPlayer;
+  if (!player?.playYouTube) return false;
+  const yt =
+    String(row?.youtube_url || "").trim() ||
+    String(row?.source_url || "").trim() ||
+    String(row?.spotify_url || "").trim();
+  if (!yt || !isYouTubeUrl(yt)) return false;
+  player.playYouTube({
+    url: yt,
+    title: String(row?.name || "YouTube"),
+    subtitle: String(row?.subtitle || row?.collectionName || ""),
+    cover: String(row?.image || ""),
+    mode: "video",
+  });
+  return true;
+}
+
+function normalizeRows(collections) {
+  const rows = [];
+  for (const col of collections) {
+    const items = Array.isArray(col?.items) ? col.items : [];
+    for (const it of items) {
+      rows.push({
+        collectionId: String(col?.id || ""),
+        collectionName: String(col?.name || "Playlist"),
+        media_type: String(it?.media_type || ""),
+        media_id: String(it?.media_id || ""),
+        name: String(it?.media?.name || it?.media_id || "Sans titre"),
+        subtitle: String(it?.media?.subtitle || ""),
+        image: resolveMediaUrl(it?.media?.image || ""),
+        href: mediaHref(it?.media_type, it?.media_id),
+        spotify_url: String(it?.media?.spotify_url || ""),
+        source_url: String(it?.media?.source_url || ""),
+        youtube_url: String(it?.media?.youtube_url || ""),
+      });
+    }
+  }
+  return rows;
+}
+
+function applyFilter(rows) {
+  let out = currentFilter === "all" ? rows : rows.filter((r) => r.media_type === currentFilter);
+  if (mergedMode) {
+    const seen = new Set();
+    out = out.filter((r) => {
+      const k = `${r.media_type}:${r.media_id}`;
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }
+  if (showFavoritesOnly) {
+    out = out.filter((r) => favorites.has(`${r.media_type}:${r.media_id}`));
+  }
+  return out;
+}
+
+function renderHero(rows) {
+  const first = rows[0] || null;
+  if (!first) {
+    heroTitle.textContent = "Bibliothèque vide";
+    heroDesc.textContent = "Ajoute des titres/album/artistes dans tes collections.";
+    heroCover.innerHTML = "";
+    return;
+  }
+  heroTitle.textContent = first.collectionName;
+  heroDesc.textContent = `Playlist ambiance • ${rows.length} éléments`;
+  heroCover.innerHTML = first.image ? `<img src="${escapeHtml(first.image)}" alt="" />` : `<div class="badge">Aucune image</div>`;
+}
+
+function renderNow(row) {
+  currentNow = row || null;
+  if (!row) {
+    nowPlayingCover.innerHTML = "";
+    nowPlayingTitle.textContent = "Aucune lecture";
+    nowPlayingSub.textContent = "Sélectionne un titre à gauche.";
+    favoriteNowBtn.textContent = "Favori";
+    similarBox.innerHTML = "";
+    return;
+  }
+
+  nowPlayingCover.innerHTML = row.image ? `<img src="${escapeHtml(row.image)}" alt="" />` : `<div class="badge">No cover</div>`;
+  nowPlayingTitle.textContent = row.name;
+  nowPlayingSub.textContent = row.subtitle || row.collectionName;
+  const key = `${row.media_type}:${row.media_id}`;
+  favoriteNowBtn.textContent = favorites.has(key) ? "Retirer favori" : "Favori";
+
+  const similars = allRows
+    .filter((x) => x.media_type === row.media_type && x.media_id !== row.media_id)
+    .slice(0, 6);
+  similarBox.innerHTML = similars.length
+    ? similars
+        .map(
+          (s) => `
+        <button class="library-item" type="button" data-now="${escapeHtml(`${s.media_type}:${s.media_id}`)}">
+          ${s.image ? `<img src="${escapeHtml(s.image)}" alt="" />` : `<span class="badge">${escapeHtml(s.media_type)}</span>`}
+          <div class="meta"><strong>${escapeHtml(s.name)}</strong><small>${escapeHtml(s.subtitle || s.collectionName)}</small></div>
+        </button>
+      `
+        )
+        .join("")
+    : `<small>Aucune suggestion.</small>`;
+
+  similarBox.querySelectorAll("[data-now]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key2 = String(btn.getAttribute("data-now") || "");
+      const target = allRows.find((x) => `${x.media_type}:${x.media_id}` === key2);
+      if (target) renderNow(target);
+    });
+  });
+}
+
+function renderGrid() {
+  const rows = applyFilter(allRows);
+  renderHero(rows);
+
+  if (!rows.length) {
+    collectionsBox.innerHTML = `<small>Aucun élément pour ce filtre.</small>`;
+    renderNow(null);
+    return;
+  }
+
+  collectionsBox.innerHTML = rows
+    .map(
+      (r) => `
+      <button class="library-item" type="button" data-open="${escapeHtml(`${r.media_type}:${r.media_id}`)}">
+        ${r.image ? `<img src="${escapeHtml(r.image)}" alt="" />` : `<span class="badge">${escapeHtml(r.media_type)}</span>`}
+        <div class="meta">
+          <strong>${escapeHtml(r.name)}</strong>
+          <small>${escapeHtml(r.subtitle || r.collectionName)}</small>
         </div>
-        ${
-          isStatus
-            ? ""
-            : `<div class="row">
-                 <button class="btn" data-edit-list="1" data-cid="${escapeHtml(col.id)}" data-name="${escapeHtml(
-                col.name
-              )}" data-public="${col.is_public ? "1" : "0"}" type="button">Editer</button>
-                 <button class="btn danger" data-del-list="1" data-cid="${escapeHtml(col.id)}" type="button">Supprimer</button>
-               </div>`
-        }
-      </div>
-      <div style="margin-top:10px;display:grid;gap:8px">
-        ${(col.items || []).map((it) => itemRow(col.id, it)).join("") || `<small>Aucune oeuvre</small>`}
-      </div>
-      <form class="row" style="margin-top:10px" data-add-item-form="1" data-cid="${escapeHtml(col.id)}">
-        <select class="input" name="media_type" style="max-width:110px">
-          <option value="track">track</option>
-          <option value="album">album</option>
-          <option value="artist">artist</option>
-        </select>
-        <input class="input" name="media_id" placeholder="spotify id" required />
-        <button class="btn" type="submit">Ajouter</button>
-      </form>
-    </div>
-  `;
+        <span class="badge">${favorites.has(`${r.media_type}:${r.media_id}`) ? "★" : escapeHtml(r.media_type)}</span>
+      </button>
+    `
+    )
+    .join("");
+
+  collectionsBox.querySelectorAll("[data-open]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = String(btn.getAttribute("data-open") || "");
+      const row = allRows.find((x) => `${x.media_type}:${x.media_id}` === key);
+      if (row) renderNow(row);
+    });
+  });
+
+  if (!currentNow) renderNow(rows[0]);
 }
 
 async function loadCollections() {
+  if (!requireLogin({ redirect: false })) {
+    collectionsBox.innerHTML = `<small>Connecte-toi pour afficher ta bibliothèque.</small>`;
+    return;
+  }
   collectionsBox.innerHTML = `<small>Chargement...</small>`;
   try {
     const r = await apiFetch("/collections/me?include_items=1");
-    const collections = r.collections || [];
-    if (!collections.length) {
-      collectionsBox.innerHTML = `<small>Aucune collection.</small>`;
+    const collections = Array.isArray(r?.collections) ? r.collections : [];
+    allRows = normalizeRows(collections);
+    renderGrid();
+  } catch (err) {
+    const msg = String(err?.message || "");
+    if (/token manquant/i.test(msg)) {
+      collectionsBox.innerHTML = `<small>Connecte-toi pour afficher ta bibliothèque.</small>`;
       return;
     }
-    collectionsBox.innerHTML = collections.map(listCard).join("");
-    bindDynamicActions();
-  } catch (err) {
-    collectionsBox.innerHTML = `<small style="color:#ffb0b0">${escapeHtml(err?.message || "Erreur")}</small>`;
-    toast(err?.message || "Erreur chargement collections", "Erreur");
+    collectionsBox.innerHTML = `<small style="color:#ffb0b0">${escapeHtml(msg || "Erreur")}</small>`;
+    toast(msg || "Erreur chargement bibliothèque", "Erreur");
   }
 }
 
-async function addStatusItem(e) {
-  e.preventDefault();
-  const fd = new FormData(statusAddForm);
-  const media_type = String(fd.get("media_type") || "track");
-  const status = String(fd.get("status") || "a_voir");
-  const media_id = String(fd.get("media_id") || "").trim();
-  if (!media_id) return;
-
-  await apiFetch(`/collections/status/${encodeURIComponent(status)}/items`, {
-    method: "POST",
-    body: JSON.stringify({ media_type, media_id }),
+chips.forEach((chip) => {
+  chip.addEventListener("click", () => {
+    const v = String(chip.getAttribute("data-filter") || "all");
+    currentFilter = ["all", "track", "artist", "album"].includes(v) ? v : "all";
+    chips.forEach((c) => c.classList.toggle("is-active", c === chip));
+    renderGrid();
   });
-  toast("Oeuvre ajoutee au statut.", "OK");
-  statusAddForm.reset();
-  await loadCollections();
-}
-
-async function createList(e) {
-  e.preventDefault();
-  const fd = new FormData(createListForm);
-  const name = String(fd.get("name") || "").trim();
-  const is_public = fd.get("is_public") === "on";
-  if (!name) return;
-  await apiFetch("/collections", {
-    method: "POST",
-    body: JSON.stringify({ name, is_public }),
-  });
-  toast("Liste creee.", "OK");
-  createListForm.reset();
-  await loadCollections();
-}
-
-function bindDynamicActions() {
-  collectionsBox.querySelectorAll("[data-add-item-form='1']").forEach((form) => {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const cid = form.getAttribute("data-cid");
-      const fd = new FormData(form);
-      const media_type = String(fd.get("media_type") || "track");
-      const media_id = String(fd.get("media_id") || "").trim();
-      if (!cid || !media_id) return;
-      await apiFetch(`/collections/${encodeURIComponent(cid)}/items`, {
-        method: "POST",
-        body: JSON.stringify({ media_type, media_id }),
-      });
-      toast("Oeuvre ajoutee a la liste.", "OK");
-      await loadCollections();
-    });
-  });
-
-  collectionsBox.querySelectorAll("[data-del-item='1']").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const cid = btn.getAttribute("data-cid");
-      const type = btn.getAttribute("data-type");
-      const id = btn.getAttribute("data-id");
-      if (!cid || !type || !id) return;
-      await apiFetch(`/collections/${encodeURIComponent(cid)}/items/${encodeURIComponent(type)}/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
-      toast("Oeuvre retiree.", "OK");
-      await loadCollections();
-    });
-  });
-
-  collectionsBox.querySelectorAll("[data-del-list='1']").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const cid = btn.getAttribute("data-cid");
-      if (!cid) return;
-      await apiFetch(`/collections/${encodeURIComponent(cid)}`, { method: "DELETE" });
-      toast("Liste supprimee.", "OK");
-      await loadCollections();
-    });
-  });
-
-  collectionsBox.querySelectorAll("[data-edit-list='1']").forEach((btn) => {
-    btn.addEventListener("click", async () => {
-      const cid = btn.getAttribute("data-cid");
-      const currentName = btn.getAttribute("data-name") || "";
-      const currentPublic = btn.getAttribute("data-public") === "1";
-      if (!cid) return;
-      const name = window.prompt("Nouveau nom de la liste", currentName);
-      if (!name || !name.trim()) return;
-      const is_public = window.confirm(
-        `Visibilite publique ?\nOK = Public\nAnnuler = Prive\n(Etat actuel: ${currentPublic ? "Public" : "Prive"})`
-      );
-      await apiFetch(`/collections/${encodeURIComponent(cid)}`, {
-        method: "PATCH",
-        body: JSON.stringify({ name: name.trim(), is_public }),
-      });
-      toast("Liste mise a jour.", "OK");
-      await loadCollections();
-    });
-  });
-}
-
-statusAddForm?.addEventListener("submit", (e) => {
-  addStatusItem(e).catch((err) => toast(err?.message || "Erreur", "Erreur"));
 });
-createListForm?.addEventListener("submit", (e) => {
-  createList(e).catch((err) => toast(err?.message || "Erreur", "Erreur"));
-});
+
 refreshBtn?.addEventListener("click", () => {
+  if (!requireLogin({ redirect: true })) return;
   loadCollections().catch((err) => toast(err?.message || "Erreur", "Erreur"));
 });
 
-loadCollections().catch((err) => toast(err?.message || "Erreur", "Erreur"));
+newListBtn?.addEventListener("click", async () => {
+  if (!requireLogin({ redirect: true })) return;
+  const name = window.prompt("Nom de la nouvelle playlist :", "");
+  if (!name || !name.trim()) return;
+  try {
+    await apiFetch("/collections", {
+      method: "POST",
+      body: JSON.stringify({ name: name.trim(), is_public: false }),
+    });
+    toast("Playlist créée.", "OK");
+    await loadCollections();
+  } catch (err) {
+    toast(err?.message || "Création impossible", "Erreur");
+  }
+});
 
+playHeroBtn?.addEventListener("click", () => {
+  const target = applyFilter(allRows)[0] || null;
+  if (!target) return;
+  if (playRowInline(target)) return;
+  window.location.href = mediaTargetHref(target);
+});
+
+openNowBtn?.addEventListener("click", () => {
+  if (!currentNow) return;
+  if (playRowInline(currentNow)) return;
+  window.location.href = mediaTargetHref(currentNow);
+});
+
+favoriteNowBtn?.addEventListener("click", () => {
+  if (!requireLogin({ redirect: true })) return;
+  if (!currentNow) return;
+  const key = `${currentNow.media_type}:${currentNow.media_id}`;
+  if (favorites.has(key)) favorites.delete(key);
+  else favorites.add(key);
+  persistFavorites();
+  renderNow(currentNow);
+  renderGrid();
+});
+
+mergePlaylistsBtn?.addEventListener("click", () => {
+  if (!requireLogin({ redirect: true })) return;
+  mergedMode = !mergedMode;
+  mergePlaylistsBtn.classList.toggle("primary", mergedMode);
+  mergePlaylistsBtn.textContent = mergedMode ? "Mode fusion actif" : "Fusionner les playlists";
+  renderGrid();
+});
+
+playMusicBtn?.addEventListener("click", () => {
+  const target = applyFilter(allRows)[0] || currentNow || null;
+  if (!target) return;
+  if (playRowInline(target)) return;
+  window.location.href = mediaTargetHref(target);
+});
+
+syncPlatformsBtn?.addEventListener("click", async () => {
+  if (!requireLogin({ redirect: true })) return;
+  try {
+    await loadCollections();
+    toast("Synchronisation terminée.", "OK");
+  } catch (err) {
+    toast(err?.message || "Sync impossible", "Erreur");
+  }
+});
+
+favoritesOnlyBtn?.addEventListener("click", () => {
+  if (!requireLogin({ redirect: true })) return;
+  showFavoritesOnly = !showFavoritesOnly;
+  favoritesOnlyBtn.classList.toggle("primary", showFavoritesOnly);
+  favoritesOnlyBtn.textContent = showFavoritesOnly ? "Tous les éléments" : "Favoris uniquement";
+  renderGrid();
+});
+
+loadCollections().catch((err) => toast(err?.message || "Erreur", "Erreur"));

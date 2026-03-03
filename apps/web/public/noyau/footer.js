@@ -1,13 +1,27 @@
 import { getLanguage, t } from "/noyau/i18n.js";
+import { initGlobalPlayer } from "/noyau/globalPlayer.js";
 
 const tabs = [
-  { href: "/accueil", icon: "&#127968;", labelKey: "home", key: "index" },
-  { href: "/recherche", icon: "&#128269;", labelKey: "search", key: "search" },
+  { href: "/accueil/accueil.html", icon: "&#127968;", labelKey: "home", key: "index" },
+  { href: "/recherche/recherche.html", icon: "&#128269;", labelKey: "search", key: "search" },
   { href: "/swipe/swipe.html", icon: "&#127183;", labelKey: "swipe", key: "swipe" },
-  { href: "/discussion", icon: "&#128172;", labelKey: "chat", key: "chat" },
-  { href: "/bibliotheque", icon: "&#128218;", labelKey: "library", key: "library" },
-  { href: "/profil", icon: "&#128100;", labelKey: "profile", key: "profile" },
+  { href: "/discussion/discussion.html", icon: "&#128172;", labelKey: "chat", key: "chat" },
+  { href: "/bibliotheque/bibliotheque.html", icon: "&#128218;", labelKey: "library", key: "library" },
+  { href: "/profil/profil.html", icon: "&#128100;", labelKey: "profile", key: "profile" },
 ];
+
+function ensureExtraStyles() {
+  const files = ["/noyau/styles/player-core.css", "/noyau/styles/player-theme.css"];
+  files.forEach((href) => {
+    const existing = document.querySelector(`link[data-extra-style="${href}"]`);
+    if (existing) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.setAttribute("data-extra-style", href);
+    document.head.appendChild(link);
+  });
+}
 
 function ensureBrandFavicon() {
   const href = "/assets/logo-supconnect.svg";
@@ -100,13 +114,17 @@ function injectFooter() {
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
+    ensureExtraStyles();
     ensureBrandFavicon();
     injectFooter();
     syncHeaderAuthLinks();
+    initGlobalPlayer();
   });
 } else {
+  ensureExtraStyles();
   ensureBrandFavicon();
   injectFooter();
   syncHeaderAuthLinks();
+  initGlobalPlayer();
 }
 

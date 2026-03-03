@@ -5,79 +5,189 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Bibliotheque — SUPCONTENT</title>
   <link rel="stylesheet" href="/noyau/styles.css" />
+  <style>
+    .library-shell{
+      display:grid;
+      grid-template-columns:minmax(0,1fr) 320px;
+      gap:14px;
+    }
+    .library-main,
+    .library-side{
+      border:1px solid var(--border);
+      border-radius:16px;
+      background:rgba(7,10,18,.86);
+      backdrop-filter: blur(4px);
+      overflow:hidden;
+    }
+    .library-main{ padding:14px; }
+    .library-hero{
+      display:grid;
+      grid-template-columns:220px minmax(0,1fr);
+      gap:16px;
+      background:linear-gradient(120deg, rgba(255,138,0,.35), rgba(10,10,10,.9));
+      border:1px solid rgba(255,255,255,.14);
+      border-radius:14px;
+      padding:14px;
+    }
+    .library-hero-cover{
+      width:100%;
+      aspect-ratio:1/1;
+      border-radius:10px;
+      border:1px solid rgba(255,255,255,.16);
+      background:rgba(255,255,255,.06);
+      overflow:hidden;
+    }
+    .library-hero-cover img{
+      width:100%;height:100%;object-fit:cover;
+    }
+    .library-hero h1{
+      margin:.2rem 0 .35rem;
+      font-size:clamp(32px,4vw,64px);
+      line-height:1.02;
+      letter-spacing:-.02em;
+    }
+    .library-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .library-chip-row{
+      display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;
+    }
+    .library-chip{
+      border:1px solid var(--border);
+      border-radius:999px;
+      background:rgba(255,255,255,.05);
+      color:#dfe6ff;
+      padding:8px 14px;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .library-chip.is-active{
+      background:#f4f7ff;
+      color:#101423;
+      border-color:#f4f7ff;
+    }
+    .library-grid{
+      margin-top:14px;
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:10px;
+    }
+    .library-item{
+      border:1px solid rgba(255,255,255,.12);
+      border-radius:10px;
+      padding:8px;
+      background:linear-gradient(110deg, rgba(255,145,0,.2), rgba(20,20,20,.72));
+      display:grid;
+      grid-template-columns:54px minmax(0,1fr) auto;
+      align-items:center;
+      gap:10px;
+      cursor:pointer;
+    }
+    .library-item img{
+      width:54px;height:54px;border-radius:8px;object-fit:cover;
+    }
+    .library-item .meta{ min-width:0; }
+    .library-item .meta strong{
+      display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .library-item .meta small{
+      display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+      color:var(--muted);
+    }
+    .library-side{ padding:14px; }
+    .now-cover{
+      width:100%;
+      aspect-ratio:1/1;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,.14);
+      overflow:hidden;
+      background:rgba(255,255,255,.05);
+    }
+    .now-cover img{ width:100%;height:100%;object-fit:cover; }
+    .similar-grid{
+      margin-top:10px;
+      display:grid;
+      gap:8px;
+    }
+    .similar-grid .library-item{
+      grid-template-columns:44px minmax(0,1fr);
+      background:rgba(255,255,255,.03);
+    }
+    .similar-grid .library-item img{
+      width:44px;height:44px;
+    }
+    @media (max-width: 1080px){
+      .library-shell{ grid-template-columns:1fr; }
+      .library-side{ order:2; }
+      .library-main{ order:1; }
+    }
+    @media (max-width: 760px){
+      .library-hero{ grid-template-columns:1fr; }
+      .library-grid{ grid-template-columns:1fr; }
+    }
+  </style>
 </head>
 <body>
   <div class="nav">
     <div class="nav-inner">
       <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
       <div class="menu">
-        <a class="pill" href="/accueil/accueil.html">Accueil</a>
-        <a class="pill" href="/recherche/recherche.html">Recherche</a>
-        <a class="pill" href="/utilisateurs/utilisateurs.html">Utilisateurs</a>
-        <a class="pill" href="/bibliotheque/bibliotheque.html">Bibliotheque</a>
+        <a class="pill" href="/recherche/recherche.html">Recherche musique</a>
         <a class="pill" href="/connexion/connexion.html">Connexion</a>
-        <a class="pill" href="/profil/profil.html">Profil</a>
       </div>
     </div>
   </div>
 
   <div class="container">
-    <div class="grid">
-      <div class="card span4">
-        <h2>Ajouter une oeuvre</h2>
-        <form id="statusAddForm" class="form">
-          <div class="two">
-            <div>
-              <label>Type</label>
-              <select class="input" name="media_type">
-                <option value="track">track</option>
-                <option value="album">album</option>
-                <option value="artist">artist</option>
-              </select>
-            </div>
-            <div>
-              <label>Statut</label>
-              <select class="input" name="status">
-                <option value="a_voir">A voir</option>
-                <option value="en_cours">En cours</option>
-                <option value="termine">Termine</option>
-                <option value="abandonne">Abandonne</option>
-              </select>
+    <section class="library-shell">
+      <article class="library-main">
+        <div class="library-hero" id="libraryHero">
+          <div class="library-hero-cover" id="heroCover"></div>
+          <div>
+            <small style="color:#f7e7d0">Playlist</small>
+            <h1 id="heroTitle">Ma bibliothèque</h1>
+            <p id="heroDesc" style="margin:0;color:#f2e8d5">Les meilleurs titres de tes collections.</p>
+            <div class="library-actions">
+              <button id="playHeroBtn" class="btn primary" type="button">Lecture</button>
+              <button id="newListBtn" class="btn" type="button">Créer une playlist</button>
+              <button id="refreshBtn" class="btn" type="button">Rafraîchir</button>
             </div>
           </div>
-          <div>
-            <label>Media ID</label>
-            <input class="input" name="media_id" required placeholder="spotify id" />
-          </div>
-          <button class="btn primary" type="submit">Ajouter</button>
-        </form>
-
-        <hr />
-
-        <h2>Nouvelle liste</h2>
-        <form id="createListForm" class="form">
-          <div>
-            <label>Nom</label>
-            <input class="input" name="name" required maxlength="80" placeholder="Mes albums chill" />
-          </div>
-          <div class="row">
-            <label style="display:flex;gap:8px;align-items:center">
-              <input type="checkbox" name="is_public" />
-              Publique
-            </label>
-          </div>
-          <button class="btn" type="submit">Creer la liste</button>
-        </form>
-      </div>
-
-      <div class="card span8">
-        <div class="row" style="justify-content:space-between">
-          <h2 style="margin:0">Mes collections</h2>
-          <button id="refreshBtn" class="btn" type="button">Rafraichir</button>
         </div>
-        <div id="collectionsBox" style="margin-top:12px"><small>Chargement...</small></div>
-      </div>
-    </div>
+
+        <div class="library-chip-row">
+          <button class="library-chip is-active" type="button" data-filter="all">Tout</button>
+          <button class="library-chip" type="button" data-filter="track">Musique</button>
+          <button class="library-chip" type="button" data-filter="artist">Artistes</button>
+          <button class="library-chip" type="button" data-filter="album">Albums</button>
+        </div>
+
+        <div class="library-actions" style="margin-top:12px">
+          <button id="mergePlaylistsBtn" class="btn" type="button">Fusionner les playlists</button>
+          <button id="playMusicBtn" class="btn primary" type="button">Lire les musiques</button>
+          <button id="syncPlatformsBtn" class="btn" type="button">Synchroniser plateformes</button>
+          <button id="favoritesOnlyBtn" class="btn" type="button">Favoris uniquement</button>
+        </div>
+
+        <div id="collectionsBox" class="library-grid"></div>
+      </article>
+
+      <aside class="library-side">
+        <small style="color:#f1f4ff;font-weight:700">Now playing</small>
+        <div class="now-cover" id="nowPlayingCover"></div>
+        <h2 id="nowPlayingTitle" style="margin:.8rem 0 .2rem">Aucune lecture</h2>
+        <div id="nowPlayingSub" style="color:var(--muted)">Sélectionne un titre à gauche.</div>
+        <div class="library-actions" style="margin-top:10px">
+          <button id="openNowBtn" class="btn primary" type="button">Ouvrir</button>
+          <button id="favoriteNowBtn" class="btn" type="button">Favori</button>
+        </div>
+        <h3 style="margin:1rem 0 .4rem">Vidéos similaires</h3>
+        <div id="similarBox" class="similar-grid"></div>
+      </aside>
+    </section>
   </div>
 
   <div id="toast" class="toast"></div>

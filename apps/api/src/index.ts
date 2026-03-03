@@ -15,9 +15,12 @@ import { ensureSocialTables } from "./db/social";
 import { ensureFollowTables } from "./db/follows";
 import { ensureSpotifyLinksTable, getSpotifyLinkByUserId, upsertSpotifyLink } from "./db/spotifyLinks";
 import { ensurePasswordResetTable } from "./db/passwordResets";
+import { ensureProfilePostsTable } from "./db/profilePosts";
 import {
   spotifyGet,
+  spotifyGetPlaylistTracks,
   spotifyNewReleases,
+  parseSpotifyPlaylistId,
   spotifySearch,
   refreshSpotifyUserAccessToken,
   spotifyUserGet,
@@ -30,6 +33,7 @@ import socialRoutes from "./routes/social";
 import followsRoutes from "./routes/follows";
 import feedRoutes from "./routes/feed";
 import notificationsRoutes from "./routes/notifications";
+import profilePostsRoutes from "./routes/profilePosts";
 import { AuthedRequest, requireAuth } from "./middleware/requireAuth";
 
 const app = express();
@@ -70,6 +74,7 @@ const endpointCatalog: EndpointDef[] = [
   { method: "get", path: "/db-test", tag: "System", summary: "Database connectivity test" },
   { method: "get", path: "/redis-test", tag: "System", summary: "Redis connectivity test" },
   { method: "get", path: "/search", tag: "System", summary: "Spotify search proxy" },
+  { method: "get", path: "/spotify/playlist", tag: "System", summary: "Resolve Spotify playlist tracks" },
   { method: "get", path: "/auth/ping", tag: "Auth" },
   { method: "get", path: "/auth/oauth/github/start", tag: "Auth" },
   { method: "get", path: "/auth/oauth/github/callback", tag: "Auth" },
@@ -131,6 +136,12 @@ const endpointCatalog: EndpointDef[] = [
   { method: "delete", path: "/follows/{targetUserId}", tag: "Follows", auth: true },
   { method: "get", path: "/follows/me", tag: "Follows", auth: true },
   { method: "get", path: "/follows/users/{userId}", tag: "Follows" },
+  { method: "get", path: "/profile-posts/popular", tag: "ProfilePosts" },
+  { method: "get", path: "/profile-posts/me", tag: "ProfilePosts", auth: true },
+  { method: "get", path: "/profile-posts/users/{userId}", tag: "ProfilePosts" },
+  { method: "post", path: "/profile-posts", tag: "ProfilePosts", auth: true },
+  { method: "patch", path: "/profile-posts/{id}", tag: "ProfilePosts", auth: true },
+  { method: "delete", path: "/profile-posts/{id}", tag: "ProfilePosts", auth: true },
   { method: "get", path: "/feed/me", tag: "Feed", auth: true },
   { method: "get", path: "/notifications/me", tag: "Notifications", auth: true },
 ];
@@ -167,6 +178,7 @@ const buildOpenApiSpec = (baseUrl: string) => {
       { name: "Collections" },
       { name: "Social" },
       { name: "Follows" },
+      { name: "ProfilePosts" },
       { name: "Feed" },
       { name: "Notifications" },
       { name: "Upload" },
@@ -193,6 +205,7 @@ app.use("/users", usersRoutes);
 app.use("/upload", uploadRoutes);
 app.use("/social", socialRoutes);
 app.use("/follows", followsRoutes);
+app.use("/profile-posts", profilePostsRoutes);
 app.use("/feed", feedRoutes);
 app.use("/notifications", notificationsRoutes);
 
@@ -662,6 +675,42 @@ app.get("/media/:type/:id", async (req, res) => {
       erreur: "échec de la récupération Spotify",
       status: e?.status ?? e?.response?.status ?? null,
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
+    });
+  }
+});
+
+app.get("/spotify/playlist", async (req, res) => {
+  try {
+    const urlRaw = Array.isArray(req.query.url) ? req.query.url[0] : req.query.url;
+    const idRaw = Array.isArray(req.query.id) ? req.query.id[0] : req.query.id;
+    const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
+    const limitNum = Number.parseInt(String(limitRaw ?? "150"), 10);
+    const limit = Number.isFinite(limitNum) ? Math.max(1, Math.min(300, limitNum)) : 150;
+
+    const playlistId = parseSpotifyPlaylistId(String(idRaw || urlRaw || "").trim());
+    if (!playlistId) {
+      return res.status(400).json({ erreur: "URL ou ID de playlist Spotify invalide" });
+    }
+
+    const data = await spotifyGetPlaylistTracks(playlistId, limit);
+    return res.json({
+      playlist: {
+        id: data.id,
+        name: data.name,
+        owner: data.owner,
+        image: data.image,
+        spotify_url: data.spotify_url,
+        total: data.total,
+      },
+      items: data.items,
+    });
+  } catch (e: any) {
+    const statusCode = e?.status ?? e?.response?.status ?? 500;
+    const details = e?.data ?? e?.response?.data ?? e?.message ?? null;
+    return res.status(statusCode).json({
+      erreur: "echec lecture playlist spotify",
+      status: statusCode,
+      details,
     });
   }
 });
@@ -1267,5 +1316,9 @@ ensureSpotifyLinksTable().catch((err) => {
 
 ensurePasswordResetTable().catch((err) => {
   console.error("Password reset table init failed (non-blocking):", err?.message || err);
+});
+
+ensureProfilePostsTable().catch((err) => {
+  console.error("Profile posts table init failed (non-blocking):", err?.message || err);
 });
 

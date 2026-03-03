@@ -76,6 +76,84 @@ async function getAccessToken(): Promise<string> {
 
 export type SpotifyType = "track" | "album" | "artist";
 
+export function parseSpotifyPlaylistId(input: string): string {
+  const raw = String(input || "").trim();
+  if (!raw) return "";
+  if (/^[A-Za-z0-9]+$/.test(raw)) return raw;
+  try {
+    const u = new URL(raw);
+    const m = String(u.pathname || "").match(/\/playlist\/([A-Za-z0-9]+)/i);
+    return String(m?.[1] || "").trim();
+  } catch {
+    return "";
+  }
+}
+
+export async function spotifyGetPlaylistTracks(playlistId: string, maxItems = 150) {
+  const token = await getAccessToken();
+  const safeId = String(playlistId || "").trim();
+  const wanted = Math.max(1, Math.min(300, Math.trunc(Number(maxItems) || 150)));
+  if (!safeId) {
+    const e = new Error("Missing playlist id");
+    (e as any).status = 400;
+    throw e;
+  }
+
+  const headers = { Authorization: `Bearer ${token}` };
+  const fields =
+    "id,name,images,external_urls,owner(display_name),tracks.items(track(id,name,artists(name),preview_url,external_urls,album(images))),tracks.next,tracks.total";
+
+  const first = await axios.get(`${SPOTIFY_API_BASE}/playlists/${encodeURIComponent(safeId)}`, {
+    headers,
+    params: { market: "FR", fields },
+    timeout: 15000,
+  });
+
+  const p: any = first.data || {};
+  const out: any[] = [];
+
+  const pushItems = (items: any[]) => {
+    for (const row of items || []) {
+      const t = row?.track;
+      if (!t?.id) continue;
+      out.push({
+        id: String(t.id || ""),
+        name: String(t.name || ""),
+        artists: Array.isArray(t.artists) ? t.artists.map((a: any) => String(a?.name || "")).filter(Boolean) : [],
+        preview_url: String(t.preview_url || ""),
+        spotify_url: String(t?.external_urls?.spotify || ""),
+        image: String(t?.album?.images?.[0]?.url || ""),
+      });
+      if (out.length >= wanted) break;
+    }
+  };
+
+  pushItems(Array.isArray(p?.tracks?.items) ? p.tracks.items : []);
+  let nextUrl = String(p?.tracks?.next || "");
+
+  while (nextUrl && out.length < wanted) {
+    const page = await axios.get(nextUrl, {
+      headers,
+      params: { market: "FR" },
+      timeout: 15000,
+    });
+    const pageData: any = page?.data || {};
+    const items = Array.isArray(pageData?.items) ? pageData.items : [];
+    pushItems(items);
+    nextUrl = String(pageData?.next || "");
+  }
+
+  return {
+    id: String(p?.id || safeId),
+    name: String(p?.name || ""),
+    owner: String(p?.owner?.display_name || ""),
+    image: String(p?.images?.[0]?.url || ""),
+    spotify_url: String(p?.external_urls?.spotify || ""),
+    total: Number(p?.tracks?.total || out.length),
+    items: out,
+  };
+}
+
 export async function spotifyRecommendations(params: {
   limit: number;
   market?: string;
