@@ -217,6 +217,125 @@ function installImageSrcGuard() {
 
 installImageSrcGuard();
 
+function installDevIssueOverlay() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (window.__supcontentDevOverlayInstalled) return;
+
+  const host = String(window.location.hostname || "").toLowerCase();
+  const forceOn = window.location.search.includes("debugOverlay=1") || localStorage.getItem("SUPCONTENT_DEV_OVERLAY") === "1";
+  const enabled = forceOn || host === "localhost" || host === "127.0.0.1";
+  if (!enabled) return;
+
+  window.__supcontentDevOverlayInstalled = true;
+
+  const issues = [];
+  let open = false;
+
+  const wrap = document.createElement("div");
+  wrap.id = "sc-dev-overlay";
+  wrap.innerHTML = `
+    <button id="scDevBadge" type="button" title="Issues dev">Issue 0</button>
+    <section id="scDevPanel" hidden>
+      <header>
+        <strong>Dev Issues</strong>
+        <button id="scDevClear" type="button">Clear</button>
+      </header>
+      <div id="scDevList"></div>
+    </section>
+  `;
+  document.body.appendChild(wrap);
+
+  const style = document.createElement("style");
+  style.textContent = `
+    #sc-dev-overlay{position:fixed;right:14px;bottom:14px;z-index:99999;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+    #scDevBadge{background:#b91c1c;color:#fff;border:1px solid #fecaca;border-radius:999px;padding:8px 12px;font-weight:800;cursor:pointer;box-shadow:0 8px 22px rgba(0,0,0,.35)}
+    #scDevPanel{position:absolute;right:0;bottom:46px;width:min(92vw,720px);max-height:min(70vh,560px);overflow:auto;background:#0b1220;color:#e2e8f0;border:1px solid rgba(248,113,113,.5);border-radius:12px;padding:10px;box-shadow:0 16px 38px rgba(0,0,0,.45)}
+    #scDevPanel header{display:flex;justify-content:space-between;align-items:center;gap:8px;position:sticky;top:0;background:#0b1220;padding-bottom:8px}
+    #scDevPanel button{background:#1f2937;color:#fff;border:1px solid #475569;border-radius:8px;padding:4px 8px;cursor:pointer}
+    #scDevList{display:grid;gap:8px}
+    .sc-dev-item{border:1px solid rgba(148,163,184,.35);border-radius:10px;padding:8px;background:#111827}
+    .sc-dev-item code{display:block;white-space:pre-wrap;word-break:break-word;color:#fca5a5}
+    .sc-dev-meta{font-size:12px;color:#93c5fd;margin-bottom:4px}
+  `;
+  document.head.appendChild(style);
+
+  const badge = wrap.querySelector("#scDevBadge");
+  const panel = wrap.querySelector("#scDevPanel");
+  const list = wrap.querySelector("#scDevList");
+  const clearBtn = wrap.querySelector("#scDevClear");
+
+  const render = () => {
+    badge.textContent = `Issue ${issues.length}`;
+    panel.hidden = !open;
+    if (!issues.length) {
+      list.innerHTML = `<div class="sc-dev-item"><div class="sc-dev-meta">No issue</div><code>Everything looks good.</code></div>`;
+      return;
+    }
+    list.innerHTML = issues
+      .slice()
+      .reverse()
+      .map((it) => {
+        return `<article class="sc-dev-item">
+          <div class="sc-dev-meta">${escapeHtml(it.type)} | ${escapeHtml(it.time)}</div>
+          <code>${escapeHtml(it.message)}</code>
+        </article>`;
+      })
+      .join("");
+  };
+
+  const pushIssue = (type, message) => {
+    issues.push({
+      type: String(type || "issue"),
+      message: String(message || "Unknown error"),
+      time: new Date().toLocaleTimeString(),
+    });
+    if (issues.length > 60) issues.shift();
+    render();
+  };
+
+  badge.addEventListener("click", () => {
+    open = !open;
+    render();
+  });
+  clearBtn.addEventListener("click", () => {
+    issues.length = 0;
+    render();
+  });
+
+  window.addEventListener("error", (ev) => {
+    const msg = ev?.error?.stack || ev?.message || "Runtime error";
+    pushIssue("runtime", msg);
+  });
+
+  window.addEventListener("unhandledrejection", (ev) => {
+    const reason = ev?.reason;
+    const msg = reason?.stack || reason?.message || String(reason || "Unhandled promise rejection");
+    pushIssue("promise", msg);
+  });
+
+  const nativeFetch = window.fetch?.bind(window);
+  if (nativeFetch) {
+    window.fetch = async (...args) => {
+      try {
+        const res = await nativeFetch(...args);
+        if (!res.ok) {
+          const url = String(args?.[0] || "");
+          pushIssue("fetch", `${res.status} ${res.statusText} | ${url}`);
+        }
+        return res;
+      } catch (err) {
+        const url = String(args?.[0] || "");
+        pushIssue("fetch", `${err?.message || "Failed to fetch"} | ${url}`);
+        throw err;
+      }
+    };
+  }
+
+  render();
+}
+
+installDevIssueOverlay();
+
 export function qs(name) {
   const params = new URLSearchParams(window.location.search);
   return params.get(name) || "";
