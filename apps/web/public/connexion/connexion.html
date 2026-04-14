@@ -3,94 +3,332 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Connexion — SUPCONTENT</title>
+  <title>Connexion - SUPCONTENT Music</title>
   <link rel="icon" type="image/svg+xml" href="/assets/logo-supconnect.svg" />
   <link rel="apple-touch-icon" href="/assets/logo-supconnect.svg" />
   <link rel="stylesheet" href="/noyau/styles.css" />
+  <style>
+    body.connexion-page{
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top,rgba(34,197,94,.18),transparent 18%),
+        radial-gradient(circle at right,rgba(168,85,247,.16),transparent 22%),
+        linear-gradient(180deg,#050505,#0d0d0d);
+      color:#fff;
+    }
+    .auth-shell{
+      width:min(1320px,calc(100vw - 24px));
+      margin:0 auto;
+      padding:28px 0 120px;
+      display:grid;
+      gap:24px;
+      grid-template-columns:minmax(0,1fr) minmax(340px,.95fr);
+    }
+    .auth-panel,
+    .auth-side{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:32px;
+      background:rgba(255,255,255,.05);
+      backdrop-filter:blur(20px);
+      box-shadow:0 24px 60px rgba(0,0,0,.24);
+    }
+    .auth-panel{padding:28px;}
+    .auth-side{padding:24px;}
+    .auth-brand{
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    .auth-brand-icon{
+      width:48px;
+      height:48px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:rgba(52,211,153,.15);
+      color:#86efac;
+      font-size:22px;
+    }
+    .auth-kicker{
+      margin:0;
+      font-size:12px;
+      font-weight:800;
+      letter-spacing:.24em;
+      text-transform:uppercase;
+      color:#86efac;
+    }
+    .auth-title{
+      margin:8px 0 0;
+      font-size:clamp(30px,4vw,46px);
+      line-height:1.04;
+      letter-spacing:-.04em;
+    }
+    .auth-subtitle{
+      margin:16px 0 0;
+      max-width:760px;
+      color:#9ca3af;
+      font-size:14px;
+      line-height:1.6;
+    }
+    .auth-features{
+      margin-top:24px;
+      display:grid;
+      gap:16px;
+      grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+    .auth-feature,
+    .auth-card,
+    .auth-status,
+    .auth-test{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:24px;
+      background:rgba(0,0,0,.22);
+    }
+    .auth-feature{padding:18px;}
+    .auth-feature-icon{
+      width:44px;
+      height:44px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:rgba(52,211,153,.15);
+      color:#86efac;
+      font-size:18px;
+    }
+    .auth-feature h3{
+      margin:14px 0 0;
+      font-size:16px;
+    }
+    .auth-feature p{
+      margin:8px 0 0;
+      color:#9ca3af;
+      font-size:14px;
+      line-height:1.55;
+    }
+    .auth-card{
+      margin-top:24px;
+      padding:18px;
+    }
+    .auth-tabs,
+    .auth-actions,
+    .auth-side-actions{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+    .auth-tab,
+    .auth-btn,
+    .auth-ghost{
+      min-height:44px;
+      border-radius:999px;
+      padding:11px 16px;
+      font:inherit;
+      font-weight:700;
+      cursor:pointer;
+    }
+    .auth-tab,
+    .auth-ghost{
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.08);
+      color:#d4d4d8;
+    }
+    .auth-tab.is-active,
+    .auth-btn{
+      border:1px solid #34d399;
+      background:#34d399;
+      color:#04130d;
+    }
+    .auth-form{
+      margin-top:20px;
+      display:grid;
+      gap:14px;
+    }
+    .auth-row{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:18px;
+      background:rgba(0,0,0,.25);
+      padding:14px 16px;
+    }
+    .auth-row-icon{
+      color:#9ca3af;
+      font-size:18px;
+      flex:0 0 auto;
+    }
+    .auth-input,
+    .auth-textarea{
+      width:100%;
+      border:0;
+      outline:0;
+      background:transparent;
+      color:#fff;
+      font:inherit;
+      font-size:14px;
+    }
+    .auth-input::placeholder,
+    .auth-textarea::placeholder{color:#71717a;}
+    .auth-toggle{
+      border:0;
+      background:transparent;
+      color:#9ca3af;
+      cursor:pointer;
+      padding:0;
+      font-size:17px;
+      flex:0 0 auto;
+    }
+    .auth-helper{
+      margin:2px 0 0;
+      color:#71717a;
+      font-size:12px;
+      line-height:1.45;
+    }
+    .auth-side h2{
+      margin:0;
+      font-size:28px;
+      line-height:1.12;
+    }
+    .auth-status,
+    .auth-test{
+      padding:16px;
+      margin-top:18px;
+    }
+    .auth-status-head{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:14px;
+      font-weight:700;
+    }
+    .auth-status-head.is-ok{color:#a7f3d0;}
+    .auth-status-head.is-warn{color:#fde68a;}
+    .auth-status p,
+    .auth-side small{
+      color:#9ca3af;
+      line-height:1.6;
+    }
+    .auth-token-block + .auth-token-block{margin-top:16px;}
+    .auth-token-label{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      color:#fff;
+      font-size:14px;
+      font-weight:700;
+    }
+    .auth-token-value{
+      margin-top:8px;
+      color:#9ca3af;
+      word-break:break-all;
+      font-size:13px;
+      line-height:1.5;
+    }
+    .auth-test.is-ok{
+      border-color:rgba(16,185,129,.24);
+      background:rgba(16,185,129,.12);
+      color:#b7f7d7;
+    }
+    .auth-test.is-bad{
+      border-color:rgba(239,68,68,.24);
+      background:rgba(239,68,68,.12);
+      color:#fecaca;
+    }
+    @media (max-width: 980px){
+      .auth-shell{grid-template-columns:1fr;}
+      .auth-features{grid-template-columns:1fr;}
+    }
+  </style>
 </head>
-
-<body>
-  <div class="nav">
-    <div class="nav-inner">
-      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
-      <div class="menu">
-        <a class="pill" href="/recherche/recherche.html">Recherche musique</a>
-        <a class="pill" href="/utilisateurs/utilisateurs.html">Recherche utilisateurs</a>
-      </div>
-    </div>
-  </div>
-
-  <div class="container">
-    <div class="grid">
-      <div class="card span6">
-        <h2>Créer un compte</h2>
-
-        <!-- action=javascript:void(0) évite toute navigation même si JS crash -->
-        <form id="registerForm" class="form" method="post" action="javascript:void(0)">
-          <div class="two">
-            <div>
-              <label>Email</label>
-              <input class="input" name="email" type="email" required placeholder="test@test.com" autocomplete="email" />
-            </div>
-            <div>
-              <label>Nom affiché</label>
-              <input class="input" name="displayName" required placeholder="Farouk" autocomplete="nickname" />
-            </div>
-          </div>
-
-          <div>
-            <label>Mot de passe (min 8)</label>
-            <input class="input" name="password" type="password" minlength="8" required placeholder="Password123!" autocomplete="new-password" pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,}" title="8+ caractères avec majuscule, minuscule, chiffre et caractère spécial." />
-          </div>
-
-          <button class="btn primary" type="submit">S'inscrire</button>
-          <small>Après inscription, on stocke les tokens en localStorage. Mot de passe: 8+ caractères avec majuscule, minuscule, chiffre, spécial.</small>
-        </form>
+<body class="connexion-page">
+  <div class="auth-shell">
+    <section class="auth-panel">
+      <div class="auth-brand">
+        <div class="auth-brand-icon">♪</div>
+        <div>
+          <p class="auth-kicker">Connexion</p>
+          <h1 class="auth-title">Entre dans ton univers musical</h1>
+        </div>
       </div>
 
-      <div class="card span6">
-        <h2>Se connecter</h2>
+      <p class="auth-subtitle">
+        Page dediee strictement a la connexion : login, inscription, mot de passe oublie et OAuth Google.
+      </p>
 
-        <div class="row" style="margin-bottom:10px">
-          <button id="googleLoginBtn" class="btn" type="button">Continuer avec Google</button>
+      <div id="authFeatures" class="auth-features"></div>
+
+      <div class="auth-card">
+        <div id="authTabs" class="auth-tabs">
+          <button class="auth-tab is-active" type="button" data-mode="login">Connexion</button>
+          <button class="auth-tab" type="button" data-mode="register">Inscription</button>
+          <button class="auth-tab" type="button" data-mode="forgot">Mot de passe oublie</button>
         </div>
 
-        <form id="loginForm" class="form" method="post" action="javascript:void(0)">
-          <div>
-            <label>Email</label>
-            <input class="input" name="email" type="email" required autocomplete="email" />
+        <form id="authForm" class="auth-form" novalidate>
+          <div id="authRegisterNameRow" class="auth-row" hidden>
+            <span class="auth-row-icon">👤</span>
+            <input id="authNameInput" class="auth-input" name="displayName" placeholder="Nom d'affichage" autocomplete="nickname" />
           </div>
 
-          <div>
-            <label>Mot de passe</label>
-            <input class="input" name="password" type="password" required autocomplete="current-password" />
+          <div class="auth-row">
+            <span class="auth-row-icon">@</span>
+            <input id="authEmailInput" class="auth-input" name="email" type="email" placeholder="Adresse email" autocomplete="email" />
           </div>
 
-          <button class="btn primary" type="submit">Connexion</button>
-          <button id="forgotPasswordBtn" class="btn" type="button">J'ai oublie mon mot de passe</button>
+          <div id="authPasswordRow" class="auth-row">
+            <span class="auth-row-icon">🔒</span>
+            <input id="authPasswordInput" class="auth-input" name="password" type="password" placeholder="Mot de passe" autocomplete="current-password" />
+            <button id="authPasswordToggle" class="auth-toggle" type="button" aria-label="Afficher le mot de passe">👁</button>
+          </div>
+
+          <p id="authHelperText" class="auth-helper">Connexion classique avec email et mot de passe.</p>
+
+          <div class="auth-actions">
+            <button id="authSubmitButton" class="auth-btn" type="submit">Se connecter →</button>
+            <button id="authGoogleButton" class="auth-ghost" type="button">Continuer avec Google</button>
+          </div>
         </form>
-
-        <hr/>
-
-        <div class="row">
-          <button id="logoutBtn" class="btn danger" type="button">Déconnexion (local)</button>
-          <a class="btn" href="/profil/profil.html">Voir mon profil</a>
-        </div>
-
-        <small>
-          La déconnexion invalide la session côté serveur puis efface les tokens côté navigateur.
-        </small>
       </div>
-    </div>
+    </section>
+
+    <aside class="auth-side">
+      <h2>Etat de session</h2>
+
+      <div class="auth-status">
+        <div id="authStatusHead" class="auth-status-head is-warn">
+          <span>⚠</span>
+          <span>Non connecte</span>
+        </div>
+        <p id="authDiagnosticText">Aucune session active</p>
+      </div>
+
+      <div class="auth-status">
+        <p class="auth-kicker" style="color:#9ca3af;">Tokens</p>
+        <div class="auth-token-block">
+          <div class="auth-token-label"><span>🛡</span><span>Access Token</span></div>
+          <div id="authAccessToken" class="auth-token-value">Aucun</div>
+        </div>
+        <div class="auth-token-block">
+          <div class="auth-token-label"><span>🔑</span><span>Refresh Token</span></div>
+          <div id="authRefreshToken" class="auth-token-value">Aucun</div>
+        </div>
+        <div class="auth-side-actions" style="margin-top:16px;">
+          <button id="authDiagnosticButton" class="auth-ghost" type="button">Diagnostic</button>
+          <button id="authLogoutButton" class="auth-ghost" type="button">Deconnexion</button>
+        </div>
+      </div>
+
+      <div class="auth-status">
+        <p class="auth-kicker" style="color:#9ca3af;">Retour interface</p>
+        <p id="authFeedbackText">Connexion prete</p>
+      </div>
+
+      <div id="authTestsBox" class="auth-test is-ok">Tests connexion passes</div>
+    </aside>
   </div>
 
   <div id="toast" class="toast"></div>
-
-  <!-- ✅ script séparé : tu verras maintenant GET /connexion/connexion.js dans tes logs -->
   <script type="module" src="/connexion/connexion.js"></script>
   <script type="module" src="/noyau/footer.js"></script>
 </body>
 </html>
-
-
-

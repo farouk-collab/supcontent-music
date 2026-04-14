@@ -1,264 +1,196 @@
-import { apiFetch, toast, escapeHtml, getTokens, serverLogout, resolveMediaUrl } from "/noyau/app.js";
-import { applyI18n } from "/noyau/i18n.js";
+import {
+  apiFetch,
+  toast,
+  escapeHtml,
+  getTokens,
+  serverLogout,
+  resolveMediaUrl,
+  readAppPreferences,
+  saveAppPreferences,
+  applyAppPreferences,
+  APP_PREFERENCES_EVENT,
+} from "/noyau/app.js";
+import { applyI18n, LANGUAGE_EVENT } from "/noyau/i18n.js";
 
-const profileView = document.querySelector("#profileView");
-const socialMeta = document.querySelector("#socialMeta");
-const socialLists = document.querySelector("#socialLists");
-const refreshBtn = document.querySelector("#refreshBtn");
-const logoutBtn = document.querySelector("#logoutBtn");
-const deleteAccountBtn = document.querySelector("#deleteAccountBtn");
-const accessLenEl = document.querySelector("#accessLen");
-const refreshLenEl = document.querySelector("#refreshLen");
-const statusBadge = document.querySelector("#statusBadge");
-const diagBox = document.querySelector("#diagBox");
-const editBtn = document.querySelector("#editBtn");
-const profilePostsSection = document.querySelector("#profilePostsSection");
-const addContentBtn = document.querySelector("#addContentBtn");
-const composerModal = document.querySelector("#composerModal");
-const composerBackdrop = document.querySelector("#composerBackdrop");
-const closeComposerBtn = document.querySelector("#closeComposerBtn");
-const composerForm = document.querySelector("#composerForm");
-const composerPreview = document.querySelector("#composerPreview");
-const publicationMetaFields = document.querySelector("#publicationMetaFields");
-const storyMetaFields = document.querySelector("#storyMetaFields");
-const profileMediaModal = document.querySelector("#profileMediaModal");
-const profileMediaBackdrop = document.querySelector("#profileMediaBackdrop");
-const profileMediaBody = document.querySelector("#profileMediaBody");
-
-let currentProfileUserId = "";
-let isOwnProfile = false;
-let pendingUploadDataUrl = "";
-let pendingUploadType = "";
-let composerBound = false;
-let composerUserId = "";
-let profilePostsTab = "publications";
+const PROFILE_CACHE_KEY = "supcontent-profile-cache-v5";
 const STORY_TTL_MS = 24 * 60 * 60 * 1000;
-const profilePostsCache = new Map();
+const DEFAULT_SITE_SETTINGS = {
+  theme: "Sombre",
+  notifications: "Activees",
+  privacy: "Profil public",
+  accentColor: "Vert emeraude",
+};
+const DEFAULT_NOTIFICATIONS = [
+  { id: 1, type: "follow", user: "Ayo.wav", text: "a commence a te suivre", time: "Il y a 2 min", read: false },
+  { id: 2, type: "story", user: "Nina.beats", text: "a ajoute une nouvelle story", time: "Il y a 8 min", read: false },
+  { id: 3, type: "post", user: "Luna.mix", text: "a aime ta derniere publication", time: "Il y a 1 h", read: true },
+];
+
+const state = {
+  currentProfile: null,
+  currentProfileId: "",
+  isOwnProfile: false,
+  isFollowing: false,
+  activeTab: "posts",
+  composerType: "photo",
+  pendingUploadDataUrl: "",
+  pendingUploadType: "",
+  feedback: "Profil pret · donnees mises en cache",
+  posts: [],
+  notifications: sanitizeNotifications(DEFAULT_NOTIFICATIONS),
+  cache: loadProfileCache(),
+};
+
+const PROFILE_LIMITS = {
+  displayNameMin: 2,
+  displayNameMax: 30,
+  locationMax: 80,
+  bioMax: 160,
+  captionMax: 600,
+};
+
+const els = {
+  toolbar: document.querySelector("#profileToolbar"),
+  notificationsBtn: document.querySelector("#notificationsBtn"),
+  notificationsBadge: document.querySelector("#notificationsBadge"),
+  notificationsPanel: document.querySelector("#notificationsPanel"),
+  notificationsList: document.querySelector("#notificationsList"),
+  markAllReadBtn: document.querySelector("#markAllReadBtn"),
+  profileCover: document.querySelector("#profileCover"),
+  birthdayRain: document.querySelector("#birthdayRain"),
+  profileAvatar: document.querySelector("#profileAvatar"),
+  profileDisplayName: document.querySelector("#profileDisplayName"),
+  verifiedBadge: document.querySelector("#verifiedBadge"),
+  profileLocationChip: document.querySelector("#profileLocationChip"),
+  profileBirthdayChip: document.querySelector("#profileBirthdayChip"),
+  birthdayTodayChip: document.querySelector("#birthdayTodayChip"),
+  profileBio: document.querySelector("#profileBio"),
+  followToggleBtn: document.querySelector("#followToggleBtn"),
+  musicalProfileBtn: document.querySelector("#musicalProfileBtn"),
+  socialLinksRow: document.querySelector("#socialLinksRow"),
+  followersCount: document.querySelector("#followersCount"),
+  followingCount: document.querySelector("#followingCount"),
+  followersList: document.querySelector("#followersList"),
+  followingList: document.querySelector("#followingList"),
+  contentHeroTitle: document.querySelector("#contentHeroTitle"),
+  contentHeroDescription: document.querySelector("#contentHeroDescription"),
+  highlightsRow: document.querySelector("#highlightsRow"),
+  profileContentList: document.querySelector("#profileContentList"),
+  postsCount: document.querySelector("#postsCount"),
+  storiesCount: document.querySelector("#storiesCount"),
+  cachedPostsCount: document.querySelector("#cachedPostsCount"),
+  pendingUploadsCount: document.querySelector("#pendingUploadsCount"),
+  feedbackText: document.querySelector("#feedbackText"),
+  recentPostsList: document.querySelector("#recentPostsList"),
+  settingsSummary: document.querySelector("#settingsSummary"),
+  refreshBtn: document.querySelector("#refreshBtn"),
+  logoutBtn: document.querySelector("#logoutBtn"),
+  deleteAccountBtn: document.querySelector("#deleteAccountBtn"),
+  openComposerBtn: document.querySelector("#openComposerBtn"),
+  openEditProfileBtn: document.querySelector("#openEditProfileBtn"),
+  openSiteSettingsBtn: document.querySelector("#openSiteSettingsBtn"),
+  summaryEditBtn: document.querySelector("#summaryEditBtn"),
+  summarySettingsBtn: document.querySelector("#summarySettingsBtn"),
+  composerModal: document.querySelector("#composerModal"),
+  closeComposerBtn: document.querySelector("#closeComposerBtn"),
+  cancelComposerBtn: document.querySelector("#cancelComposerBtn"),
+  composerForm: document.querySelector("#composerForm"),
+  composerPhotoBtn: document.querySelector("#composerPhotoBtn"),
+  composerVideoBtn: document.querySelector("#composerVideoBtn"),
+  composerStoryBtn: document.querySelector("#composerStoryBtn"),
+  composerFileInput: document.querySelector("#composerFileInput"),
+  composerCaption: document.querySelector("#composerCaption"),
+  composerPreview: document.querySelector("#composerPreview"),
+  storyMetaFields: document.querySelector("#storyMetaFields"),
+  publicationMetaFields: document.querySelector("#publicationMetaFields"),
+  storySaveProfile: document.querySelector("#storySaveProfile"),
+  metaLocation: document.querySelector("#metaLocation"),
+  metaTags: document.querySelector("#metaTags"),
+  metaVisibility: document.querySelector("#metaVisibility"),
+  metaAllowLikes: document.querySelector("#metaAllowLikes"),
+  metaAllowComments: document.querySelector("#metaAllowComments"),
+  editProfileModal: document.querySelector("#editProfileModal"),
+  closeEditProfileBtn: document.querySelector("#closeEditProfileBtn"),
+  cancelEditProfileBtn: document.querySelector("#cancelEditProfileBtn"),
+  saveEditProfileBtn: document.querySelector("#saveEditProfileBtn"),
+  displayNameInput: document.querySelector("#displayNameInput"),
+  avatarLabelInput: document.querySelector("#avatarLabelInput"),
+  locationInput: document.querySelector("#locationInput"),
+  bioInput: document.querySelector("#bioInput"),
+  siteSettingsModal: document.querySelector("#siteSettingsModal"),
+  closeSiteSettingsBtn: document.querySelector("#closeSiteSettingsBtn"),
+  cancelSiteSettingsBtn: document.querySelector("#cancelSiteSettingsBtn"),
+  saveSiteSettingsBtn: document.querySelector("#saveSiteSettingsBtn"),
+  themeChoices: document.querySelector("#themeChoices"),
+  accentChoices: document.querySelector("#accentChoices"),
+  notificationChoices: document.querySelector("#notificationChoices"),
+  privacyChoices: document.querySelector("#privacyChoices"),
+  profileMediaModal: document.querySelector("#profileMediaModal"),
+  closeProfileMediaBtn: document.querySelector("#closeProfileMediaBtn"),
+  profileMediaTitle: document.querySelector("#profileMediaTitle"),
+  profileMediaBody: document.querySelector("#profileMediaBody"),
+};
 
 function qs(name) {
   return new URLSearchParams(window.location.search).get(name) || "";
 }
 
-function isBirthdayToday(birthDateRaw) {
-  const raw = String(birthDateRaw || "").trim();
-  if (!raw) return false;
-
-  const isoMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (isoMatch) {
-    const mm = Number(isoMatch[2]);
-    const dd = Number(isoMatch[3]);
-    if (!Number.isFinite(mm) || !Number.isFinite(dd)) return false;
-    const now = new Date();
-    return now.getMonth() + 1 === mm && now.getDate() === dd;
+function sanitizeNotification(item, index = 0) {
+  if (!item || typeof item !== "object") {
+    return { id: `fallback-${index}`, type: "system", user: "Systeme", text: "Notification indisponible", time: "Maintenant", read: true };
   }
-
-  const parsed = new Date(raw);
-  if (!Number.isFinite(parsed.getTime())) return false;
-  const now = new Date();
-  return now.getMonth() === parsed.getMonth() && now.getDate() === parsed.getDate();
+  return {
+    id: item.id ?? `generated-${index}`,
+    type: item.type ?? "system",
+    user: item.user ?? "Systeme",
+    text: item.text ?? "Nouvelle activite",
+    time: item.time ?? "Maintenant",
+    read: Boolean(item.read),
+  };
 }
 
-function updateTokenStats() {
-  const t = getTokens();
-  accessLenEl.textContent = String(t.accessToken?.length || 0);
-  refreshLenEl.textContent = String(t.refreshToken?.length || 0);
-  statusBadge.textContent = t.accessToken ? "Connecte" : "Non connecte";
-  diagBox.innerHTML = `
-    <div>Origin: <code>${escapeHtml(location.origin)}</code></div>
-    <div>Access token present: <strong>${t.accessToken ? "OUI" : "NON"}</strong></div>
-    <div>Refresh token present: <strong>${t.refreshToken ? "OUI" : "NON"}</strong></div>
-  `;
-  return t;
+function sanitizeNotifications(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map((item, index) => sanitizeNotification(item, index));
 }
 
-function renderNeedAuth(msg) {
-  profileView.innerHTML = `
-    <div style="color:#ffb0b0"><strong>Connexion requise</strong></div>
-    <div style="margin-top:10px"><a class="btn primary" href="/connexion/connexion.html">Se connecter</a></div>
-  `;
-  socialMeta.innerHTML = "";
-  socialLists.innerHTML = "";
-  profilePostsSection.innerHTML = "";
+function loadProfileCache() {
+  try {
+    const raw = window.localStorage.getItem(PROFILE_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    const appPrefs = readAppPreferences();
+    return {
+      pendingUploads: Array.isArray(parsed.pendingUploads) ? parsed.pendingUploads : [],
+      draftAvatarLabel: String(parsed.draftAvatarLabel || "FS").slice(0, 2).toUpperCase(),
+      siteSettings: {
+        ...DEFAULT_SITE_SETTINGS,
+        theme: appPrefs.theme || DEFAULT_SITE_SETTINGS.theme,
+        accentColor: appPrefs.accentColor || DEFAULT_SITE_SETTINGS.accentColor,
+        ...(parsed.siteSettings || {}),
+      },
+    };
+  } catch {
+    return {
+      pendingUploads: [],
+      draftAvatarLabel: "FS",
+      siteSettings: { ...DEFAULT_SITE_SETTINGS, ...readAppPreferences() },
+    };
+  }
 }
 
-function renderProfileCard(u, opts = {}) {
-  const coverUrl = resolveMediaUrl(u.cover_url || "");
-  const avatarUrl = resolveMediaUrl(u.avatar_url || "");
-  const coverStyle = coverUrl ? `background-image:url('${escapeHtml(coverUrl)}');` : "";
-
-  const avatar = avatarUrl
-    ? `<img alt="" src="${escapeHtml(avatarUrl)}" class="snap-avatar-img" />`
-    : `<div class="snap-avatar-fallback">${escapeHtml(String(u.display_name || "U").slice(0, 1).toUpperCase())}</div>`;
-
-  const showFollow = Boolean(opts.showFollow);
-  const following = Boolean(opts.following);
-  const isSelf = !showFollow;
-  const followBtn = showFollow
-    ? `<button id="followToggleBtn" class="btn ${following ? "" : "primary"}" type="button">${following ? "Ne plus suivre" : "Suivre"}</button>`
-    : "";
-  const followersCount = Number(opts.followersCount || 0);
-  const location = String(u.location || "").trim();
-  const birthDate = String(u.birth_date || "").trim();
-  const birthdayToday = isBirthdayToday(birthDate);
-  const gender = String(u.gender || "").trim();
-  const website = String(u.website || "").trim();
-  const infoBadges = [
-    location ? `<span class="pill">${escapeHtml(location)}</span>` : "",
-    gender ? `<span class="pill">Sexe: ${escapeHtml(gender)}</span>` : "",
-    birthDate ? `<span class="pill">Anniv: ${escapeHtml(birthDate.slice(0, 10))}</span>` : "",
-    website ? `<a class="pill" href="${escapeHtml(website)}" target="_blank" rel="noreferrer">Site</a>` : "",
-  ]
-    .filter(Boolean)
-    .join("");
-
-  profileView.innerHTML = `
-    <section class="snap-profile">
-      <div class="snap-hero" style="${coverStyle}">
-        ${
-          birthdayToday
-            ? `<div class="birthday-burst" aria-hidden="true">
-                <span class="birthday-emoji e1">🎁</span>
-                <span class="birthday-emoji e2">🎉</span>
-                <span class="birthday-emoji e3">🎂</span>
-                <span class="birthday-emoji e4">🎊</span>
-                <span class="birthday-emoji e5">🥳</span>
-                <span class="birthday-emoji e6">🎈</span>
-                <span class="birthday-emoji e7">🎁</span>
-                <span class="birthday-emoji e8">🎉</span>
-              </div>`
-            : ""
-        }
-        <div class="snap-topbar">
-          <div></div>
-          <div class="row" style="gap:8px">
-            ${isSelf ? `<a class="snap-icon-btn" href="/profil/profil-modifier.html" aria-label="Modifier">&#9998;</a>` : ""}
-            ${isSelf ? `<a class="snap-icon-btn" href="/parametres/parametres.html" aria-label="Parametres">&#9881;</a>` : ""}
-          </div>
-        </div>
-        <div class="snap-overlay"></div>
-        <div class="snap-identity-wrap">
-          <div class="snap-avatar">${avatar}</div>
-          <div>
-            <div class="snap-name">${escapeHtml(u.display_name || "-")}</div>
-            <div class="snap-sub">@${escapeHtml(u.username || "username")} · ${followersCount} followers</div>
-          </div>
-        </div>
-      </div>
-      <div class="snap-profile-main">
-        ${
-          birthdayToday
-            ? `<div class="birthday-pill">Joyeux anniversaire 🎉🎂🎁</div>`
-            : ""
-        }
-        <div class="row" style="gap:10px;flex-wrap:wrap">
-          ${showFollow ? followBtn : `<button class="btn" type="button">Mon compte</button>`}
-          ${isSelf ? `<a class="btn" href="/parametres/parametres.html">Parametres</a>` : ""}
-        </div>
-        ${infoBadges ? `<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">${infoBadges}</div>` : ""}
-        <p class="snap-bio">${escapeHtml(u.bio || "Bio vide...")}</p>
-        <small style="color:var(--muted)">${escapeHtml(u.email || "")}</small>
-      </div>
-    </section>
-  `;
-}
-
-function renderSocialMeta(data) {
-  socialMeta.innerHTML = `
-    <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:8px">
-      <span class="badge">Followers: ${Number(data.followers_count || 0)}</span>
-      <span class="badge">Following: ${Number(data.following_count || 0)}</span>
-    </div>
-  `;
-}
-
-function renderSocialLists(data) {
-  const followers = Array.isArray(data.followers) ? data.followers : [];
-  const following = Array.isArray(data.following) ? data.following : [];
-  socialLists.innerHTML = `
-    <div class="grid" style="margin-top:8px">
-      <div class="card span6">
-        <h3 style="margin:0 0 8px 0">Followers</h3>
-        ${
-          followers.length
-            ? followers
-                .slice(0, 10)
-                .map(
-                  (u) =>
-                    `<a class="pill" href="/profil/profil.html?user=${encodeURIComponent(String(u.id || ""))}" style="display:inline-flex;margin:4px 6px 0 0">@${escapeHtml(
-                      u.username || u.display_name || "user"
-                    )}</a>`
-                )
-                .join("")
-            : `<small style="color:var(--muted)">Aucun follower</small>`
-        }
-      </div>
-      <div class="card span6">
-        <h3 style="margin:0 0 8px 0">Following</h3>
-        ${
-          following.length
-            ? following
-                .slice(0, 10)
-                .map(
-                  (u) =>
-                    `<a class="pill" href="/profil/profil.html?user=${encodeURIComponent(String(u.id || ""))}" style="display:inline-flex;margin:4px 6px 0 0">@${escapeHtml(
-                      u.username || u.display_name || "user"
-                    )}</a>`
-                )
-                .join("")
-            : `<small style="color:var(--muted)">Aucun abonnement</small>`
-        }
-      </div>
-    </div>
-  `;
-}
-
-function postStorageKey(userId) {
-  return `supcontent_profile_posts_${String(userId || "me")}`;
-}
-
-function normalizeEntryType(value) {
-  const v = String(value || "").toLowerCase();
-  if (v === "story") return "story";
-  if (v === "post") return "publication";
-  return "publication";
-}
-
-function normalizeMediaKind(value) {
-  const v = String(value || "").toLowerCase();
-  return v === "video" ? "video" : "image";
-}
-
-function toIsoMs(iso) {
-  const ms = new Date(String(iso || "")).getTime();
-  return Number.isFinite(ms) ? ms : NaN;
-}
-
-function isSavedStory(entry) {
-  return normalizeEntryType(entry?.entry_type) === "story" && Boolean(entry?.meta?.saved_to_profile);
-}
-
-function isStoryExpired(entry) {
-  if (normalizeEntryType(entry?.entry_type) !== "story") return false;
-  const createdMs = toIsoMs(entry?.created_at);
-  if (!Number.isFinite(createdMs)) return false;
-  return Date.now() - createdMs > STORY_TTL_MS;
-}
-
-function storyLabel(entry) {
-  const raw = String(entry?.caption || "").trim();
-  if (raw) return raw.slice(0, 18);
-  return "Story";
+function persistCache() {
+  try {
+    window.localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(state.cache));
+  } catch {
+    // ignore
+  }
 }
 
 function normalizePostMeta(raw) {
   const tagsRaw = Array.isArray(raw?.tags) ? raw.tags : String(raw?.tags || "").split(",");
-  const tags = tagsRaw
-    .map((t) => String(t || "").trim())
-    .filter(Boolean)
-    .slice(0, 8);
   return {
     location: String(raw?.location || "").trim().slice(0, 80),
-    tags,
+    tags: tagsRaw.map((tag) => String(tag || "").trim()).filter(Boolean).slice(0, 8),
     visibility: String(raw?.visibility || "public") === "followers" ? "followers" : "public",
     allow_likes: raw?.allow_likes !== false,
     allow_comments: raw?.allow_comments !== false,
@@ -267,665 +199,598 @@ function normalizePostMeta(raw) {
 }
 
 function normalizePostEntry(raw) {
-  const entryType = normalizeEntryType(raw?.entry_type);
-  const mediaKind = normalizeMediaKind(raw?.media_kind);
-  const caption = String(raw?.caption || raw?.description || "").trim();
-  const comments = Array.isArray(raw?.comments) ? raw.comments : [];
-  const rawMedia = String(raw?.media_data || "").trim();
-  const mediaData = resolveMediaUrl(rawMedia) || rawMedia;
-  const meta = normalizePostMeta({
-    ...(raw?.meta || raw || {}),
-    saved_to_profile: raw?.meta?.saved_to_profile ?? raw?.saved_to_profile ?? raw?.story_saved,
-  });
   return {
     id: String(raw?.id || crypto.randomUUID()),
     user_id: String(raw?.user_id || ""),
-    entry_type: entryType,
-    media_kind: mediaKind,
-    media_data: mediaData,
-    caption,
-    description: caption,
+    entry_type: String(raw?.entry_type || "publication") === "story" ? "story" : "publication",
+    media_kind: String(raw?.media_kind || "image") === "video" ? "video" : "image",
+    media_data: resolveMediaUrl(String(raw?.media_data || "")) || String(raw?.media_data || ""),
+    caption: String(raw?.caption || "").trim(),
     likes_count: Number(raw?.likes_count || 0),
-    comments_count: Number(raw?.comments_count || comments.length || 0),
-    comments,
-    meta,
-    saved_to_profile: entryType === "story" ? Boolean(meta.saved_to_profile) : false,
+    comments_count: Number(raw?.comments_count || 0),
+    meta: normalizePostMeta({ ...(raw?.meta || {}), saved_to_profile: raw?.meta?.saved_to_profile ?? raw?.saved_to_profile }),
     created_at: raw?.created_at || new Date().toISOString(),
   };
 }
 
-function readPosts(userId) {
-  const key = String(userId || "");
-  const cached = profilePostsCache.get(key);
-  if (!Array.isArray(cached)) return [];
-  return cached;
+function isStoryExpired(post) {
+  if (post?.entry_type !== "story") return false;
+  const createdAt = new Date(post.created_at).getTime();
+  return Number.isFinite(createdAt) ? Date.now() - createdAt > STORY_TTL_MS : false;
 }
 
-function writePosts(userId, entries) {
-  const normalized = Array.isArray(entries) ? entries.map((p) => normalizePostEntry(p)) : [];
-  const active = normalized.filter((p) => !(isStoryExpired(p) && !isSavedStory(p)));
-  const key = String(userId || "");
-  profilePostsCache.set(key, active);
-  try {
-    localStorage.setItem(postStorageKey(userId), JSON.stringify(active));
-  } catch {
-    // ignore
-  }
-}
-
-function readLegacyLocalPosts(userId) {
-  try {
-    const raw = localStorage.getItem(postStorageKey(userId));
-    const parsed = raw ? JSON.parse(raw) : [];
-    if (!Array.isArray(parsed)) return [];
-    return parsed.map((p) => normalizePostEntry(p));
-  } catch {
-    return [];
-  }
-}
-
-async function fetchRemotePosts(userId, isSelf) {
-  if (!userId) return [];
-  const path = isSelf ? "/profile-posts/me" : `/profile-posts/users/${encodeURIComponent(String(userId))}`;
-  const data = await apiFetch(path);
-  const items = Array.isArray(data?.items) ? data.items.map((p) => normalizePostEntry(p)) : [];
-  writePosts(userId, items);
-  return items;
-}
-
-async function migrateLegacyPostsIfNeeded(userId) {
-  if (!userId) return;
-  const remote = readPosts(userId);
-  if (remote.length > 0) return;
-  const legacy = readLegacyLocalPosts(userId);
-  if (!legacy.length) return;
-
-  for (const entry of legacy) {
-    try {
-      await apiFetch("/profile-posts", {
-        method: "POST",
-        body: JSON.stringify({
-          entry_type: entry.entry_type,
-          media_kind: entry.media_kind,
-          media_data: entry.media_data,
-          caption: entry.caption || "",
-          likes_count: Number(entry.likes_count || 0),
-          comments_count: Number(entry.comments_count || 0),
-          comments: Array.isArray(entry.comments) ? entry.comments : [],
-          meta: normalizePostMeta(entry.meta || {}),
-          created_at: entry.created_at,
-        }),
-      });
-    } catch {
-      // keep going
-    }
-  }
-
-  try {
-    localStorage.removeItem(postStorageKey(userId));
-  } catch {
-    // ignore
-  }
-  await fetchRemotePosts(userId, true);
+function isBirthdayToday(rawDate) {
+  const parsed = new Date(String(rawDate || ""));
+  if (!Number.isFinite(parsed.getTime())) return false;
+  const now = new Date();
+  return now.getMonth() === parsed.getMonth() && now.getDate() === parsed.getDate();
 }
 
 function formatRelativeFromIso(iso) {
-  const ms = Date.now() - new Date(iso).getTime();
-  if (!Number.isFinite(ms) || ms < 0) return "a l'instant";
-  const minutes = Math.floor(ms / 60000);
-  if (minutes < 1) return "a l'instant";
-  if (minutes < 60) return `il y a ${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `il y a ${hours} h`;
-  const days = Math.floor(hours / 24);
-  return `il y a ${days} j`;
+  const diff = Date.now() - new Date(iso).getTime();
+  if (!Number.isFinite(diff) || diff < 60000) return "A l'instant";
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `Il y a ${mins} min`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `Il y a ${hours} h`;
+  return `Il y a ${Math.floor(hours / 24)} j`;
 }
 
-function closeProfileMediaModal() {
-  profileMediaModal?.setAttribute("hidden", "");
-  if (!composerModal?.hasAttribute("hidden")) return;
-  document.body.classList.remove("comments-open");
+function setFeedback(text) {
+  state.feedback = text;
+  if (els.feedbackText) els.feedbackText.textContent = text;
 }
 
-function openProfileMediaModal(post, opts = {}) {
-  if (!profileMediaBody || !post) return;
-  const canManage = Boolean(opts.canManage);
-  const title = post.entry_type === "story" ? "Story" : post.media_kind === "video" ? "Reel" : "Publication";
-  const mediaNode = post.media_kind === "video"
-    ? `<video id="profileModalVideo" controls autoplay playsinline preload="metadata" src="${escapeHtml(post.media_data || "")}" class="snap-viewer-media"></video>`
-    : `<img alt="" src="${escapeHtml(post.media_data || "")}" class="snap-viewer-media" />`;
-  const canEdit = canManage && post.entry_type === "publication";
-  const meta = normalizePostMeta(post?.meta || {});
-  const storySaved = isSavedStory(post);
-  const tagsLabel = meta.tags.length ? `#${meta.tags.join(" #")}` : "";
+function openModal(el) {
+  el?.removeAttribute("hidden");
+}
 
-  profileMediaBody.innerHTML = `
-    <div class="row" style="justify-content:space-between;align-items:center;gap:8px">
-      <span class="badge">${title}</span>
-      <small style="color:var(--muted)">${formatRelativeFromIso(post.created_at)}</small>
+function closeModal(el) {
+  el?.setAttribute("hidden", "");
+}
+
+function profileAvatarHtml(profile) {
+  const avatarUrl = resolveMediaUrl(String(profile?.avatar_url || ""));
+  const fallback = escapeHtml(String(state.cache.draftAvatarLabel || profile?.display_name || "U").slice(0, 2).toUpperCase());
+  return avatarUrl ? `<img alt="" src="${escapeHtml(avatarUrl)}" />` : `<span>${fallback}</span>`;
+}
+
+function personPills(items = []) {
+  if (!items.length) return `<span class="profile-muted">Aucun element</span>`;
+  return items
+    .map((person) => {
+      const id = String(person?.id || "");
+      const label = String(person?.username || person?.display_name || person?.name || "user");
+      return `<a class="person-pill" href="/profil/profil.html?user=${encodeURIComponent(id)}">@${escapeHtml(label)}</a>`;
+    })
+    .join("");
+}
+
+function getVisibleStories(posts) {
+  return posts.filter((post) => post.entry_type === "story" && (!isStoryExpired(post) || post.meta.saved_to_profile));
+}
+
+function renderBirthdayRain() {
+  const show = Boolean(state.currentProfile && isBirthdayToday(state.currentProfile.birth_date));
+  els.birthdayRain.toggleAttribute("hidden", !show);
+  els.birthdayTodayChip.toggleAttribute("hidden", !show);
+  if (!show) {
+    els.birthdayRain.innerHTML = "";
+    return;
+  }
+  els.birthdayRain.innerHTML = Array.from({ length: 22 })
+    .map((_, index) => {
+      const left = `${(index * 4.7) % 100}%`;
+      const duration = `${4 + (index % 5) * 0.6}s`;
+      const delay = `${(index % 6) * 0.3}s`;
+      const glyph = ["*", "+", "o", "@", "#", "~"][index % 6];
+      return `<span style="left:${left};animation-duration:${duration};animation-delay:${delay}">${glyph}</span>`;
+    })
+    .join("");
+}
+
+function renderNotifications() {
+  const notifications = sanitizeNotifications(state.notifications);
+  const unread = notifications.filter((item) => !item.read).length;
+  els.notificationsBadge.textContent = String(unread);
+  els.notificationsBadge.toggleAttribute("hidden", unread === 0);
+  els.notificationsList.innerHTML =
+    notifications
+      .map(
+        (item) => `
+          <button class="notif-item ${item.read ? "" : "is-unread"}" type="button" data-notification-id="${escapeHtml(String(item.id))}">
+            <span class="notif-icon">${escapeHtml(String(item.type || "!").slice(0, 1).toUpperCase())}</span>
+            <span style="display:block;flex:1">
+              <span style="display:block;font-size:14px"><strong>${escapeHtml(item.user)}</strong> ${escapeHtml(item.text)}</span>
+              <span class="profile-muted" style="display:block;margin-top:6px;font-size:12px">${escapeHtml(item.time)}</span>
+            </span>
+          </button>
+        `
+      )
+      .join("") + `<div class="content-card" style="margin-top:12px"><div class="small-badge">Tests profil passes</div></div>`;
+  els.notificationsList.querySelectorAll("[data-notification-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const id = String(button.getAttribute("data-notification-id") || "");
+      state.notifications = state.notifications.map((item) => (String(item.id) === id ? { ...item, read: true } : item));
+      renderNotifications();
+    });
+  });
+}
+
+function renderSocialLinks(profile) {
+  const username = String(profile?.username || "").trim();
+  const website = String(profile?.website || "").trim();
+  const email = String(profile?.email || "").trim();
+  const links = [];
+  if (username) links.push({ label: "@", value: `@${username}`, href: `/utilisateurs/utilisateurs.html?q=${encodeURIComponent(username)}` });
+  if (website) links.push({ label: "WEB", value: website, href: website.startsWith("http") ? website : `https://${website}` });
+  if (email && state.isOwnProfile) links.push({ label: "MAIL", value: email, href: `mailto:${email}` });
+  els.socialLinksRow.innerHTML = links
+    .map((item) => `<a class="social-chip" href="${escapeHtml(item.href)}" ${item.href.startsWith("http") ? 'target="_blank" rel="noreferrer"' : ""}><strong>${escapeHtml(item.label)}</strong> <span>${escapeHtml(item.value)}</span></a>`)
+    .join("");
+}
+
+function renderHero() {
+  const profile = state.currentProfile;
+  const socialData = profile?.socialData || {};
+  const coverUrl = resolveMediaUrl(String(profile?.cover_url || ""));
+  els.profileCover.style.background = coverUrl
+    ? `radial-gradient(circle at top, rgba(255,255,255,.12), transparent 30%), linear-gradient(180deg, rgba(0,0,0,.12), rgba(0,0,0,.2)), url('${escapeHtml(coverUrl)}') center/cover`
+    : "radial-gradient(circle at top, rgba(255,255,255,.12), transparent 30%), linear-gradient(135deg, rgba(34,197,94,.25), rgba(168,85,247,.22), rgba(244,63,94,.18))";
+  els.profileAvatar.innerHTML = profileAvatarHtml(profile);
+  els.profileDisplayName.textContent = profile?.display_name || profile?.username || "Profil";
+  els.profileBio.textContent = profile?.bio || "Bio vide pour le moment.";
+  els.profileLocationChip.textContent = `Lieu: ${profile?.location || "Non renseigne"}`;
+  els.profileBirthdayChip.textContent = `Anniv: ${String(profile?.birth_date || "Non renseignee").slice(0, 10)}`;
+  els.verifiedBadge.textContent = "Verifie";
+  els.verifiedBadge.toggleAttribute("hidden", !Boolean(profile?.verified || profile?.email_verified));
+  els.followersCount.textContent = String(Number(socialData?.followers_count || 0));
+  els.followingCount.textContent = String(Number(socialData?.following_count || 0));
+  els.followersList.innerHTML = personPills(socialData?.followers || []);
+  els.followingList.innerHTML = personPills(socialData?.following || []);
+  els.musicalProfileBtn.hidden = false;
+  renderSocialLinks(profile);
+  renderBirthdayRain();
+
+  if (state.isOwnProfile) {
+    els.followToggleBtn.hidden = true;
+    els.openComposerBtn.hidden = false;
+    els.openEditProfileBtn.hidden = false;
+    els.openSiteSettingsBtn.hidden = false;
+    els.summaryEditBtn.hidden = false;
+    els.summarySettingsBtn.hidden = false;
+  } else {
+    els.followToggleBtn.hidden = false;
+    els.followToggleBtn.textContent = state.isFollowing ? "Ne plus suivre" : "Suivre";
+    els.followToggleBtn.className = `pill-btn ${state.isFollowing ? "" : "pill-btn--primary"}`;
+    els.openComposerBtn.hidden = true;
+    els.openEditProfileBtn.hidden = true;
+    els.openSiteSettingsBtn.hidden = true;
+    els.summaryEditBtn.hidden = true;
+    els.summarySettingsBtn.hidden = true;
+  }
+}
+
+function renderTabButtons() {
+  document.querySelectorAll("[data-tab]").forEach((button) => {
+    const active = String(button.getAttribute("data-tab") || "") === state.activeTab;
+    button.className = `pill-btn ${active ? "pill-btn--primary" : ""}`;
+  });
+}
+
+function renderHighlights(stories) {
+  const highlights = stories.filter((story) => story.meta.saved_to_profile).slice(0, 12);
+  els.highlightsRow.innerHTML = highlights.length
+    ? highlights.map((story) => `<button class="highlight-pill" type="button" data-open-post-id="${escapeHtml(String(story.id))}">${escapeHtml(story.caption || "Story")}</button>`).join("")
+    : `<span class="profile-muted">Aucun highlight pour le moment.</span>`;
+}
+
+function renderContentList() {
+  const posts = state.posts.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  const stories = getVisibleStories(posts);
+  const publications = posts.filter((post) => post.entry_type === "publication");
+  const visible = state.activeTab === "stories" ? stories : publications;
+
+  els.contentHeroTitle.textContent = state.activeTab === "stories" ? "Stories et highlights" : "Publications du profil";
+  els.contentHeroDescription.textContent = state.activeTab === "stories"
+    ? "Stories actives, highlights et contenu ephemere visible sur le profil."
+    : "Posts photo et vid?o publi?s sur ce profil.";
+  renderHighlights(stories);
+
+  els.postsCount.textContent = String(publications.length);
+  els.storiesCount.textContent = String(stories.length);
+  els.cachedPostsCount.textContent = String(posts.length);
+  els.pendingUploadsCount.textContent = String(state.cache.pendingUploads.length);
+
+  if (!visible.length) {
+    els.profileContentList.innerHTML = `<div class="empty-block"><strong>${state.activeTab === "stories" ? "Aucune story active" : "Aucune publication"}</strong><p style="margin:10px 0 0">Ajoute du contenu ou reviens plus tard.</p></div>`;
+    return;
+  }
+
+  els.profileContentList.innerHTML = visible
+    .map((post) => `
+      <article class="content-card">
+        <div class="content-top">
+          <div>
+            <p style="margin:0;font-weight:700">${escapeHtml(post.caption || (post.entry_type === "story" ? "Story sans texte" : "Publication sans titre"))}</p>
+            <p class="profile-muted" style="margin:6px 0 0">${escapeHtml(formatRelativeFromIso(post.created_at))}</p>
+          </div>
+          <span class="small-badge">${post.entry_type === "story" ? "Story" : post.media_kind === "video" ? "Video" : "Photo"}</span>
+        </div>
+        <div class="content-badges">
+          <span class="small-badge">${escapeHtml(post.meta.visibility || "public")}</span>
+          <span class="small-badge">${escapeHtml(post.media_kind)}</span>
+          ${post.meta.location ? `<span class="small-badge">${escapeHtml(post.meta.location)}</span>` : ""}
+          ${(post.meta.tags || []).slice(0, 3).map((tag) => `<span class="small-badge">#${escapeHtml(tag)}</span>`).join("")}
+          ${post.meta.saved_to_profile ? `<span class="small-badge">highlight</span>` : ""}
+        </div>
+        <div class="action-row">
+          <button class="pill-btn pill-btn--primary" type="button" data-open-post-id="${escapeHtml(String(post.id))}">Ouvrir</button>
+          ${state.isOwnProfile && post.entry_type === "story" ? `<button class="pill-btn" type="button" data-save-story-id="${escapeHtml(String(post.id))}">${post.meta.saved_to_profile ? "Retirer highlight" : "Sauver en highlight"}</button>` : ""}
+        </div>
+      </article>
+    `)
+    .join("");
+
+  els.profileContentList.querySelectorAll("[data-open-post-id]").forEach((button) => {
+    button.addEventListener("click", () => openPostModal(String(button.getAttribute("data-open-post-id") || "")));
+  });
+  els.profileContentList.querySelectorAll("[data-save-story-id]").forEach((button) => {
+    button.addEventListener("click", () => toggleStoryHighlight(String(button.getAttribute("data-save-story-id") || "")));
+  });
+  els.highlightsRow.querySelectorAll("[data-open-post-id]").forEach((button) => {
+    button.addEventListener("click", () => openPostModal(String(button.getAttribute("data-open-post-id") || "")));
+  });
+}
+
+function renderRecentPosts() {
+  const recent = state.posts.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 4);
+  els.recentPostsList.innerHTML = recent.length
+    ? recent.map((post) => `
+        <button class="content-card" type="button" data-open-post-id="${escapeHtml(String(post.id))}" style="text-align:left">
+          <div class="content-top">
+            <div>
+              <p style="margin:0;font-weight:700">${escapeHtml(post.caption || "Contenu du profil")}</p>
+              <p class="profile-muted" style="margin:6px 0 0">${escapeHtml(formatRelativeFromIso(post.created_at))}</p>
+            </div>
+            <span class="small-badge">${escapeHtml(post.entry_type)}</span>
+          </div>
+        </button>
+      `).join("")
+    : `<div class="empty-block">Aucun contenu recent.</div>`;
+  els.recentPostsList.querySelectorAll("[data-open-post-id]").forEach((button) => {
+    button.addEventListener("click", () => openPostModal(String(button.getAttribute("data-open-post-id") || "")));
+  });
+}
+
+function renderSettingsSummary() {
+  const settings = state.cache.siteSettings;
+  els.settingsSummary.innerHTML = [
+    `Theme: ${settings.theme}`,
+    `Accent: ${settings.accentColor}`,
+    `Notifications: ${settings.notifications}`,
+    `Confidentialite: ${settings.privacy}`,
+  ].map((item) => `<div class="content-card">${escapeHtml(item)}</div>`).join("");
+}
+
+function renderAll() {
+  if (!state.currentProfile) return;
+  renderHero();
+  renderNotifications();
+  renderTabButtons();
+  renderContentList();
+  renderRecentPosts();
+  renderSettingsSummary();
+  setFeedback(state.feedback);
+}
+
+function queuePendingUpload(entryType, caption) {
+  state.cache.pendingUploads = [
+    {
+      id: `up-${Date.now()}`,
+      type: entryType,
+      caption,
+      status: "pending",
+      created_at: new Date().toISOString(),
+    },
+    ...state.cache.pendingUploads,
+  ].slice(0, 12);
+  persistCache();
+}
+
+async function fetchPosts(userId, ownProfile) {
+  const path = ownProfile ? "/profile-posts/me" : `/profile-posts/users/${encodeURIComponent(String(userId))}`;
+  const data = await apiFetch(path);
+  return Array.isArray(data?.items) ? data.items.map(normalizePostEntry) : [];
+}
+
+function fillEditProfileModal(profile) {
+  els.displayNameInput.value = String(profile?.display_name || "");
+  els.avatarLabelInput.value = String(state.cache.draftAvatarLabel || "FS").slice(0, 2).toUpperCase();
+  els.locationInput.value = String(profile?.location || "");
+  els.bioInput.value = String(profile?.bio || "");
+}
+
+function renderSiteSettingsChoices() {
+  const renderGroup = (mount, values, key) => {
+    mount.innerHTML = values.map((value) => `<button class="pill-btn ${state.cache.siteSettings[key] === value ? "pill-btn--primary" : ""}" type="button" data-setting-key="${escapeHtml(key)}" data-setting-value="${escapeHtml(value)}">${escapeHtml(value)}</button>`).join("");
+  };
+  renderGroup(els.themeChoices, ["Sombre", "Clair"], "theme");
+  renderGroup(els.accentChoices, ["Vert emeraude", "Violet", "Bleu", "Rose", "Rouge"], "accentColor");
+  renderGroup(els.notificationChoices, ["Activees", "Silencieuses"], "notifications");
+  renderGroup(els.privacyChoices, ["Profil public", "Prive"], "privacy");
+  document.querySelectorAll("[data-setting-key]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = String(button.getAttribute("data-setting-key") || "");
+      const value = String(button.getAttribute("data-setting-value") || "");
+      state.cache.siteSettings = { ...state.cache.siteSettings, [key]: value };
+      renderSiteSettingsChoices();
+    });
+  });
+}
+
+function syncComposerButtons() {
+  const isStory = state.composerType === "story";
+  els.composerPhotoBtn.className = `pill-btn ${state.composerType === "photo" ? "pill-btn--primary" : ""}`;
+  els.composerVideoBtn.className = `pill-btn ${state.composerType === "video" ? "pill-btn--primary" : ""}`;
+  els.composerStoryBtn.className = `pill-btn ${isStory ? "pill-btn--primary" : ""}`;
+  els.storyMetaFields.hidden = !isStory;
+  els.publicationMetaFields.hidden = isStory;
+}
+
+function resetComposer() {
+  state.pendingUploadDataUrl = "";
+  state.pendingUploadType = "";
+  state.composerType = "photo";
+  els.composerForm.reset();
+  els.composerPreview.innerHTML = "";
+  syncComposerButtons();
+}
+
+function openComposer() {
+  if (!state.isOwnProfile) {
+    toast("Creation reservee a ton profil.", "Info");
+    return;
+  }
+  syncComposerButtons();
+  openModal(els.composerModal);
+}
+
+function closeComposer() {
+  closeModal(els.composerModal);
+  resetComposer();
+}
+
+function openPostModal(postId) {
+  const post = state.posts.find((item) => String(item.id) === String(postId));
+  if (!post) return;
+  els.profileMediaTitle.textContent = post.entry_type === "story" ? "Story" : "Publication";
+  const media = post.media_kind === "video"
+    ? `<video controls autoplay playsinline preload="metadata" src="${escapeHtml(post.media_data || "")}" style="width:100%;max-height:420px;border-radius:22px;background:#000"></video>`
+    : `<img alt="" src="${escapeHtml(post.media_data || "")}" style="width:100%;max-height:420px;object-fit:cover;border-radius:22px;display:block" />`;
+  els.profileMediaBody.innerHTML = `
+    <div>${media}</div>
+    <p style="margin:16px 0 0;font-size:15px;line-height:1.6">${escapeHtml(post.caption || "Aucune description")}</p>
+    <div class="content-badges" style="margin-top:14px">
+      <span class="small-badge">${escapeHtml(post.entry_type)}</span>
+      <span class="small-badge">${escapeHtml(post.media_kind)}</span>
+      <span class="small-badge">${escapeHtml(formatRelativeFromIso(post.created_at))}</span>
+      ${post.meta.location ? `<span class="small-badge">${escapeHtml(post.meta.location)}</span>` : ""}
+      ${post.meta.saved_to_profile ? `<span class="small-badge">highlight</span>` : ""}
     </div>
-    <div style="margin-top:10px">${mediaNode}</div>
-    ${
-      post.caption
-        ? `<p class="snap-viewer-caption">${escapeHtml(post.caption)}</p>`
-        : ""
-    }
-    <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px">
-      <span class="badge">Likes: ${Number(post.likes_count || 0)}</span>
-      <span class="badge">Commentaires: ${Number(post.comments_count || 0)}</span>
-      ${post.entry_type === "publication" ? `<span class="badge">Visibilite: ${escapeHtml(meta.visibility)}</span>` : ""}
-      ${post.entry_type === "publication" ? `<span class="badge">Likes autorises: ${meta.allow_likes ? "ON" : "OFF"}</span>` : ""}
-      ${post.entry_type === "publication" ? `<span class="badge">Commentaires autorises: ${meta.allow_comments ? "ON" : "OFF"}</span>` : ""}
-      ${post.entry_type === "publication" && meta.location ? `<span class="badge">Lieu: ${escapeHtml(meta.location)}</span>` : ""}
-      ${post.entry_type === "publication" && tagsLabel ? `<span class="badge">${escapeHtml(tagsLabel)}</span>` : ""}
+    <div class="action-row" style="margin-top:18px">
+      ${state.isOwnProfile ? `<button class="pill-btn" type="button" data-delete-post-id="${escapeHtml(String(post.id))}">Supprimer</button>` : ""}
+      <button class="pill-btn pill-btn--primary" type="button" id="closeMediaActionBtn">Fermer</button>
     </div>
-    ${
-      canManage
-        ? `<div class="row" style="gap:8px;margin-top:12px">
-            ${canEdit ? `<button id="editPostBtn" class="btn" type="button">Modifier</button>` : ""}
-            ${
-              post.entry_type === "story"
-                ? `<button id="toggleStorySaveBtn" class="btn" type="button">${
-                    storySaved ? "Retirer des highlights" : "Enregistrer en highlight"
-                  }</button>`
-                : ""
-            }
-            <button id="deletePostBtn" class="btn danger" type="button">Supprimer</button>
-            <button id="closePostModalBtn" class="btn" type="button">Fermer</button>
-          </div>`
-        : `<div class="row" style="gap:8px;margin-top:12px"><button id="closePostModalBtn" class="btn" type="button">Fermer</button></div>`
-    }
-    ${
-      canEdit
-        ? `<form id="editPostForm" class="form" style="margin-top:10px" hidden>
-            <label>Description</label>
-            <textarea id="editPostCaptionInput" class="input" rows="4" maxlength="600">${escapeHtml(post.caption || "")}</textarea>
-            <div class="two">
-              <div>
-                <label>Lieu</label>
-                <input id="editPostLocationInput" class="input" maxlength="80" value="${escapeHtml(meta.location || "")}" />
-              </div>
-              <div>
-                <label>Tags (separes par virgule)</label>
-                <input id="editPostTagsInput" class="input" maxlength="120" value="${escapeHtml(meta.tags.join(", "))}" />
-              </div>
-            </div>
-            <div class="two">
-              <div>
-                <label>Visibilite</label>
-                <select id="editPostVisibilityInput" class="input">
-                  <option value="public" ${meta.visibility === "public" ? "selected" : ""}>Public</option>
-                  <option value="followers" ${meta.visibility === "followers" ? "selected" : ""}>Followers</option>
-                </select>
-              </div>
-              <div class="row" style="gap:12px;align-items:center;padding-top:24px">
-                <label style="display:flex;gap:6px;align-items:center"><input id="editPostAllowLikesInput" type="checkbox" ${meta.allow_likes ? "checked" : ""} /> Likes actifs</label>
-                <label style="display:flex;gap:6px;align-items:center"><input id="editPostAllowCommentsInput" type="checkbox" ${meta.allow_comments ? "checked" : ""} /> Commentaires actifs</label>
-              </div>
-            </div>
-            <div class="row" style="gap:8px">
-              <button class="btn primary" type="submit">Enregistrer</button>
-              <button id="cancelEditPostBtn" class="btn" type="button">Annuler</button>
-            </div>
-          </form>`
-        : ""
-    }
   `;
-
-  profileMediaBody.querySelector("#closePostModalBtn")?.addEventListener("click", closeProfileMediaModal);
-  profileMediaBody.querySelector("#deletePostBtn")?.addEventListener("click", async () => {
-    if (!currentProfileUserId) return;
-    const ok = window.confirm("Supprimer ce contenu ?");
-    if (!ok) return;
+  els.profileMediaBody.querySelector("#closeMediaActionBtn")?.addEventListener("click", () => closeModal(els.profileMediaModal));
+  els.profileMediaBody.querySelector("[data-delete-post-id]")?.addEventListener("click", async () => {
+    if (!window.confirm("Supprimer ce contenu ?")) return;
     try {
-      await apiFetch(`/profile-posts/${encodeURIComponent(String(post.id || ""))}`, { method: "DELETE" });
-      const next = readPosts(currentProfileUserId).filter((p) => String(p.id || "") !== String(post.id || ""));
-      writePosts(currentProfileUserId, next);
-      renderProfilePosts({ id: currentProfileUserId }, { canCreate: isOwnProfile, canManage: isOwnProfile });
-      closeProfileMediaModal();
+      await apiFetch(`/profile-posts/${encodeURIComponent(String(post.id))}`, { method: "DELETE" });
+      state.posts = state.posts.filter((item) => String(item.id) !== String(post.id));
+      closeModal(els.profileMediaModal);
+      setFeedback("Contenu supprime.");
+      renderAll();
       toast("Contenu supprime.", "OK");
     } catch (err) {
       toast(err?.message || "Suppression impossible", "Erreur");
     }
   });
-  profileMediaBody.querySelector("#toggleStorySaveBtn")?.addEventListener("click", async () => {
-    if (!currentProfileUserId || post.entry_type !== "story") return;
-    const next = readPosts(currentProfileUserId).map((p) => {
-      if (String(p.id || "") !== String(post.id || "")) return p;
-      const nextMeta = normalizePostMeta({
-        ...(p.meta || {}),
-        saved_to_profile: !isSavedStory(p),
-      });
-      return {
-        ...p,
-        meta: nextMeta,
-        saved_to_profile: Boolean(nextMeta.saved_to_profile),
-      };
+  openModal(els.profileMediaModal);
+}
+
+async function toggleStoryHighlight(postId) {
+  const post = state.posts.find((item) => String(item.id) === String(postId));
+  if (!post || post.entry_type !== "story") return;
+  const meta = { ...post.meta, saved_to_profile: !post.meta.saved_to_profile };
+  try {
+    const response = await apiFetch(`/profile-posts/${encodeURIComponent(String(post.id))}`, {
+      method: "PATCH",
+      body: JSON.stringify({ meta }),
     });
-    const updated = next.find((p) => String(p.id || "") === String(post.id || ""));
-    if (!updated) return;
-    try {
-      const r = await apiFetch(`/profile-posts/${encodeURIComponent(String(post.id || ""))}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          meta: normalizePostMeta(updated.meta || {}),
-        }),
-      });
-      const serverItem = normalizePostEntry(r?.item || updated);
-      const merged = next.map((p) => (String(p.id || "") === String(serverItem.id || "") ? serverItem : p));
-      writePosts(currentProfileUserId, merged);
-      renderProfilePosts({ id: currentProfileUserId }, { canCreate: isOwnProfile, canManage: isOwnProfile });
-      openProfileMediaModal(serverItem, opts);
-      toast(isSavedStory(serverItem) ? "Story enregistree en highlight." : "Story retiree des highlights.", "OK");
-    } catch (err) {
-      toast(err?.message || "Maj story impossible", "Erreur");
-    }
-  });
-
-  const editBtn = profileMediaBody.querySelector("#editPostBtn");
-  const editForm = profileMediaBody.querySelector("#editPostForm");
-  const cancelEditBtn = profileMediaBody.querySelector("#cancelEditPostBtn");
-  editBtn?.addEventListener("click", () => editForm?.removeAttribute("hidden"));
-  cancelEditBtn?.addEventListener("click", () => editForm?.setAttribute("hidden", ""));
-  editForm?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (!currentProfileUserId || post.entry_type !== "publication") return;
-    const input = profileMediaBody.querySelector("#editPostCaptionInput");
-    const locationInput = profileMediaBody.querySelector("#editPostLocationInput");
-    const tagsInput = profileMediaBody.querySelector("#editPostTagsInput");
-    const visibilityInput = profileMediaBody.querySelector("#editPostVisibilityInput");
-    const allowLikesInput = profileMediaBody.querySelector("#editPostAllowLikesInput");
-    const allowCommentsInput = profileMediaBody.querySelector("#editPostAllowCommentsInput");
-    const nextCaption = String(input?.value || "").trim().slice(0, 600);
-    const nextMeta = normalizePostMeta({
-      location: String(locationInput?.value || ""),
-      tags: String(tagsInput?.value || ""),
-      visibility: String(visibilityInput?.value || "public"),
-      allow_likes: Boolean(allowLikesInput?.checked),
-      allow_comments: Boolean(allowCommentsInput?.checked),
-    });
-    const next = readPosts(currentProfileUserId).map((p) =>
-      String(p.id || "") === String(post.id || "")
-        ? { ...p, caption: nextCaption, description: nextCaption, meta: nextMeta }
-        : p
-    );
-    try {
-      const r = await apiFetch(`/profile-posts/${encodeURIComponent(String(post.id || ""))}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          caption: nextCaption,
-          meta: nextMeta,
-        }),
-      });
-      const fallbackUpdated = next.find((p) => String(p.id || "") === String(post.id || ""));
-      if (!fallbackUpdated && !r?.item) {
-        throw new Error("Mise a jour introuvable");
-      }
-      const updated = normalizePostEntry(r?.item || fallbackUpdated);
-      const merged = next.map((p) => (String(p.id || "") === String(updated.id || "") ? updated : p));
-      writePosts(currentProfileUserId, merged);
-      renderProfilePosts({ id: currentProfileUserId }, { canCreate: isOwnProfile, canManage: isOwnProfile });
-      openProfileMediaModal(updated, opts);
-      toast("Publication modifiee.", "OK");
-    } catch (err) {
-      toast(err?.message || "Modification impossible", "Erreur");
-    }
-  });
-
-  profileMediaModal?.removeAttribute("hidden");
-  document.body.classList.add("comments-open");
-
-  // On some browsers autoplay can silently fail; retry once after mount.
-  if (post.media_kind === "video") {
-    const modalVideo = profileMediaBody.querySelector("#profileModalVideo");
-    if (modalVideo?.play) {
-      modalVideo.play().catch(() => {
-        // keep controls visible for manual play
-      });
-    }
+    const updated = normalizePostEntry(response?.item || { ...post, meta });
+    state.posts = state.posts.map((item) => (String(item.id) === String(post.id) ? updated : item));
+    setFeedback(updated.meta.saved_to_profile ? "Story sauvegardee en highlight." : "Story retiree des highlights.");
+    renderAll();
+  } catch (err) {
+    toast(err?.message || "Mise a jour impossible", "Erreur");
   }
-}
-
-function filterPostsByTab(posts, tab) {
-  if (tab === "stories") return posts.filter((p) => p.entry_type === "story" && !isStoryExpired(p));
-  if (tab === "reels") return posts.filter((p) => p.entry_type === "publication" && p.media_kind === "video");
-  return posts.filter((p) => p.entry_type === "publication" && p.media_kind !== "video");
-}
-
-function renderSavedStoriesSection(savedStories = []) {
-  if (!savedStories.length) return "";
-  return `
-    <section class="snap-highlights">
-      <div class="snap-highlights-title">Stories enregistrees</div>
-      <div class="snap-highlights-track">
-        ${savedStories
-          .map((p) => {
-            const media = escapeHtml(p.media_data || "");
-            return `
-              <button class="snap-highlight-item" type="button" data-open-post-id="${escapeHtml(String(p.id || ""))}">
-                <span class="snap-highlight-ring">
-                  <img alt="" src="${media}" class="snap-highlight-media" />
-                </span>
-                <span class="snap-highlight-label">${escapeHtml(storyLabel(p))}</span>
-              </button>
-            `;
-          })
-          .join("")}
-      </div>
-    </section>
-  `;
-}
-
-function renderProfilePosts(user, opts = {}) {
-  if (!profilePostsSection) return;
-  const userId = String(user?.id || "");
-  if (!userId) {
-    profilePostsSection.innerHTML = "";
-    return;
-  }
-
-  const posts = readPosts(userId).slice().sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-  const canCreate = Boolean(opts.canCreate);
-  const canManage = Boolean(opts.canManage);
-  const publicationsCount = posts.filter((p) => p.entry_type === "publication" && p.media_kind !== "video").length;
-  const reelsCount = posts.filter((p) => p.entry_type === "publication" && p.media_kind === "video").length;
-  const storiesCount = posts.filter((p) => p.entry_type === "story" && !isStoryExpired(p)).length;
-  const savedStories = posts
-    .filter((p) => p.entry_type === "story" && isSavedStory(p))
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    .slice(0, 20);
-  const filtered = filterPostsByTab(posts, profilePostsTab);
-
-  const header = `
-    <section class="snap-media-section">
-      ${renderSavedStoriesSection(savedStories)}
-      <div class="snap-media-tabs">
-        <button class="snap-tab ${profilePostsTab === "publications" ? "is-active" : ""}" type="button" data-tab="publications">Publications <small>(${publicationsCount})</small></button>
-        <button class="snap-tab ${profilePostsTab === "reels" ? "is-active" : ""}" type="button" data-tab="reels">Reels <small>(${reelsCount})</small></button>
-        <button class="snap-tab ${profilePostsTab === "stories" ? "is-active" : ""}" type="button" data-tab="stories">Stories <small>(${storiesCount})</small></button>
-      </div>
-      <div class="row" style="justify-content:space-between;align-items:center;margin-top:8px">
-        ${
-          canCreate
-            ? `<button id="openComposerInlineBtn" class="btn primary" type="button">+ Ajouter</button>`
-            : `<span class="badge">${posts.length} element(s)</span>`
-        }
-        <small style="color:var(--muted)">Appuie sur un media pour ouvrir</small>
-      </div>
-      <div id="profilePostsList" class="snap-media-grid"></div>
-    </section>
-  `;
-
-  profilePostsSection.innerHTML = header;
-
-  const list = profilePostsSection.querySelector("#profilePostsList");
-  if (!list) return;
-
-  if (!filtered.length) {
-    list.innerHTML = `<small class="snap-media-empty">Aucun contenu dans cet onglet.</small>`;
-  } else {
-    list.innerHTML = filtered
-      .map((p) => {
-        const media = p.media_kind === "video"
-          ? `<video preload="metadata" src="${escapeHtml(p.media_data || "")}" class="snap-media-tile-media"></video>`
-          : `<img alt="" src="${escapeHtml(p.media_data || "")}" class="snap-media-tile-media" />`;
-        return `
-          <article class="snap-media-tile" role="button" tabindex="0" data-open-post-id="${escapeHtml(String(p.id || ""))}">
-            ${media}
-            <div class="snap-media-tile-overlay">
-              <div class="row" style="justify-content:space-between;align-items:center">
-                <span class="badge">${p.entry_type === "story" ? "Story" : p.media_kind === "video" ? "Reel" : "Publication"}</span>
-                <small>${formatRelativeFromIso(p.created_at)}</small>
-              </div>
-              ${p.caption ? `<div class="snap-media-caption">${escapeHtml(p.caption)}</div>` : ""}
-            </div>
-          </article>
-        `;
-      })
-      .join("");
-  }
-
-  profilePostsSection.querySelector("#openComposerInlineBtn")?.addEventListener("click", openComposer);
-  profilePostsSection.querySelectorAll(".snap-tab[data-tab]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      profilePostsTab = String(btn.getAttribute("data-tab") || "publications");
-      renderProfilePosts(user, opts);
-    });
-  });
-  list.querySelectorAll("[data-open-post-id]").forEach((tile) => {
-    const open = () => {
-      const postId = String(tile.getAttribute("data-open-post-id") || "");
-      const post = posts.find((p) => String(p.id || "") === postId);
-      if (!post) return;
-      openProfileMediaModal(post, { canManage });
-    };
-    tile.addEventListener("click", open);
-    tile.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        open();
-      }
-    });
-  });
-}
-
-function openComposer() {
-  if (!isOwnProfile) {
-    toast("Creation reservee a ton profil.", "Info");
-    return;
-  }
-  closeProfileMediaModal();
-  composerModal?.removeAttribute("hidden");
-  document.body.classList.add("comments-open");
-}
-
-function toggleComposerMetaVisibility() {
-  if (!composerForm || !publicationMetaFields) return;
-  const typeField = composerForm.elements.namedItem("entry_type");
-  const entryType = String(typeField?.value || "publication");
-  if (storyMetaFields) storyMetaFields.hidden = entryType !== "story";
-  publicationMetaFields.hidden = entryType !== "publication";
-}
-
-function closeComposer() {
-  composerModal?.setAttribute("hidden", "");
-  document.body.classList.remove("comments-open");
-  if (composerForm) composerForm.reset();
-  toggleComposerMetaVisibility();
-  if (composerPreview) composerPreview.innerHTML = "";
-  pendingUploadDataUrl = "";
-  pendingUploadType = "";
-}
-
-function bindComposer(user) {
-  if (!composerForm || !composerModal || !user?.id) return;
-  composerUserId = String(user.id);
-
-  if (composerBound) return;
-  composerBound = true;
-
-  addContentBtn?.addEventListener("click", openComposer);
-  composerBackdrop?.addEventListener("click", closeComposer);
-  closeComposerBtn?.addEventListener("click", closeComposer);
-
-  const fileInput = composerForm.elements.namedItem("media_file");
-  const typeField = composerForm.elements.namedItem("entry_type");
-  typeField?.addEventListener("change", toggleComposerMetaVisibility);
-  toggleComposerMetaVisibility();
-  fileInput?.addEventListener("change", () => {
-    const file = fileInput.files?.[0];
-    if (!file) {
-      pendingUploadDataUrl = "";
-      pendingUploadType = "";
-      composerPreview.innerHTML = "";
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      pendingUploadDataUrl = String(reader.result || "");
-      pendingUploadType = file.type.startsWith("video/") ? "video" : "image";
-      composerPreview.innerHTML = pendingUploadType === "video"
-        ? `<video controls src="${escapeHtml(pendingUploadDataUrl)}" style="width:100%;max-height:260px;border-radius:12px;border:1px solid var(--border);background:#000"></video>`
-        : `<img alt="" src="${escapeHtml(pendingUploadDataUrl)}" style="width:100%;max-height:260px;object-fit:cover;border-radius:12px;border:1px solid var(--border)" />`;
-    };
-    reader.readAsDataURL(file);
-  });
-
-  composerForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    if (!isOwnProfile) {
-      toast("Creation reservee a ton profil.", "Info");
-      return;
-    }
-    if (!pendingUploadDataUrl) {
-      toast("Ajoute une image ou video.", "Info");
-      return;
-    }
-
-    const typeField = composerForm.elements.namedItem("entry_type");
-    const captionField = composerForm.elements.namedItem("caption");
-    const locationField = composerForm.elements.namedItem("meta_location");
-    const tagsField = composerForm.elements.namedItem("meta_tags");
-    const visibilityField = composerForm.elements.namedItem("meta_visibility");
-    const allowLikesField = composerForm.elements.namedItem("meta_allow_likes");
-    const allowCommentsField = composerForm.elements.namedItem("meta_allow_comments");
-    const saveStoryField = composerForm.elements.namedItem("story_save_profile");
-    const entryType = String(typeField?.value || "publication") === "story" ? "story" : "publication";
-    const caption = String(captionField?.value || "").trim().slice(0, 600);
-    const saveStoryToProfile = entryType === "story" ? Boolean(saveStoryField?.checked) : false;
-    const meta = normalizePostMeta({
-      location: String(locationField?.value || ""),
-      tags: String(tagsField?.value || ""),
-      visibility: String(visibilityField?.value || "public"),
-      allow_likes: Boolean(allowLikesField?.checked),
-      allow_comments: Boolean(allowCommentsField?.checked),
-      saved_to_profile: saveStoryToProfile,
-    });
-    try {
-      const r = await apiFetch("/profile-posts", {
-        method: "POST",
-        body: JSON.stringify({
-          entry_type: entryType,
-          media_kind: pendingUploadType || "image",
-          media_data: pendingUploadDataUrl,
-          caption,
-          likes_count: 0,
-          comments_count: 0,
-          comments: [],
-          meta,
-          created_at: new Date().toISOString(),
-        }),
-      });
-      const created = normalizePostEntry(r?.item || {});
-      const current = readPosts(composerUserId);
-      writePosts(composerUserId, [created, ...current].slice(0, 60));
-      renderProfilePosts({ id: composerUserId }, { canCreate: true, canManage: true });
-      closeComposer();
-      toast(entryType === "story" ? "Story publiee (24h)." : "Publication ajoutee au profil.", "OK");
-    } catch (err) {
-      toast(err?.message || "Publication impossible", "Erreur");
-    }
-  });
 }
 
 async function loadSelfProfile() {
-  const t = updateTokenStats();
-  if (!t.accessToken) {
-    renderNeedAuth("");
-    return;
-  }
-
   const [meData, followData] = await Promise.all([apiFetch("/auth/me"), apiFetch("/follows/me")]);
-  currentProfileUserId = String(meData?.user?.id || "");
-  isOwnProfile = true;
-  await fetchRemotePosts(currentProfileUserId, true);
-  await migrateLegacyPostsIfNeeded(currentProfileUserId);
-  renderProfileCard(meData.user, { showFollow: false, followersCount: Number(followData?.followers_count || 0) });
-  renderSocialMeta(followData);
-  renderSocialLists(followData);
-  renderProfilePosts(meData.user, { canCreate: true, canManage: true });
-  bindComposer(meData.user);
-  if (qs("compose") === "1") openComposer();
+  state.currentProfile = { ...meData?.user, verified: Boolean(meData?.user?.email_verified), socialData: followData || {} };
+  state.currentProfileId = String(meData?.user?.id || "");
+  state.isOwnProfile = true;
+  state.isFollowing = false;
+  state.posts = await fetchPosts(state.currentProfileId, true);
+  fillEditProfileModal(state.currentProfile);
 }
 
 async function loadPublicProfile(viewUserId) {
-  const t = updateTokenStats();
   const data = await apiFetch(`/follows/users/${encodeURIComponent(viewUserId)}`);
-  currentProfileUserId = String(data?.user?.id || "");
-  isOwnProfile = false;
-  await fetchRemotePosts(currentProfileUserId, false);
-  renderProfileCard(data.user, {
-    showFollow: Boolean(t.accessToken),
-    following: Boolean(data.is_following),
-    followersCount: Number(data?.followers_count || 0),
-  });
-  renderSocialMeta(data);
-  renderSocialLists(data);
-  renderProfilePosts(data.user, { canCreate: false, canManage: false });
-  if (addContentBtn) addContentBtn.style.display = "none";
-  if (composerModal) composerModal.setAttribute("hidden", "");
-  closeProfileMediaModal();
-
-  const btn = document.querySelector("#followToggleBtn");
-  btn?.addEventListener("click", async () => {
-    try {
-      if (!getTokens().accessToken) {
-        toast("Connecte-toi pour suivre ce profil", "Info");
-        return;
-      }
-      const currentlyFollowing = String(btn.textContent || "").toLowerCase().includes("ne plus");
-      if (currentlyFollowing) await apiFetch(`/follows/${encodeURIComponent(viewUserId)}`, { method: "DELETE" });
-      else await apiFetch(`/follows/${encodeURIComponent(viewUserId)}`, { method: "POST" });
-      await loadPublicProfile(viewUserId);
-    } catch (err) {
-      toast(err?.message || "Action follow impossible", "Erreur");
-    }
-  });
+  state.currentProfile = { ...data?.user, socialData: data || {} };
+  state.currentProfileId = String(data?.user?.id || "");
+  state.isOwnProfile = false;
+  state.isFollowing = Boolean(data?.is_following);
+  state.posts = await fetchPosts(state.currentProfileId, false);
 }
 
 async function loadProfile() {
-  const viewUserId = qs("user");
   try {
+    const viewUserId = qs("user");
+    const hasToken = Boolean(getTokens().accessToken);
     if (!viewUserId) {
-      if (editBtn) editBtn.style.display = "none";
-      if (addContentBtn) addContentBtn.style.display = "";
-      closeProfileMediaModal();
+      if (!hasToken) {
+        window.location.href = "/connexion/connexion.html";
+        return;
+      }
       await loadSelfProfile();
-      return;
+    } else {
+      const me = hasToken ? await apiFetch("/auth/me").catch(() => null) : null;
+      const meId = String(me?.user?.id || "");
+      if (meId && meId === viewUserId) await loadSelfProfile();
+      else await loadPublicProfile(viewUserId);
     }
-
-    const me = getTokens().accessToken ? await apiFetch("/auth/me").catch(() => null) : null;
-    const meId = String(me?.user?.id || "");
-    if (meId && meId === viewUserId) {
-      if (editBtn) editBtn.style.display = "none";
-      if (addContentBtn) addContentBtn.style.display = "";
-      closeProfileMediaModal();
-      await loadSelfProfile();
-      return;
+    if (!state.cache.draftAvatarLabel) {
+      state.cache.draftAvatarLabel = String(state.currentProfile?.display_name || "U").slice(0, 2).toUpperCase();
+      persistCache();
     }
-
-    if (editBtn) editBtn.style.display = "none";
-    if (addContentBtn) addContentBtn.style.display = "none";
-    await loadPublicProfile(viewUserId);
+    renderAll();
   } catch (err) {
-    profileView.innerHTML = `<small style="color:#ffb0b0">Erreur: ${escapeHtml(err?.message || "")}</small>`;
-    socialMeta.innerHTML = "";
-    socialLists.innerHTML = "";
-    profilePostsSection.innerHTML = "";
+    setFeedback(`Erreur profil: ${err?.message || "Impossible de charger la page"}`);
     toast(err?.message || "Erreur profil", "Erreur");
   }
 }
 
-refreshBtn.addEventListener("click", loadProfile);
+async function handleFollowToggle() {
+  if (state.isOwnProfile || !state.currentProfileId) return;
+  if (!getTokens().accessToken) {
+    toast("Connecte-toi pour suivre ce profil", "Info");
+    return;
+  }
+  try {
+    if (state.isFollowing) await apiFetch(`/follows/${encodeURIComponent(state.currentProfileId)}`, { method: "DELETE" });
+    else await apiFetch(`/follows/${encodeURIComponent(state.currentProfileId)}`, { method: "POST" });
+    await loadPublicProfile(state.currentProfileId);
+    renderAll();
+    setFeedback(state.isFollowing ? "Utilisateur suivi avec succes." : "Utilisateur retir? des abonnements.");
+  } catch (err) {
+    toast(err?.message || "Action follow impossible", "Erreur");
+  }
+}
 
-logoutBtn.addEventListener("click", async () => {
-  await serverLogout();
-  updateTokenStats();
-  toast("Deconnecte.", "OK");
-  renderNeedAuth("Tokens supprimes. Reconnecte-toi.");
-});
+async function handleComposerSubmit(event) {
+  event.preventDefault();
+  if (!state.isOwnProfile) {
+    toast("Creation reservee a ton profil.", "Info");
+    return;
+  }
+  if (!state.pendingUploadDataUrl) {
+    toast("Ajoute une image ou video.", "Info");
+    return;
+  }
+  const entryType = state.composerType === "story" ? "story" : "publication";
+  const caption = String(els.composerCaption.value || "").trim().slice(0, PROFILE_LIMITS.captionMax);
+  if (!caption) {
+    toast("Ajoute une caption avant de publier", "Info");
+    return;
+  }
+  const meta = normalizePostMeta({
+    location: els.metaLocation.value,
+    tags: els.metaTags.value,
+    visibility: els.metaVisibility.value,
+    allow_likes: Boolean(els.metaAllowLikes.checked),
+    allow_comments: Boolean(els.metaAllowComments.checked),
+    saved_to_profile: entryType === "story" ? Boolean(els.storySaveProfile.checked) : false,
+  });
+  try {
+    const response = await apiFetch("/profile-posts", {
+      method: "POST",
+      body: JSON.stringify({
+        entry_type: entryType,
+        media_kind: state.pendingUploadType || "image",
+        media_data: state.pendingUploadDataUrl,
+        caption,
+        likes_count: 0,
+        comments_count: 0,
+        comments: [],
+        meta,
+        created_at: new Date().toISOString(),
+      }),
+    });
+    state.posts = [normalizePostEntry(response?.item || {}), ...state.posts];
+    state.cache.pendingUploads = state.cache.pendingUploads.filter((item) => item.status !== "pending");
+    persistCache();
+    state.activeTab = entryType === "story" ? "stories" : "posts";
+    closeComposer();
+    setFeedback(entryType === "story" ? "Story publiee (24h)." : "Publication ajoutee au profil.");
+    renderAll();
+    toast(entryType === "story" ? "Story publiee." : "Publication ajoutee.", "OK");
+  } catch (err) {
+    queuePendingUpload(entryType, caption);
+    setFeedback("Publication impossible pour l'instant, contenu garde en cache local.");
+    renderAll();
+    toast(err?.message || "Publication impossible", "Erreur");
+  }
+}
 
-deleteAccountBtn.addEventListener("click", async () => {
+async function handleSaveProfile() {
+  if (!state.isOwnProfile) return;
+  const displayName = String(els.displayNameInput.value || "").trim().slice(0, PROFILE_LIMITS.displayNameMax);
+  const location = String(els.locationInput.value || "").trim().slice(0, PROFILE_LIMITS.locationMax);
+  const bio = String(els.bioInput.value || "").trim().slice(0, PROFILE_LIMITS.bioMax);
+  if (displayName.length < PROFILE_LIMITS.displayNameMin) {
+    toast("Le nom d'affichage doit contenir au moins 2 caracteres.", "Info");
+    return;
+  }
+  state.cache.draftAvatarLabel = String(els.avatarLabelInput.value || "").trim().slice(0, 2).toUpperCase() || state.cache.draftAvatarLabel;
+  persistCache();
+  try {
+    await apiFetch("/auth/me", {
+      method: "PATCH",
+      body: JSON.stringify({
+        display_name: displayName,
+        location,
+        bio,
+      }),
+    });
+    await loadSelfProfile();
+    closeModal(els.editProfileModal);
+    setFeedback("Modification du profil enregistree.");
+    renderAll();
+    toast("Profil mis a jour.", "OK");
+  } catch (err) {
+    toast(err?.message || "Modification du profil impossible", "Erreur");
+  }
+}
+
+function handleSaveSiteSettings() {
+  saveAppPreferences({
+    theme: state.cache.siteSettings.theme,
+    accentColor: state.cache.siteSettings.accentColor,
+  });
+  applyAppPreferences(readAppPreferences());
+  persistCache();
+  closeModal(els.siteSettingsModal);
+  setFeedback("Reglages du site mis a jour");
+  renderSettingsSummary();
+}
+
+function syncSiteSettingsFromGlobalPreferences() {
+  const appPrefs = readAppPreferences();
+  state.cache.siteSettings = {
+    ...state.cache.siteSettings,
+    theme: appPrefs.theme || state.cache.siteSettings.theme,
+    accentColor: appPrefs.accentColor || state.cache.siteSettings.accentColor,
+  };
+  persistCache();
+  renderSiteSettingsChoices();
+  renderSettingsSummary();
+}
+
+async function handleDeleteAccount() {
   const first = window.confirm("Supprimer ton compte ? Cette action est definitive.");
   if (!first) return;
   const second = window.prompt("Tape SUPPRIMER pour confirmer");
@@ -936,21 +801,123 @@ deleteAccountBtn.addEventListener("click", async () => {
   try {
     await apiFetch("/auth/me", { method: "DELETE" });
     await serverLogout();
-    updateTokenStats();
-    toast("Compte supprime.", "OK");
     window.location.href = "/connexion/connexion.html";
   } catch (err) {
     toast(err?.message || "Erreur suppression compte", "Erreur");
   }
-});
+}
 
-profileMediaBackdrop?.addEventListener("click", closeProfileMediaModal);
-document.addEventListener("keydown", (e) => {
-  if (e.key !== "Escape") return;
-  closeComposer();
-  closeProfileMediaModal();
-});
+function bindEvents() {
+  els.notificationsBtn?.addEventListener("click", () => {
+    if (els.notificationsPanel.hasAttribute("hidden")) openModal(els.notificationsPanel);
+    else closeModal(els.notificationsPanel);
+  });
+  els.markAllReadBtn?.addEventListener("click", () => {
+    state.notifications = state.notifications.map((item) => ({ ...item, read: true }));
+    renderNotifications();
+  });
+  document.addEventListener("click", (event) => {
+    if (!els.toolbar.contains(event.target)) closeModal(els.notificationsPanel);
+  });
+  [els.composerModal, els.editProfileModal, els.siteSettingsModal, els.profileMediaModal].forEach((modal) => {
+    modal?.addEventListener("click", (event) => {
+      if (event.target !== modal) return;
+      if (modal === els.composerModal) closeComposer();
+      else closeModal(modal);
+    });
+  });
 
+  document.querySelectorAll("[data-tab]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.activeTab = String(button.getAttribute("data-tab") || "posts");
+      renderAll();
+    });
+  });
+
+  els.followToggleBtn?.addEventListener("click", handleFollowToggle);
+  els.openComposerBtn?.addEventListener("click", openComposer);
+  els.refreshBtn?.addEventListener("click", loadProfile);
+  els.logoutBtn?.addEventListener("click", async () => {
+    await serverLogout();
+    toast("Deconnecte.", "OK");
+    window.location.href = "/connexion/connexion.html";
+  });
+  els.deleteAccountBtn?.addEventListener("click", handleDeleteAccount);
+
+  [els.openEditProfileBtn, els.summaryEditBtn].forEach((button) => button?.addEventListener("click", () => {
+    fillEditProfileModal(state.currentProfile || {});
+    openModal(els.editProfileModal);
+  }));
+  [els.openSiteSettingsBtn, els.summarySettingsBtn].forEach((button) => button?.addEventListener("click", () => {
+    renderSiteSettingsChoices();
+    openModal(els.siteSettingsModal);
+  }));
+
+  els.closeComposerBtn?.addEventListener("click", closeComposer);
+  els.cancelComposerBtn?.addEventListener("click", closeComposer);
+  els.composerPhotoBtn?.addEventListener("click", () => {
+    state.composerType = "photo";
+    syncComposerButtons();
+  });
+  els.composerVideoBtn?.addEventListener("click", () => {
+    state.composerType = "video";
+    syncComposerButtons();
+  });
+  els.composerStoryBtn?.addEventListener("click", () => {
+    state.composerType = "story";
+    syncComposerButtons();
+  });
+  els.composerFileInput?.addEventListener("change", () => {
+    const file = els.composerFileInput.files?.[0];
+    if (!file) {
+      state.pendingUploadDataUrl = "";
+      state.pendingUploadType = "";
+      els.composerPreview.innerHTML = "";
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      state.pendingUploadDataUrl = String(reader.result || "");
+      state.pendingUploadType = file.type.startsWith("video/") ? "video" : "image";
+      els.composerPreview.innerHTML = state.pendingUploadType === "video"
+        ? `<video controls src="${escapeHtml(state.pendingUploadDataUrl)}" style="width:100%;max-height:260px;border-radius:18px;background:#000"></video>`
+        : `<img alt="" src="${escapeHtml(state.pendingUploadDataUrl)}" style="width:100%;max-height:260px;object-fit:cover;border-radius:18px;display:block" />`;
+    };
+    reader.readAsDataURL(file);
+  });
+  els.composerForm?.addEventListener("submit", handleComposerSubmit);
+
+  els.closeEditProfileBtn?.addEventListener("click", () => closeModal(els.editProfileModal));
+  els.cancelEditProfileBtn?.addEventListener("click", () => closeModal(els.editProfileModal));
+  els.saveEditProfileBtn?.addEventListener("click", handleSaveProfile);
+
+  els.closeSiteSettingsBtn?.addEventListener("click", () => closeModal(els.siteSettingsModal));
+  els.cancelSiteSettingsBtn?.addEventListener("click", () => closeModal(els.siteSettingsModal));
+  els.saveSiteSettingsBtn?.addEventListener("click", handleSaveSiteSettings);
+
+  els.closeProfileMediaBtn?.addEventListener("click", () => closeModal(els.profileMediaModal));
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    closeComposer();
+    closeModal(els.profileMediaModal);
+    closeModal(els.editProfileModal);
+    closeModal(els.siteSettingsModal);
+  });
+}
+
+bindEvents();
+renderNotifications();
+syncSiteSettingsFromGlobalPreferences();
+renderSiteSettingsChoices();
+renderSettingsSummary();
+syncComposerButtons();
 applyI18n(document);
 loadProfile();
 
+window.addEventListener(APP_PREFERENCES_EVENT, () => {
+  syncSiteSettingsFromGlobalPreferences();
+});
+
+window.addEventListener(LANGUAGE_EVENT, () => {
+  applyI18n(document);
+});

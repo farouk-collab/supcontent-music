@@ -6,139 +6,838 @@
   <title>Profil - SUPCONTENT</title>
   <link rel="stylesheet" href="/noyau/styles.css" />
   <link rel="stylesheet" href="/noyau/styles/profile-composer.css" />
+  <style>
+    .profile-preview-page{
+      min-height:100vh;
+      color:#fff;
+      background:
+        radial-gradient(circle at top, rgba(34,197,94,.14), transparent 18%),
+        radial-gradient(circle at right, rgba(168,85,247,.12), transparent 22%),
+        linear-gradient(180deg, #050505, #0d0d0d);
+    }
+    .profile-shell{
+      width:min(1240px, calc(100% - 24px));
+      margin:0 auto;
+      padding:24px 0 120px;
+    }
+    .profile-card{
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.05);
+      backdrop-filter:blur(18px);
+      border-radius:32px;
+      box-shadow:0 24px 80px rgba(0,0,0,.28);
+    }
+    .profile-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      padding:20px;
+      margin-bottom:24px;
+    }
+    .profile-header p,
+    .profile-muted{ color:#a1a1aa; }
+    .profile-kicker{
+      color:#86efac;
+      font-size:12px;
+      letter-spacing:.25em;
+      text-transform:uppercase;
+      margin:0 0 8px;
+    }
+    .profile-title{
+      margin:0;
+      font-size:34px;
+      line-height:1.05;
+    }
+    .profile-toolbar{
+      position:relative;
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      align-items:center;
+      justify-content:flex-end;
+    }
+    .icon-circle,
+    .pill-btn,
+    .tiny-btn{
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      border-radius:999px;
+      cursor:pointer;
+    }
+    .icon-circle{
+      width:46px;
+      height:46px;
+      display:grid;
+      place-items:center;
+      font-family:"Segoe UI Symbol","Noto Sans Symbols",system-ui,sans-serif;
+      font-size:20px;
+      line-height:1;
+    }
+    .pill-btn{
+      padding:11px 16px;
+      font-weight:700;
+    }
+    .pill-btn--primary{
+      background:#4ade80;
+      color:#000;
+      border-color:transparent;
+    }
+    .notif-btn{
+      position:relative;
+      min-width:144px;
+      text-align:center;
+    }
+    .notif-badge{
+      position:absolute;
+      top:-8px;
+      right:-6px;
+      min-width:24px;
+      height:24px;
+      padding:0 6px;
+      border-radius:999px;
+      display:grid;
+      place-items:center;
+      background:#d946ef;
+      color:#fff;
+      font-size:11px;
+      font-weight:800;
+      box-shadow:0 10px 20px rgba(217,70,239,.28);
+    }
+    .notif-panel{
+      position:absolute;
+      top:calc(100% + 12px);
+      right:0;
+      width:min(360px, 92vw);
+      z-index:30;
+      border-radius:24px;
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(10,10,10,.96);
+      box-shadow:0 30px 80px rgba(0,0,0,.45);
+    }
+    .notif-head,
+    .notif-list{
+      padding:16px;
+    }
+    .notif-head{
+      border-bottom:1px solid rgba(255,255,255,.08);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .notif-item{
+      width:100%;
+      text-align:left;
+      display:flex;
+      gap:12px;
+      border:1px solid rgba(255,255,255,.06);
+      background:rgba(255,255,255,.03);
+      color:#fff;
+      border-radius:20px;
+      padding:14px;
+      margin-bottom:10px;
+      cursor:pointer;
+    }
+    .notif-item.is-unread{
+      background:rgba(217,70,239,.1);
+      border-color:rgba(217,70,239,.2);
+    }
+    .notif-icon{
+      width:40px;
+      height:40px;
+      display:grid;
+      place-items:center;
+      border-radius:999px;
+      background:rgba(255,255,255,.08);
+      flex:none;
+    }
+    .profile-hero{
+      overflow:hidden;
+      margin-bottom:24px;
+    }
+    .profile-cover{
+      min-height:220px;
+      position:relative;
+      background:
+        radial-gradient(circle at top, rgba(255,255,255,.12), transparent 30%),
+        linear-gradient(135deg, rgba(34,197,94,.25), rgba(168,85,247,.22), rgba(244,63,94,.18));
+    }
+    .profile-cover-overlay{
+      position:absolute;
+      inset:0;
+      background:linear-gradient(180deg, transparent, rgba(0,0,0,.3) 65%, rgba(0,0,0,.62));
+    }
+    .birthday-rain{
+      pointer-events:none;
+      position:absolute;
+      inset:0;
+      overflow:hidden;
+    }
+    .birthday-rain span{
+      position:absolute;
+      top:-24px;
+      animation:birthday-fall linear infinite;
+      opacity:0;
+    }
+    .profile-hero-body{
+      padding:0 20px 20px;
+      margin-top:-54px;
+      position:relative;
+      z-index:2;
+    }
+    .profile-hero-main{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap:18px;
+      flex-wrap:wrap;
+    }
+    .profile-identity{
+      display:flex;
+      gap:18px;
+      align-items:flex-end;
+      flex-wrap:wrap;
+    }
+    .profile-avatar{
+      width:96px;
+      height:96px;
+      border-radius:28px;
+      border:4px solid #050505;
+      background:rgba(255,255,255,.09);
+      display:grid;
+      place-items:center;
+      font-size:32px;
+      font-weight:800;
+      overflow:hidden;
+    }
+    .profile-avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .profile-name-row{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+    .profile-name-row h2{
+      margin:0;
+      font-size:34px;
+    }
+    .verified-dot{
+      color:#86efac;
+    }
+    .meta-row{
+      display:flex;
+      gap:14px;
+      flex-wrap:wrap;
+      margin-top:10px;
+      color:#d4d4d8;
+      font-size:14px;
+    }
+    .meta-chip,
+    .social-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.05);
+      color:#e4e4e7;
+      text-decoration:none;
+    }
+    .birthday-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:9px 12px;
+      border-radius:999px;
+      background:#4ade80;
+      color:#000;
+      font-size:12px;
+      font-weight:800;
+    }
+    .profile-bio{
+      margin:14px 0 0;
+      max-width:860px;
+      color:#d4d4d8;
+      line-height:1.6;
+    }
+    .social-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:16px;
+    }
+    .profile-main-grid{
+      display:grid;
+      grid-template-columns:.9fr 1.15fr .95fr;
+      gap:24px;
+      margin-bottom:24px;
+    }
+    .side-panel,
+    .center-panel,
+    .summary-panel,
+    .bottom-panel{
+      padding:20px;
+    }
+    .section-title{
+      margin:0;
+      font-size:24px;
+    }
+    .stats-grid{
+      display:grid;
+      gap:12px;
+      grid-template-columns:repeat(2, minmax(0, 1fr));
+      margin-top:16px;
+    }
+    .stat-card{
+      border-radius:22px;
+      background:rgba(0,0,0,.22);
+      padding:16px;
+    }
+    .stat-card p{ margin:0; }
+    .stat-card strong{
+      display:block;
+      margin-top:6px;
+      font-size:30px;
+    }
+    .soft-card{
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.2);
+      border-radius:24px;
+      padding:16px;
+      margin-top:18px;
+    }
+    .person-cloud{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:12px;
+    }
+    .person-pill{
+      border-radius:999px;
+      padding:9px 14px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.05);
+      color:#e4e4e7;
+      text-decoration:none;
+    }
+    .tab-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .tab-group{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .hero-mini{
+      padding:18px;
+      border-radius:28px;
+      background:
+        linear-gradient(135deg, rgba(34,197,94,.16), rgba(168,85,247,.18), rgba(244,63,94,.12));
+      border:1px solid rgba(255,255,255,.08);
+      margin-top:18px;
+    }
+    .highlights-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-top:14px;
+    }
+    .highlight-pill{
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.05);
+    }
+    .content-list{
+      display:grid;
+      gap:14px;
+      margin-top:18px;
+    }
+    .content-card{
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.22);
+      padding:16px;
+    }
+    .content-top{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .content-badges,
+    .action-row{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:14px;
+    }
+    .small-badge{
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(255,255,255,.05);
+      color:#d4d4d8;
+      padding:8px 12px;
+      font-size:12px;
+    }
+    .empty-block{
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.08);
+      background:rgba(0,0,0,.2);
+      padding:34px 18px;
+      text-align:center;
+      color:#a1a1aa;
+      margin-top:18px;
+    }
+    .summary-stack{
+      display:grid;
+      gap:18px;
+      margin-top:16px;
+    }
+    .action-list{
+      display:grid;
+      gap:12px;
+      margin-top:12px;
+    }
+    .action-list .pill-btn{
+      width:100%;
+      text-align:left;
+      justify-content:flex-start;
+    }
+    .feedback-line{
+      color:#d4d4d8;
+      line-height:1.55;
+      margin:12px 0 0;
+    }
+    .bottom-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:24px;
+    }
+    .modal-shell{
+      position:fixed;
+      inset:0;
+      z-index:200;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:rgba(0,0,0,.72);
+      backdrop-filter:blur(8px);
+      padding:16px;
+    }
+    .modal-shell[hidden]{ display:none; }
+    .modal-card{
+      width:min(100%, 720px);
+      border-radius:32px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(10,10,10,.98);
+      color:#fff;
+      padding:22px;
+      box-shadow:0 24px 80px rgba(0,0,0,.42);
+    }
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      margin-bottom:16px;
+    }
+    .modal-grid{
+      display:grid;
+      gap:16px;
+    }
+    .field{
+      display:grid;
+      gap:8px;
+    }
+    .field label{
+      font-size:14px;
+      color:#d4d4d8;
+    }
+    .field input,
+    .field textarea,
+    .field select{
+      width:100%;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.06);
+      color:#fff;
+      padding:14px 16px;
+      outline:none;
+    }
+    .field textarea{
+      min-height:120px;
+      resize:vertical;
+    }
+    .choice-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:10px;
+    }
+    .modal-actions{
+      margin-top:18px;
+      display:flex;
+      justify-content:flex-end;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    @keyframes birthday-fall{
+      0%{ transform:translateY(-20px) rotate(0deg); opacity:0; }
+      10%{ opacity:1; }
+      100%{ transform:translateY(420px) rotate(360deg); opacity:0; }
+    }
+    @media (max-width: 1080px){
+      .profile-main-grid,
+      .bottom-grid{
+        grid-template-columns:1fr;
+      }
+    }
+    @media (max-width: 760px){
+      .profile-header,
+      .profile-hero-main,
+      .profile-identity,
+      .tab-row{
+        flex-direction:column;
+        align-items:flex-start;
+      }
+      .profile-toolbar{
+        width:100%;
+        justify-content:flex-start;
+      }
+      .stats-grid{
+        grid-template-columns:1fr;
+      }
+      .profile-title,
+      .profile-name-row h2{
+        font-size:28px;
+      }
+    }
+  </style>
 </head>
-<body class="profile-page">
-  <div class="nav">
-    <div class="nav-inner">
-      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
-      <div class="menu">
-        <a class="pill" href="/utilisateurs/utilisateurs.html">Recherche utilisateurs</a>
-        <a class="pill" href="/connexion/connexion.html">Connexion</a>
+<body class="profile-preview-page">
+  <div class="profile-shell">
+    <header class="profile-card profile-header">
+      <div>
+        <p class="profile-kicker">Profil</p>
+        <h1 class="profile-title">Compte utilisateur</h1>
+        <p class="profile-muted">Affichage du profil, social, contenu, stories, cache et uploads en attente.</p>
       </div>
-      <div class="profile-top-actions">
-        <button id="addContentBtn" class="btn" type="button" aria-label="Ajouter une story ou publication">+</button>
+
+      <div id="profileToolbar" class="profile-toolbar">
+        <button id="openEditProfileBtn" class="icon-circle" type="button" title="Modifier le profil" aria-label="Modifier le profil">&#9998;</button>
+        <button id="openSiteSettingsBtn" class="icon-circle" type="button" title="R?glages du site" aria-label="R?glages du site">&#9881;</button>
+        <button id="notificationsBtn" class="pill-btn pill-btn--primary notif-btn" type="button">
+          Notifications
+          <span id="notificationsBadge" class="notif-badge" hidden>0</span>
+        </button>
+
+        <div id="notificationsPanel" class="notif-panel" hidden>
+          <div class="notif-head">
+            <div>
+              <p class="profile-kicker" style="margin-bottom:6px">Notifications</p>
+              <strong>Centre d'activité</strong>
+            </div>
+            <button id="markAllReadBtn" class="tiny-btn" type="button" style="padding:8px 12px">Tout marquer comme lu</button>
+          </div>
+          <div id="notificationsList" class="notif-list"></div>
+        </div>
       </div>
-    </div>
+    </header>
+
+    <section class="profile-card profile-hero">
+      <div id="profileCover" class="profile-cover">
+        <div class="profile-cover-overlay"></div>
+        <div id="birthdayRain" class="birthday-rain" hidden></div>
+      </div>
+      <div class="profile-hero-body">
+        <div class="profile-hero-main">
+          <div class="profile-identity">
+            <div id="profileAvatar" class="profile-avatar">FS</div>
+            <div>
+              <div class="profile-name-row">
+                <h2 id="profileDisplayName">Chargement...</h2>
+                <span id="verifiedBadge" class="verified-dot" hidden></span>
+              </div>
+              <div class="meta-row">
+                <span id="profileLocationChip" class="meta-chip"></span>
+                <span id="profileBirthdayChip" class="meta-chip"></span>
+                <span id="birthdayTodayChip" class="birthday-chip" hidden>Anniversaire aujourd'hui</span>
+              </div>
+              <p id="profileBio" class="profile-bio"></p>
+            </div>
+          </div>
+
+          <div class="action-row">
+            <button id="followToggleBtn" class="pill-btn pill-btn--primary" type="button" hidden></button>
+            <a id="musicalProfileBtn" class="pill-btn" href="/profil-musical/" hidden>Profil musical</a>
+          </div>
+        </div>
+
+        <div id="socialLinksRow" class="social-row"></div>
+      </div>
+    </section>
+
+    <section class="profile-main-grid">
+      <aside class="profile-card side-panel">
+        <h2 class="section-title">Réseau social</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <p>Abonn?s</p>
+            <strong id="followersCount">0</strong>
+          </div>
+          <div class="stat-card">
+            <p>Abonnements</p>
+            <strong id="followingCount">0</strong>
+          </div>
+        </div>
+
+        <div class="soft-card">
+          <p class="profile-kicker" style="margin-bottom:10px;color:#a1a1aa">Abonn?s</p>
+          <div id="followersList" class="person-cloud"></div>
+        </div>
+
+        <div class="soft-card">
+          <p class="profile-kicker" style="margin-bottom:10px;color:#a1a1aa">Abonnements</p>
+          <div id="followingList" class="person-cloud"></div>
+        </div>
+      </aside>
+
+      <main class="profile-card center-panel">
+        <div class="tab-row">
+          <div class="tab-group">
+            <button class="pill-btn pill-btn--primary" data-tab="posts" type="button">Publications</button>
+            <button class="pill-btn" data-tab="stories" type="button">Stories</button>
+          </div>
+          <button id="openComposerBtn" class="pill-btn pill-btn--primary" type="button">Créer</button>
+        </div>
+
+        <section id="collectionHero" class="hero-mini">
+          <p class="profile-kicker" style="margin-bottom:8px">Profil ouvert</p>
+          <h2 id="contentHeroTitle" style="margin:0 0 8px;font-size:32px">Mon contenu</h2>
+          <p id="contentHeroDescription" class="profile-muted" style="margin:0">Posts, stories et contenus visibles depuis le profil.</p>
+          <div id="highlightsRow" class="highlights-row"></div>
+        </section>
+
+        <div id="profileContentList" class="content-list"></div>
+      </main>
+
+      <aside class="profile-card summary-panel">
+        <h2 class="section-title">Résumé du profil</h2>
+        <div class="summary-stack">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <p>Publications</p>
+              <strong id="postsCount">0</strong>
+            </div>
+            <div class="stat-card">
+              <p>Stories actives</p>
+              <strong id="storiesCount">0</strong>
+            </div>
+          </div>
+
+          <div class="soft-card">
+            <p class="profile-kicker" style="margin-bottom:10px;color:#a1a1aa">Cache & uploads</p>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <p>Posts en cache</p>
+                <strong id="cachedPostsCount">0</strong>
+              </div>
+              <div class="stat-card">
+                <p>Uploads en attente</p>
+                <strong id="pendingUploadsCount">0</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="soft-card">
+            <p class="profile-kicker" style="margin-bottom:10px;color:#a1a1aa">Actions profil</p>
+            <div class="action-list">
+              <button id="summaryEditBtn" class="pill-btn" type="button">Modifier le profil</button>
+              <button id="summarySettingsBtn" class="pill-btn" type="button">Réglages du site</button>
+              <button id="refreshBtn" class="pill-btn" type="button">Rafraîchir</button>
+              <button id="logoutBtn" class="pill-btn" type="button">Déconnexion (local)</button>
+              <button id="deleteAccountBtn" class="pill-btn" type="button">Supprimer mon compte</button>
+            </div>
+          </div>
+
+          <div class="soft-card">
+            <div class="profile-kicker" style="margin-bottom:10px;color:#86efac">État visuel / technique</div>
+            <p id="feedbackText" class="feedback-line">Profil prêt · données mises en cache</p>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="bottom-grid">
+      <section class="profile-card bottom-panel">
+        <div style="display:flex;align-items:center;gap:10px">
+          <h2 class="section-title" style="font-size:24px">Recently played</h2>
+        </div>
+        <div id="recentPostsList" class="content-list"></div>
+      </section>
+
+      <section class="profile-card bottom-panel">
+        <div style="display:flex;align-items:center;gap:10px">
+          <h2 class="section-title" style="font-size:24px">Réglages actifs</h2>
+        </div>
+        <div id="settingsSummary" class="content-list"></div>
+      </section>
+    </section>
   </div>
 
-  <div class="container">
-    <div class="grid">
-      <div class="card span8">
-        <div class="row" style="justify-content:space-between;align-items:center;gap:12px">
-          <h2 style="margin:0" data-i18n="my_profile">Mon profil</h2>
-          <div class="row" style="gap:10px;align-items:center">
-            <span id="statusBadge" class="badge">...</span>
-            <a id="editBtn" class="btn" href="/profil/profil-modifier.html" title="Parametres">⚙️</a>
-          </div>
-        </div>
-
-        <div id="profileView" style="margin-top:14px">
-          <small>Chargement...</small>
-        </div>
-        <div id="socialMeta" style="margin-top:12px"></div>
-        <div id="socialLists" style="margin-top:10px"></div>
-        <div id="profilePostsSection" style="margin-top:12px"></div>
-
-        <hr />
-
-        <div class="row" style="gap:10px;flex-wrap:wrap">
-          <button id="refreshBtn" class="btn" type="button" data-i18n="refresh">Rafraichir</button>
-          <button id="logoutBtn" class="btn danger" type="button" data-i18n="logout_local">Deconnexion (local)</button>
-          <button id="deleteAccountBtn" class="btn danger" type="button" data-i18n="delete_account">Supprimer mon compte</button>
-        </div>
-
-        <small style="display:block;margin-top:6px;color:#ffb0b0">
-          <span data-i18n="delete_warning">Attention: suppression definitive du compte.</span>
-        </small>
+  <div id="composerModal" class="modal-shell" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 style="margin:0;font-size:24px">Composer du contenu</h3>
+        <button id="closeComposerBtn" class="icon-circle" type="button" aria-label="Fermer">X</button>
       </div>
-
-      <div class="card span4">
-        <h2 data-i18n="diagnostics">Diagnostic</h2>
-        <div class="row" style="gap:10px;flex-wrap:wrap;margin-bottom:10px">
-          <span class="badge">accessLen: <span id="accessLen">0</span></span>
-          <span class="badge">refreshLen: <span id="refreshLen">0</span></span>
-        </div>
-
-        <div id="diagBox" style="color:var(--muted)">
-          <small>...</small>
-        </div>
+      <div class="choice-row">
+        <button id="composerPhotoBtn" class="pill-btn pill-btn--primary" type="button">Photo</button>
+        <button id="composerVideoBtn" class="pill-btn" type="button">Vidéo</button>
+        <button id="composerStoryBtn" class="pill-btn" type="button">Story</button>
       </div>
-    </div>
-  </div>
-
-  <div id="toast" class="toast"></div>
-  <div id="composerModal" class="comments-sheet" hidden>
-    <button id="composerBackdrop" class="comments-backdrop" type="button" aria-label="Fermer"></button>
-    <div class="comments-panel">
-      <div class="comments-handle"></div>
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <h3 style="margin:0" data-i18n="new_story_post">Nouvelle story / publication</h3>
-        <button id="closeComposerBtn" class="btn" type="button" data-i18n="close">Fermer</button>
-      </div>
-      <form id="composerForm" class="form" style="margin-top:10px">
-        <div class="two">
-          <div>
-            <label data-i18n="type">Type</label>
-            <select class="input" name="entry_type">
-              <option value="story">Story</option>
-              <option value="publication">Publication</option>
-            </select>
-          </div>
-          <div>
-            <label data-i18n="media">Media</label>
-            <input class="input" name="media_file" type="file" accept="image/*,video/*" required />
-          </div>
+      <form id="composerForm" class="modal-grid" style="margin-top:16px">
+        <div class="field">
+          <label for="composerFileInput">Média</label>
+          <input id="composerFileInput" name="media_file" type="file" accept="image/*,video/*" required />
         </div>
-        <div>
-          <label data-i18n="text">Texte</label>
-          <textarea class="input" name="caption" rows="3" placeholder="Ton texte..."></textarea>
+        <div id="composerPreview"></div>
+        <div class="field">
+          <label for="composerCaption">Caption</label>
+          <textarea id="composerCaption" name="caption" maxlength="600" placeholder="Écris une caption pour ton post ou ta story..."></textarea>
         </div>
-        <div id="storyMetaFields" class="row" style="gap:12px;align-items:center">
-          <label style="display:flex;gap:6px;align-items:center">
-            <input type="checkbox" name="story_save_profile" />
+        <div id="storyMetaFields" class="soft-card" hidden>
+          <label style="display:flex;gap:8px;align-items:center">
+            <input id="storySaveProfile" name="story_save_profile" type="checkbox" />
             <span>Enregistrer dans mon profil (highlight)</span>
           </label>
         </div>
-        <div id="publicationMetaFields" class="form" style="gap:8px">
-          <div class="two">
-            <div>
-              <label data-i18n="location">Lieu</label>
-              <input class="input" name="meta_location" maxlength="80" placeholder="Ville, pays..." />
+        <div id="publicationMetaFields" class="soft-card">
+          <div class="modal-grid">
+            <div class="field">
+              <label for="metaLocation">Lieu</label>
+              <input id="metaLocation" name="meta_location" maxlength="80" placeholder="Ville, pays..." />
             </div>
-            <div>
-              <label data-i18n="tags_csv">Tags (separes par virgule)</label>
-              <input class="input" name="meta_tags" maxlength="120" placeholder="rap, chill, amapiano" />
+            <div class="field">
+              <label for="metaTags">Tags</label>
+              <input id="metaTags" name="meta_tags" maxlength="120" placeholder="rap, chill, amapiano" />
             </div>
-          </div>
-          <div class="two">
-            <div>
-              <label data-i18n="visibility">Visibilite</label>
-              <select class="input" name="meta_visibility">
+            <div class="field">
+              <label for="metaVisibility">Visibilité</label>
+              <select id="metaVisibility" name="meta_visibility">
                 <option value="public">Public</option>
-                <option value="followers">Followers</option>
+                <option value="followers">Abonn?s</option>
               </select>
             </div>
-            <div class="row" style="gap:12px;align-items:center;padding-top:24px">
-              <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="meta_allow_likes" checked /> <span data-i18n="likes_enabled">Likes actifs</span></label>
-              <label style="display:flex;gap:6px;align-items:center"><input type="checkbox" name="meta_allow_comments" checked /> <span data-i18n="comments_enabled">Commentaires actifs</span></label>
+            <div class="choice-row">
+              <label style="display:flex;gap:8px;align-items:center">
+                <input id="metaAllowLikes" name="meta_allow_likes" type="checkbox" checked />
+                <span>Likes actifs</span>
+              </label>
+              <label style="display:flex;gap:8px;align-items:center">
+                <input id="metaAllowComments" name="meta_allow_comments" type="checkbox" checked />
+                <span>Commentaires actifs</span>
+              </label>
             </div>
           </div>
         </div>
-        <div id="composerPreview" style="margin-top:8px"></div>
-        <button class="btn primary" type="submit" data-i18n="publish">Publier</button>
+        <div class="modal-actions">
+          <button id="cancelComposerBtn" class="pill-btn" type="button">Annuler</button>
+          <button class="pill-btn pill-btn--primary" type="submit">Publier</button>
+        </div>
       </form>
     </div>
   </div>
 
-  <div id="profileMediaModal" class="snap-viewer" hidden>
-    <button id="profileMediaBackdrop" class="snap-viewer-backdrop" type="button" aria-label="Fermer"></button>
-    <section class="snap-viewer-panel" role="dialog" aria-modal="true" aria-label="Contenu du profil">
-      <div id="profileMediaBody"></div>
-    </section>
+  <div id="editProfileModal" class="modal-shell" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 style="margin:0;font-size:24px">Modifier le profil</h3>
+        <button id="closeEditProfileBtn" class="icon-circle" type="button" aria-label="Fermer">X</button>
+      </div>
+      <div class="modal-grid">
+        <div class="field">
+          <label for="displayNameInput">Nom d'affichage</label>
+          <input id="displayNameInput" type="text" maxlength="30" />
+        </div>
+        <div class="field">
+          <label for="avatarLabelInput">Initiales / avatar</label>
+          <input id="avatarLabelInput" type="text" maxlength="2" />
+        </div>
+        <div class="field">
+          <label for="locationInput">Localisation</label>
+          <input id="locationInput" type="text" maxlength="80" />
+        </div>
+        <div class="field">
+          <label for="bioInput">Bio</label>
+          <textarea id="bioInput" maxlength="160"></textarea>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="cancelEditProfileBtn" class="pill-btn" type="button">Annuler</button>
+        <button id="saveEditProfileBtn" class="pill-btn pill-btn--primary" type="button">Enregistrer</button>
+      </div>
+    </div>
   </div>
 
-  <script type="module" src="/profil/profil.js?v=4"></script>
+  <div id="siteSettingsModal" class="modal-shell" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 style="margin:0;font-size:24px">Réglages du site</h3>
+        <button id="closeSiteSettingsBtn" class="icon-circle" type="button" aria-label="Fermer">X</button>
+      </div>
+      <div class="modal-grid">
+        <div class="soft-card">
+          <strong>Thème</strong>
+          <div id="themeChoices" class="choice-row"></div>
+        </div>
+        <div class="soft-card">
+          <strong>Couleur accent</strong>
+          <div id="accentChoices" class="choice-row"></div>
+        </div>
+        <div class="soft-card">
+          <strong>Notifications</strong>
+          <div id="notificationChoices" class="choice-row"></div>
+        </div>
+        <div class="soft-card">
+          <strong>Confidentialité</strong>
+          <div id="privacyChoices" class="choice-row"></div>
+        </div>
+      </div>
+      <div class="modal-actions">
+        <button id="cancelSiteSettingsBtn" class="pill-btn" type="button">Annuler</button>
+        <button id="saveSiteSettingsBtn" class="pill-btn pill-btn--primary" type="button">Enregistrer</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="profileMediaModal" class="modal-shell" hidden>
+    <div class="modal-card">
+      <div class="modal-head">
+        <h3 id="profileMediaTitle" style="margin:0;font-size:24px">Contenu</h3>
+        <button id="closeProfileMediaBtn" class="icon-circle" type="button" aria-label="Fermer">X</button>
+      </div>
+      <div id="profileMediaBody"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module" src="/profil/profil.js?v=5"></script>
   <script type="module" src="/noyau/footer.js"></script>
 </body>
 </html>
-

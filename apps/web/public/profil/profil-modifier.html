@@ -3,124 +3,454 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Modifier profil — SUPCONTENT</title>
+  <title>Modifier mon profil - SUPCONTENT</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/logo-supconnect.svg" />
+  <link rel="apple-touch-icon" href="/assets/logo-supconnect.svg" />
   <link rel="stylesheet" href="/noyau/styles.css" />
+  <style>
+    body.edit-profile-page{
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top, rgba(34,197,94,.16), transparent 18%),
+        radial-gradient(circle at right, rgba(59,130,246,.12), transparent 22%),
+        linear-gradient(180deg, #050505, #0d0d0d);
+      color:#fff;
+    }
+    .edit-shell{
+      width:min(1180px, calc(100vw - 24px));
+      margin:0 auto;
+      padding:28px 0 120px;
+    }
+    .edit-header,
+    .edit-panel,
+    .edit-side-panel{
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.05);
+      backdrop-filter:blur(20px);
+      border-radius:32px;
+      box-shadow:0 24px 60px rgba(0,0,0,.24);
+    }
+    .edit-header{
+      margin-bottom:24px;
+      padding:24px;
+    }
+    .back-link{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom:18px;
+      color:#a1a1aa;
+      text-decoration:none;
+      font-size:14px;
+      font-weight:600;
+    }
+    .back-link:hover{color:#fff;}
+    .edit-header-row{
+      display:flex;
+      flex-wrap:wrap;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:18px;
+    }
+    .edit-title{
+      margin:0;
+      font-size:34px;
+      line-height:1.06;
+      letter-spacing:-.04em;
+    }
+    .edit-badges,
+    .edit-actions,
+    .edit-status-row{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      align-items:center;
+    }
+    .edit-badge,
+    .edit-btn,
+    .edit-ghost{
+      border-radius:999px;
+      font:inherit;
+      font-weight:700;
+    }
+    .edit-badge{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:9px 14px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.08);
+      color:#d4d4d8;
+      font-size:13px;
+    }
+    .edit-badge.is-ok{
+      border-color:rgba(16,185,129,.24);
+      background:rgba(16,185,129,.12);
+      color:#b7f7d7;
+    }
+    .edit-save-count{
+      padding:14px 18px;
+      border-radius:24px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(0,0,0,.2);
+      color:#d4d4d8;
+      font-size:14px;
+    }
+    .edit-grid{
+      display:grid;
+      gap:24px;
+      grid-template-columns:minmax(0,1.05fr) minmax(320px,.95fr);
+    }
+    .edit-panel,
+    .edit-side-panel{
+      padding:24px;
+    }
+    .field-grid{
+      display:grid;
+      gap:18px;
+    }
+    .field-row{
+      display:grid;
+      gap:8px;
+    }
+    .field-row label{
+      color:#d4d4d8;
+      font-size:14px;
+      font-weight:600;
+    }
+    .field-helper{
+      color:#71717a;
+      font-size:12px;
+      line-height:1.45;
+    }
+    .field-control{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:18px;
+      background:rgba(0,0,0,.2);
+      padding:14px 16px;
+    }
+    .field-icon{
+      color:#9ca3af;
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:.08em;
+      flex:0 0 auto;
+    }
+    .field-input,
+    .field-textarea,
+    .field-select{
+      width:100%;
+      border:0;
+      outline:0;
+      background:transparent;
+      color:#fff;
+      font:inherit;
+      font-size:14px;
+    }
+    .field-select option{background:#09090b;color:#fff;}
+    .field-textarea{
+      min-height:96px;
+      resize:none;
+    }
+    .field-input::placeholder,
+    .field-textarea::placeholder{color:#71717a;}
+    .split-grid{
+      display:grid;
+      gap:16px;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+    .file-card{
+      display:grid;
+      gap:8px;
+      border:1px dashed rgba(255,255,255,.12);
+      border-radius:20px;
+      background:rgba(0,0,0,.2);
+      padding:16px;
+    }
+    .file-card input[type="file"]{
+      display:block;
+      width:100%;
+      color:#d4d4d8;
+      font-size:13px;
+    }
+    .file-card input[type="file"]::file-selector-button{
+      margin-right:12px;
+      border:0;
+      border-radius:999px;
+      background:#34d399;
+      color:#04130d;
+      padding:10px 14px;
+      font-weight:800;
+      cursor:pointer;
+    }
+    .edit-btn,
+    .edit-ghost{
+      min-height:46px;
+      cursor:pointer;
+      padding:12px 18px;
+    }
+    .edit-btn{
+      border:1px solid #34d399;
+      background:#34d399;
+      color:#04130d;
+    }
+    .edit-ghost{
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.08);
+      color:#e4e4e7;
+    }
+    .hint-box,
+    .preview-box,
+    .validation-box,
+    .mini-profile{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:24px;
+      background:rgba(0,0,0,.2);
+      padding:16px;
+    }
+    .preview-title{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      margin:0;
+      font-size:22px;
+    }
+    .preview-icon{
+      width:44px;
+      height:44px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:rgba(52,211,153,.15);
+      color:#86efac;
+      font-size:13px;
+      font-weight:800;
+      letter-spacing:.08em;
+    }
+    .preview-stack{
+      margin-top:18px;
+      display:grid;
+      gap:16px;
+    }
+    .preview-card{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:24px;
+      background:rgba(0,0,0,.2);
+      padding:16px;
+    }
+    .preview-media{
+      height:112px;
+      border-radius:20px;
+      background:linear-gradient(135deg, rgba(16,185,129,.26), rgba(24,24,27,.92), rgba(59,130,246,.24));
+      overflow:hidden;
+    }
+    .preview-media img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .preview-card h3{
+      margin:14px 0 0;
+      font-size:16px;
+    }
+    .preview-card p{
+      margin:8px 0 0;
+      color:#9ca3af;
+      font-size:14px;
+      line-height:1.5;
+    }
+    .preview-card small{
+      display:block;
+      margin-top:10px;
+      color:#71717a;
+      font-size:12px;
+    }
+    .mini-profile h3{
+      margin:0;
+      font-size:22px;
+    }
+    .mini-profile .username{
+      margin-top:6px;
+      color:#9ca3af;
+      font-size:14px;
+    }
+    .mini-profile .bio{
+      margin-top:14px;
+      color:#d4d4d8;
+      font-size:14px;
+      line-height:1.55;
+    }
+    .validation-box.is-ok{
+      border-color:rgba(16,185,129,.24);
+      background:rgba(16,185,129,.12);
+      color:#b7f7d7;
+    }
+    .validation-box.is-bad{
+      border-color:rgba(239,68,68,.24);
+      background:rgba(239,68,68,.12);
+      color:#fecaca;
+    }
+    @media (max-width: 920px){
+      .edit-grid{grid-template-columns:1fr;}
+      .split-grid{grid-template-columns:1fr;}
+    }
+  </style>
 </head>
-<body>
-  <div class="nav">
-    <div class="nav-inner">
-      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
-            <div class="menu">
-        <a class="pill" href="/profil/profil.html">Profil</a>
-        <a class="pill" href="/connexion/connexion.html">Connexion</a>
+<body class="edit-profile-page">
+  <div class="edit-shell">
+    <header class="edit-header">
+      <a class="back-link" href="/profil/profil.html">&lt; Retour</a>
+
+      <div class="edit-header-row">
+        <div>
+          <h1 class="edit-title">Modifier mon profil</h1>
+          <div class="edit-badges" style="margin-top:16px;">
+            <span id="statusBadge" class="edit-badge is-ok">Status Connecte</span>
+            <span class="edit-badge">Access token: <span id="accessLen">0</span></span>
+          </div>
+        </div>
+
+        <div class="edit-save-count">Enregistrements : <span id="saveCount">0</span></div>
       </div>
-    </div>
-  </div>
+    </header>
 
-  <div class="container">
-    <div class="grid">
-      <div class="card span7">
-        <div class="row" style="justify-content:space-between;align-items:center;gap:12px">
-          <h2 style="margin:0">Modifier mon profil</h2>
-          <a class="btn" href="/profil/profil.html">← Retour</a>
-        </div>
-
-        <div class="row" style="gap:10px;flex-wrap:wrap;margin:12px 0 0 0">
-          <span id="statusBadge" class="badge">…</span>
-          <span class="badge">accessLen: <span id="accessLen">0</span></span>
-        </div>
-
-        <hr/>
-
-        <form id="updateForm" class="form">
-          <div class="two">
-            <div>
-              <label>Nom affiché</label>
-              <input class="input" name="display_name" placeholder="Ton nom" />
-            </div>
-            <div>
-              <label>Pseudo (@username)</label>
-              <input class="input" name="username" placeholder="ex: farouk_47" />
-              <small>Uniquement lettres/chiffres/_ (3–30)</small>
+    <div class="edit-grid">
+      <section class="edit-panel">
+        <form id="updateForm" class="field-grid" novalidate>
+          <div class="field-row">
+            <label for="displayNameInput">Nom affiche</label>
+            <div class="field-control">
+              <span class="field-icon">USER</span>
+              <input id="displayNameInput" class="field-input" name="display_name" placeholder="Ton nom" />
             </div>
           </div>
 
-          <div>
-            <label>Bio</label>
-            <textarea class="input" name="bio" rows="4" placeholder="Dis un truc cool sur toi…"></textarea>
+          <div class="field-row">
+            <label for="usernameInput">Pseudo (@username)</label>
+            <div class="field-control">
+              <span class="field-icon">@</span>
+              <input id="usernameInput" class="field-input" name="username" placeholder="ex: farouk_47" />
+            </div>
+            <span class="field-helper">Uniquement lettres/chiffres/_ (3-30)</span>
           </div>
 
-          <div class="two">
-            <div>
-              <label>Site web</label>
-              <input class="input" name="website" placeholder="https://..." />
-            </div>
-            <div>
-              <label>Localisation</label>
-              <input class="input" name="location" placeholder="Orly, France" />
+          <div class="field-row">
+            <label for="bioInput">Bio</label>
+            <div class="field-control">
+              <span class="field-icon">BIO</span>
+              <textarea id="bioInput" class="field-textarea" name="bio" placeholder="Dis un truc cool sur toi..."></textarea>
             </div>
           </div>
 
-          <div class="two">
-            <div>
-              <label>Date de naissance</label>
-              <input class="input" name="birth_date" type="date" />
-              <small>Format auto: YYYY-MM-DD</small>
+          <div class="field-row">
+            <label for="websiteInput">Site web</label>
+            <div class="field-control">
+              <span class="field-icon">WEB</span>
+              <input id="websiteInput" class="field-input" name="website" placeholder="https://..." />
             </div>
-            <div>
-              <label>Genre</label>
-              <select class="input" name="gender">
-                <option value="">—</option>
+          </div>
+
+          <div class="field-row">
+            <label for="locationInput">Localisation</label>
+            <div class="field-control">
+              <span class="field-icon">LOC</span>
+              <input id="locationInput" class="field-input" name="location" placeholder="Orly, France" />
+            </div>
+          </div>
+
+          <div class="field-row">
+            <label for="birthDateInput">Date de naissance</label>
+            <div class="field-control">
+              <span class="field-icon">DATE</span>
+              <input id="birthDateInput" class="field-input" name="birth_date" type="date" />
+            </div>
+            <span class="field-helper">Format auto: YYYY-MM-DD</span>
+          </div>
+
+          <div class="field-row">
+            <label for="genderInput">Genre</label>
+            <div class="field-control">
+              <span class="field-icon">GEN</span>
+              <select id="genderInput" class="field-select" name="gender">
+                <option value="">-</option>
                 <option value="male">Homme</option>
                 <option value="female">Femme</option>
                 <option value="other">Autre</option>
-                <option value="prefer_not_to_say">Ne pas dire</option>
+                <option value="prefer_not_to_say">Prefere ne pas dire</option>
               </select>
             </div>
           </div>
 
-          <div class="two">
-            <div>
-              <label>Photo de profil (fichier)</label>
-              <input class="input" name="avatar_file" type="file" accept="image/*" />
-              <small>PNG/JPG/WebP (max 3MB)</small>
-            </div>
-            <div>
-              <label>Photo de couverture (fichier)</label>
-              <input class="input" name="cover_file" type="file" accept="image/*" />
-              <small>PNG/JPG/WebP (max 3MB)</small>
-            </div>
+          <div class="split-grid">
+            <label class="field-row">
+              <span>Photo de profil (fichier)</span>
+              <div class="file-card">
+                <input id="avatarFileInput" name="avatar_file" type="file" accept="image/png,image/jpeg,image/webp" />
+                <span class="field-helper">PNG/JPG/WebP (max 3MB)</span>
+              </div>
+            </label>
+
+            <label class="field-row">
+              <span>Photo de couverture (fichier)</span>
+              <div class="file-card">
+                <input id="coverFileInput" name="cover_file" type="file" accept="image/png,image/jpeg,image/webp" />
+                <span class="field-helper">PNG/JPG/WebP (max 3MB)</span>
+              </div>
+            </label>
           </div>
 
-          <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:10px">
-            <button class="btn primary" type="submit">Enregistrer</button>
-            <button id="refreshBtn" class="btn" type="button">Recharger</button>
+          <div class="edit-actions">
+            <button class="edit-btn" type="submit">Enregistrer</button>
+            <button id="refreshBtn" class="edit-ghost" type="button">Recharger</button>
           </div>
 
-          <small id="hint" style="display:block;margin-top:10px;color:var(--muted)">
-            Si rien ne se passe: regarde la console (F12) → Network → POST /upload/* puis PATCH /auth/me.
-          </small>
+          <div class="hint-box">
+            Si rien ne se passe: regarde la console (F12) -> Network -> POST /upload/* puis PATCH /auth/me.
+          </div>
         </form>
-      </div>
+      </section>
 
-      <div class="card span5">
-        <h2>Prévisualisation</h2>
-        <div id="previewBox"><small>Chargement…</small></div>
-        <hr/>
-        <small style="color:var(--muted)">
-          Ici on preview les fichiers choisis puis on les enregistre au clic sur Enregistrer.
-        </small>
-      </div>
+      <aside class="edit-side-panel">
+        <div class="edit-status-row">
+          <div class="preview-icon">UP</div>
+          <h2 class="preview-title" style="margin:0;">Previsualisation</h2>
+        </div>
+
+        <div class="preview-stack">
+          <article class="preview-card">
+            <div class="preview-media" id="avatarPreviewMedia"></div>
+            <h3>Avatar</h3>
+            <p id="avatarPreviewSubtitle">Aucun fichier choisi</p>
+            <small id="avatarPreviewName">Aucun fichier choisi</small>
+          </article>
+
+          <article class="preview-card">
+            <div class="preview-media" id="coverPreviewMedia"></div>
+            <h3>Couverture</h3>
+            <p id="coverPreviewSubtitle">Aucun fichier choisi</p>
+            <small id="coverPreviewName">Aucun fichier choisi</small>
+          </article>
+
+          <article class="mini-profile">
+            <h3 id="miniDisplayName">-</h3>
+            <div id="miniUsername" class="username">@username</div>
+            <div id="miniBio" class="bio">Bio vide...</div>
+            <p style="margin-top:12px;color:#71717a;font-size:12px;">Ici on preview les fichiers choisis puis on les enregistre au clic sur Enregistrer.</p>
+          </article>
+
+          <article id="validationBox" class="validation-box is-ok">Tests page profil-modifier passes</article>
+          <article class="hint-box" id="feedbackBox">Ici on preview les fichiers choisis puis on les enregistre au clic sur Enregistrer.</article>
+        </div>
+      </aside>
     </div>
   </div>
 
   <div id="toast" class="toast"></div>
-
-  <!-- cache-busting version param ensures browser fetches latest JS -->
-  <script type="module" src="/profil/profil-modifier.js?v=3"></script>
+  <script type="module" src="/profil/profil-modifier.js"></script>
   <script type="module" src="/noyau/footer.js"></script>
 </body>
 </html>
-
-
-

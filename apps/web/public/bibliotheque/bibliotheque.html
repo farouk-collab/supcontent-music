@@ -3,196 +3,282 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Bibliotheque — SUPCONTENT</title>
+  <title>Bibliotheque - SUPCONTENT Music</title>
   <link rel="stylesheet" href="/noyau/styles.css" />
   <style>
-    .library-shell{
-      display:grid;
-      grid-template-columns:minmax(0,1fr) 320px;
-      gap:14px;
-    }
-    .library-main,
-    .library-side{
-      border:1px solid var(--border);
-      border-radius:16px;
-      background:rgba(7,10,18,.86);
-      backdrop-filter: blur(4px);
-      overflow:hidden;
-    }
-    .library-main{ padding:14px; }
-    .library-hero{
-      display:grid;
-      grid-template-columns:220px minmax(0,1fr);
-      gap:16px;
-      background:linear-gradient(120deg, rgba(255,138,0,.35), rgba(10,10,10,.9));
-      border:1px solid rgba(255,255,255,.14);
-      border-radius:14px;
-      padding:14px;
-    }
-    .library-hero-cover{
-      width:100%;
-      aspect-ratio:1/1;
-      border-radius:10px;
-      border:1px solid rgba(255,255,255,.16);
-      background:rgba(255,255,255,.06);
-      overflow:hidden;
-    }
-    .library-hero-cover img{
-      width:100%;height:100%;object-fit:cover;
-    }
-    .library-hero h1{
-      margin:.2rem 0 .35rem;
-      font-size:clamp(32px,4vw,64px);
-      line-height:1.02;
-      letter-spacing:-.02em;
-    }
-    .library-actions{
-      display:flex;
-      gap:10px;
-      flex-wrap:wrap;
-      margin-top:10px;
-    }
-    .library-chip-row{
-      display:flex; gap:8px; flex-wrap:wrap; margin-top:14px;
-    }
-    .library-chip{
-      border:1px solid var(--border);
-      border-radius:999px;
-      background:rgba(255,255,255,.05);
-      color:#dfe6ff;
-      padding:8px 14px;
-      font-weight:700;
-      cursor:pointer;
-    }
-    .library-chip.is-active{
-      background:#f4f7ff;
-      color:#101423;
-      border-color:#f4f7ff;
-    }
-    .library-grid{
-      margin-top:14px;
-      display:grid;
-      grid-template-columns:repeat(2,minmax(0,1fr));
-      gap:10px;
-    }
-    .library-item{
-      border:1px solid rgba(255,255,255,.12);
-      border-radius:10px;
-      padding:8px;
-      background:linear-gradient(110deg, rgba(255,145,0,.2), rgba(20,20,20,.72));
-      display:grid;
-      grid-template-columns:54px minmax(0,1fr) auto;
-      align-items:center;
-      gap:10px;
-      cursor:pointer;
-    }
-    .library-item img{
-      width:54px;height:54px;border-radius:8px;object-fit:cover;
-    }
-    .library-item .meta{ min-width:0; }
-    .library-item .meta strong{
-      display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    .library-item .meta small{
-      display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-      color:var(--muted);
-    }
-    .library-side{ padding:14px; }
-    .now-cover{
-      width:100%;
-      aspect-ratio:1/1;
-      border-radius:12px;
-      border:1px solid rgba(255,255,255,.14);
-      overflow:hidden;
-      background:rgba(255,255,255,.05);
-    }
-    .now-cover img{ width:100%;height:100%;object-fit:cover; }
-    .similar-grid{
-      margin-top:10px;
-      display:grid;
-      gap:8px;
-    }
-    .similar-grid .library-item{
-      grid-template-columns:44px minmax(0,1fr);
-      background:rgba(255,255,255,.03);
-    }
-    .similar-grid .library-item img{
-      width:44px;height:44px;
-    }
-    @media (max-width: 1080px){
-      .library-shell{ grid-template-columns:1fr; }
-      .library-side{ order:2; }
-      .library-main{ order:1; }
-    }
-    @media (max-width: 760px){
-      .library-hero{ grid-template-columns:1fr; }
-      .library-grid{ grid-template-columns:1fr; }
-    }
+    body.library-page{min-height:100vh;background:radial-gradient(circle at top,rgba(34,197,94,.16),transparent 20%),radial-gradient(circle at right,rgba(168,85,247,.14),transparent 20%),linear-gradient(180deg,#050505,#0d0d0d);color:#fff}
+    .library-shell{width:min(1380px,calc(100vw - 24px));margin:0 auto;padding:22px 0 170px}
+    .library-header,.library-col,.library-main,.library-side,.library-lower,.library-hero-card{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);backdrop-filter:blur(20px);box-shadow:0 24px 60px rgba(0,0,0,.24);border-radius:32px}
+    .library-header{position:relative;z-index:40;display:flex;justify-content:space-between;gap:20px;padding:20px;margin-bottom:22px;overflow:visible;background:radial-gradient(circle at top left,rgba(34,197,94,.14),transparent 30%),radial-gradient(circle at top right,rgba(168,85,247,.12),transparent 24%),rgba(255,255,255,.05)}
+    .library-header-main{display:flex;gap:16px;align-items:flex-start}
+    .library-brand-icon{width:54px;height:54px;border-radius:20px;display:grid;place-items:center;background:rgba(52,211,153,.14);color:#86efac;flex:0 0 auto;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+    .library-brand-icon svg{width:24px;height:24px;display:block}
+    .library-kicker{margin:0;color:#86efac;text-transform:uppercase;letter-spacing:.25em;font-size:12px;font-weight:800}
+    .library-title{margin:8px 0 0;font-size:clamp(30px,4vw,46px);line-height:1.02;letter-spacing:-.04em}
+    .library-subtitle{margin:10px 0 0;max-width:760px;color:#9ca3af;font-size:14px;line-height:1.6}
+    .library-hero-strip{display:grid;gap:12px;margin-bottom:22px;grid-template-columns:repeat(3,minmax(0,1fr))}
+    .library-hero-card{padding:16px 18px;border-radius:24px}
+    .library-hero-card strong{display:block;color:#fff;font-size:18px}
+    .library-hero-card p{margin:8px 0 0;color:#94a3b8;font-size:13px;line-height:1.45}
+    .library-header-actions,.library-chip-row,.library-action-row,.library-badge-row,.library-mode-row,.library-social-row,.library-transport{display:flex;flex-wrap:wrap;gap:10px}
+    .library-header-actions{align-items:flex-start;justify-content:flex-end}
+    .library-pill,.library-chip,.library-ghost,.library-primary,.library-badge{border-radius:999px;font:inherit;font-weight:700}
+    .library-pill,.library-chip,.library-ghost,.library-badge{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.08);color:#e5e7eb}
+    .library-primary{border:1px solid transparent;background:#34d399;color:#04130d}
+    .library-pill,.library-chip,.library-ghost,.library-primary{cursor:pointer;padding:11px 16px;min-height:42px}
+    .library-chip.is-active{background:#34d399;border-color:#34d399;color:#04130d}
+    .library-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px}
+    .library-notifications{position:relative}
+    .library-notif-btn{position:relative;border:1px solid #34d399;background:#34d399;color:#04130d}
+    .library-notif-btn.is-open{background:#facc15;border-color:#facc15;color:#111827}
+    .library-notif-count{position:absolute;top:-8px;right:-8px;min-width:24px;height:24px;padding:0 6px;border-radius:999px;background:#d946ef;color:#fff;display:grid;place-items:center;font-size:12px;font-weight:900}
+    .library-notif-panel{position:absolute;top:calc(100% + 12px);right:0;width:min(380px,calc(100vw - 24px));border:1px solid rgba(255,255,255,.1);border-radius:28px;background:rgba(24,24,27,.96);box-shadow:0 30px 70px rgba(0,0,0,.5);overflow:hidden;z-index:120}
+    .library-notif-panel[hidden]{display:none}
+    .library-notif-head{display:flex;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .library-notif-body{max-height:420px;overflow:auto;padding:12px}
+    .library-test-pill{margin-bottom:10px;padding:10px 12px;border-radius:18px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05);font-size:12px}
+    .library-test-pill.is-ok{border-color:rgba(16,185,129,.24);background:rgba(16,185,129,.12);color:#b7f7d7}
+    .library-test-pill.is-bad{border-color:rgba(248,113,113,.24);background:rgba(239,68,68,.12);color:#fecaca}
+    .library-notif-list,.library-list,.library-stats,.library-mini-list,.library-lower-grid{display:grid;gap:12px}
+    .library-notif-card,.library-list-card,.library-media-card,.library-stat-card,.library-box,.library-player-card,.library-footer-player{border:1px solid rgba(255,255,255,.1);border-radius:24px;background:rgba(0,0,0,.2)}
+    .library-notif-card{width:100%;display:grid;grid-template-columns:42px 1fr;gap:12px;padding:12px;color:inherit;text-align:left;cursor:pointer}
+    .library-notif-card.is-unread{background:rgba(217,70,239,.12);border-color:rgba(217,70,239,.24)}
+    .library-notif-icon,.library-icon-btn,.library-player-cover{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08)}
+    .library-notif-icon{width:42px;height:42px;border-radius:999px;font-size:18px}
+    .library-grid{display:grid;gap:20px;grid-template-columns:minmax(300px,.9fr) minmax(420px,1.15fr) minmax(300px,.95fr)}
+    .library-col,.library-main,.library-side,.library-lower{padding:18px}
+    .library-panel-title-row,.library-hero-top,.library-media-top,.library-player-head,.library-progress-meta{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .library-panel-title-row h2,.library-main h2,.library-side h2,.library-lower h2{margin:0;font-size:24px}
+    .library-hero{margin-bottom:16px;padding:20px;border-radius:28px;border:1px solid rgba(255,255,255,.1);background:linear-gradient(140deg,rgba(168,85,247,.24),rgba(10,10,10,.92),rgba(16,185,129,.18))}
+    .library-hero h2{margin:8px 0 0;font-size:38px;line-height:1;letter-spacing:-.04em}
+    .library-hero p{margin:10px 0 0;color:#d1d5db}
+    .library-list-card,.library-media-card,.library-box,.library-player-card{padding:16px}
+    .library-list-button{width:100%;color:inherit;text-align:left;cursor:pointer}
+    .library-list-button.is-active{border-color:rgba(52,211,153,.34);background:rgba(16,185,129,.12)}
+    .library-media-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+    .library-media-actions button,.library-transport button,.library-queue-move{cursor:pointer;font:inherit}
+    .library-icon-btn{width:42px;height:42px;border:none;border-radius:999px;color:#fff}
+    .library-icon-btn.is-favorite{color:#86efac}
+    .library-empty{padding:32px 18px;text-align:center;color:#a1a1aa}
+    .library-stat-card{padding:14px}
+    .library-stat-card p{margin:0;font-size:13px;color:#9ca3af}
+    .library-stat-card strong{display:block;margin-top:6px;font-size:28px}
+    .library-player-card,.library-box{margin-top:16px}
+    .library-player-display{padding:16px;border-radius:24px;border:1px solid rgba(52,211,153,.22);background:linear-gradient(145deg,rgba(16,185,129,.12),rgba(0,0,0,.3),rgba(168,85,247,.12))}
+    .library-player-cover{width:56px;height:56px;border-radius:20px;font-size:22px}
+    .library-player-title{margin:0;font-size:18px;font-weight:700}
+    .library-player-sub{margin:4px 0 0;color:#a1a1aa;font-size:14px}
+    .library-player-visual{margin-top:16px;min-height:180px;border:1px solid rgba(255,255,255,.1);border-radius:24px;background:rgba(0,0,0,.22);display:grid;place-items:center;text-align:center;padding:18px}
+    .library-player-visual svg{width:72px;height:72px;display:block}
+    .library-progress{height:8px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+    .library-progress > div{height:8px;border-radius:999px;background:#34d399}
+    .library-footer-player{position:sticky;bottom:16px;padding:14px 16px;margin-top:16px;background:rgba(12,12,16,.92);backdrop-filter:blur(20px)}
+    .library-footer-row{display:flex;align-items:center;gap:12px;justify-content:space-between}
+    .library-footer-meta{min-width:0;flex:1}
+    .library-footer-meta strong{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .library-footer-meta span{display:block;margin-top:4px;font-size:12px;color:#a1a1aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    @media (max-width:1180px){.library-hero-strip,.library-grid{grid-template-columns:1fr}}
+    @media (max-width:860px){.library-header{flex-direction:column}.library-header-main{align-items:flex-start}.library-header-actions{justify-content:flex-start}.library-footer-row{flex-wrap:wrap}.library-footer-meta{flex:1 1 100%}}
   </style>
 </head>
-<body>
-  <div class="nav">
-    <div class="nav-inner">
-      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
-      <div class="menu">
-        <a class="pill" href="/recherche/recherche.html">Recherche musique</a>
-        <a class="pill" href="/connexion/connexion.html">Connexion</a>
+<body class="library-page">
+  <div class="library-shell">
+    <header class="library-header">
+      <div class="library-header-main">
+        <div class="library-brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5v14"></path><path d="M9 5v14"></path><path d="m14 6 2 13"></path><path d="m19 4 3 12"></path></svg>
+        </div>
+        <div>
+          <p class="library-kicker">Bibliotheque</p>
+          <h1 class="library-title">Ta bibliotheque musicale</h1>
+          <p class="library-subtitle">Collections, favoris, player et recommandations sociales dans un espace plus premium et plus clair.</p>
+        </div>
       </div>
-    </div>
-  </div>
+      <div class="library-header-actions">
+        <span id="libraryAuthBadge" class="library-badge">Connexion non verifiee</span>
+        <button id="librarySyncButton" class="library-primary" type="button">Synchroniser</button>
+        <div class="library-notifications">
+          <button id="libraryNotificationsButton" class="library-pill library-notif-btn" type="button">Notifications<span id="libraryNotificationsCount" class="library-notif-count" hidden>0</span></button>
+          <div id="libraryNotificationsPanel" class="library-notif-panel" hidden>
+            <div class="library-notif-head">
+              <div>
+                <p class="library-kicker" style="margin:0;">Notifications</p>
+                <strong style="display:block;margin-top:4px;">Etat de la bibliotheque</strong>
+              </div>
+              <button id="libraryNotificationsReadButton" class="library-pill" type="button">Tout lire</button>
+            </div>
+            <div class="library-notif-body">
+              <div id="libraryNotificationTests" class="library-test-pill"></div>
+              <div id="libraryFeatureTests" class="library-test-pill"></div>
+              <div id="libraryNotificationsList" class="library-notif-list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
 
-  <div class="container">
-    <section class="library-shell">
-      <article class="library-main">
-        <div class="library-hero" id="libraryHero">
-          <div class="library-hero-cover" id="heroCover"></div>
-          <div>
-            <small style="color:#f7e7d0">Playlist</small>
-            <h1 id="heroTitle">Ma bibliothèque</h1>
-            <p id="heroDesc" style="margin:0;color:#f2e8d5">Les meilleurs titres de tes collections.</p>
-            <div class="library-actions">
-              <button id="playHeroBtn" class="btn primary" type="button">Lecture</button>
-              <button id="newListBtn" class="btn" type="button">Créer une playlist</button>
-              <button id="refreshBtn" class="btn" type="button">Rafraîchir</button>
+    <section class="library-hero-strip" aria-label="Temps forts bibliotheque">
+      <article class="library-hero-card">
+        <strong>Collections pilotables</strong>
+        <p>Creer, renommer, dedoublonner, partager et reorganiser tes listes depuis un seul hub plus lisible.</p>
+      </article>
+      <article class="library-hero-card">
+        <strong>Player visible partout</strong>
+        <p>Le now playing, la file, les modes audio ou video et le footer player gardent une continuite de lecture.</p>
+      </article>
+      <article class="library-hero-card">
+        <strong>Couche sociale incluse</strong>
+        <p>Reco, droits, activite recente et suggestions voisines restent a portee sans quitter la bibliotheque.</p>
+      </article>
+    </section>
+
+    <section class="library-grid">
+      <aside class="library-col">
+        <div class="library-panel-title-row">
+          <h2>Collections</h2>
+          <button id="libraryCreateCollectionButton" class="library-primary" type="button">Nouvelle</button>
+        </div>
+        <div class="library-chip-row" style="margin-top:16px;">
+          <button class="library-chip is-active" type="button" data-library-view="collections">Collections</button>
+          <button class="library-chip" type="button" data-library-view="favorites">Favoris</button>
+        </div>
+        <div id="libraryCollectionsList" class="library-list" style="margin-top:16px;"></div>
+      </aside>
+
+      <main class="library-main">
+        <section class="library-hero">
+          <div class="library-hero-top">
+            <div>
+              <p class="library-kicker">Selection</p>
+              <h2 id="libraryCollectionHero">Night Drive</h2>
+              <p>Un espace pour parcourir tes medias, ta file et tes actions de collection dans un seul flow.</p>
+            </div>
+            <div class="library-badge-row">
+              <button id="libraryFavoritesOnlyButton" class="library-pill" type="button">Favoris seulement</button>
+              <button id="libraryShareButton" class="library-pill" type="button">Partager</button>
+            </div>
+          </div>
+          <div class="library-action-row" style="margin-top:16px;">
+            <button id="libraryAddMediaButton" class="library-primary" type="button">Ajouter un media</button>
+            <button id="libraryRenameCollectionButton" class="library-pill" type="button">Renommer</button>
+            <button id="libraryDeleteCollectionButton" class="library-pill" type="button">Supprimer</button>
+            <button id="libraryMergeCollectionsButton" class="library-pill" type="button">Fusionner</button>
+            <button id="libraryDeduplicateButton" class="library-pill" type="button">Dedoublonner</button>
+          </div>
+        </section>
+
+        <div id="libraryMainContent"></div>
+      </main>
+
+      <aside class="library-side">
+        <div class="library-panel-title-row">
+          <h2>Player</h2>
+          <div class="library-mode-row">
+            <button id="libraryAudioModeButton" class="library-chip is-active" type="button">Audio</button>
+            <button id="libraryVideoModeButton" class="library-chip" type="button">Video</button>
+          </div>
+        </div>
+
+        <div class="library-player-card">
+          <div class="library-player-display">
+            <div class="library-player-head">
+              <div style="display:flex;gap:12px;align-items:center;">
+                <div id="libraryPlayerCover" class="library-player-cover">SON</div>
+                <div>
+                  <p id="libraryPlayerTitle" class="library-player-title">Late Night Session</p>
+                  <p id="libraryPlayerArtist" class="library-player-sub">DJ Nova</p>
+                  <p id="libraryPlayerCollection" class="library-player-sub">Night Drive</p>
+                </div>
+              </div>
+              <div id="libraryPlayerDuration" class="library-badge">42:18</div>
+            </div>
+
+            <div id="libraryPlayerBadges" class="library-badge-row" style="margin-top:14px;"></div>
+            <div id="libraryPlayerVisual" class="library-player-visual"></div>
+
+            <div class="library-progress-meta" style="margin-top:16px;">
+              <span id="libraryPlayerCurrentTime">00:00</span>
+              <span id="libraryPlayerEndTime">42:18</span>
+            </div>
+            <div class="library-progress" style="margin-top:10px;"><div id="libraryPlayerProgress" style="width:38%;"></div></div>
+
+            <div class="library-transport" style="margin-top:16px;">
+              <button id="libraryPrevButton" class="library-pill" type="button">Prev</button>
+              <button id="libraryNextButton" class="library-pill" type="button">Next</button>
+              <button id="libraryForwardButton" class="library-pill" type="button">+10</button>
+              <button id="libraryShuffleButton" class="library-pill" type="button">Shuffle</button>
+              <button id="libraryRepeatButton" class="library-pill" type="button">Repeat</button>
+            </div>
+
+            <div class="library-box">
+              <p style="margin:0 0 8px;color:#9ca3af;font-size:13px;">Volume</p>
+              <input id="libraryVolumeInput" type="range" min="0" max="100" value="72" style="width:100%;" />
             </div>
           </div>
         </div>
 
-        <div class="library-chip-row">
-          <button class="library-chip is-active" type="button" data-filter="all">Tout</button>
-          <button class="library-chip" type="button" data-filter="track">Musique</button>
-          <button class="library-chip" type="button" data-filter="artist">Artistes</button>
-          <button class="library-chip" type="button" data-filter="album">Albums</button>
+        <div class="library-box">
+          <h2 style="font-size:18px;margin:0;">Queue</h2>
+          <div id="libraryQueueList" class="library-mini-list" style="margin-top:14px;"></div>
         </div>
-
-        <div class="library-actions" style="margin-top:12px">
-          <button id="mergePlaylistsBtn" class="btn" type="button">Fusionner les playlists</button>
-          <button id="playMusicBtn" class="btn primary" type="button">Lire les musiques</button>
-          <button id="syncPlatformsBtn" class="btn" type="button">Synchroniser plateformes</button>
-          <button id="favoritesOnlyBtn" class="btn" type="button">Favoris uniquement</button>
-        </div>
-
-        <div id="collectionsBox" class="library-grid"></div>
-      </article>
-
-      <aside class="library-side">
-        <small style="color:#f1f4ff;font-weight:700">Now playing</small>
-        <div class="now-cover" id="nowPlayingCover"></div>
-        <h2 id="nowPlayingTitle" style="margin:.8rem 0 .2rem">Aucune lecture</h2>
-        <div id="nowPlayingSub" style="color:var(--muted)">Sélectionne un titre à gauche.</div>
-        <div class="library-actions" style="margin-top:10px">
-          <button id="openNowBtn" class="btn primary" type="button">Ouvrir</button>
-          <button id="favoriteNowBtn" class="btn" type="button">Favori</button>
-        </div>
-        <h3 style="margin:1rem 0 .4rem">Vidéos similaires</h3>
-        <div id="similarBox" class="similar-grid"></div>
       </aside>
     </section>
-  </div>
 
-  <div id="toast" class="toast"></div>
+    <section class="library-lower" style="margin-top:20px;">
+      <div class="library-panel-title-row">
+        <h2>Insights & social</h2>
+        <div id="libraryStatsGrid" class="library-stats"></div>
+      </div>
+
+      <div class="library-lower-grid" style="margin-top:16px;grid-template-columns:repeat(3,minmax(0,1fr));">
+        <div class="library-box">
+          <h2 style="font-size:18px;margin:0;">Auto collections</h2>
+          <div id="libraryAutoCollections" class="library-mini-list" style="margin-top:14px;"></div>
+        </div>
+        <div class="library-box">
+          <h2 style="font-size:18px;margin:0;">Recommandations</h2>
+          <div id="libraryRecommendationsList" class="library-mini-list" style="margin-top:14px;"></div>
+        </div>
+        <div class="library-box">
+          <h2 style="font-size:18px;margin:0;">Social</h2>
+          <div id="librarySocialList" class="library-mini-list" style="margin-top:14px;"></div>
+        </div>
+      </div>
+
+      <div class="library-lower-grid" style="margin-top:16px;grid-template-columns:repeat(3,minmax(0,1fr));">
+        <div class="library-box">
+          <h2 style="font-size:18px;margin:0;">Droits</h2>
+          <div id="libraryRightsList" class="library-mini-list" style="margin-top:14px;"></div>
+        </div>
+        <div class="library-box">
+          <h2 style="font-size:18px;margin:0;">Statut</h2>
+          <div id="libraryStatusList" class="library-mini-list" style="margin-top:14px;"></div>
+        </div>
+        <div class="library-box">
+          <h2 style="font-size:18px;margin:0;">Recents / similaires</h2>
+          <div id="libraryRecentList" class="library-mini-list" style="margin-top:14px;"></div>
+          <div id="librarySimilarList" class="library-mini-list" style="margin-top:14px;"></div>
+        </div>
+      </div>
+
+      <div class="library-footer-player">
+        <div class="library-footer-row">
+          <div id="libraryFooterCurrent" class="library-footer-meta">
+            <strong>Lecture en cours</strong>
+            <span>Late Night Session</span>
+          </div>
+          <div class="library-transport">
+            <button id="libraryFooterShuffle" class="library-pill" type="button">Shuffle</button>
+            <button id="libraryFooterPrev" class="library-pill" type="button">Prev</button>
+            <button id="libraryFooterPlay" class="library-primary" type="button">Play</button>
+            <button id="libraryFooterNext" class="library-pill" type="button">Next</button>
+            <button id="libraryFooterRepeat" class="library-pill" type="button">Repeat</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
   <script type="module" src="/bibliotheque/bibliotheque.js"></script>
   <script type="module" src="/noyau/footer.js"></script>
 </body>
 </html>
-

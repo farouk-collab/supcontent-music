@@ -3,36 +3,565 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Utilisateurs - SUPCONTENT</title>
+  <title>Recherche utilisateurs - SUPCONTENT</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/logo-supconnect.svg" />
+  <link rel="apple-touch-icon" href="/assets/logo-supconnect.svg" />
   <link rel="stylesheet" href="/noyau/styles.css" />
+  <style>
+    body.user-search-page{
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top, rgba(34,197,94,.16), transparent 18%),
+        radial-gradient(circle at right, rgba(59,130,246,.12), transparent 22%),
+        linear-gradient(180deg, #050505, #0d0d0d);
+      color:#fff;
+    }
+    .user-search-shell{
+      width:min(1100px, calc(100vw - 24px));
+      margin:0 auto;
+      padding:24px 0 120px;
+    }
+    .user-search-card,
+    .user-search-hero,
+    .user-search-feed,
+    .user-search-results{
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.05);
+      backdrop-filter:blur(20px);
+      border-radius:32px;
+      box-shadow:0 24px 60px rgba(0,0,0,.24);
+    }
+    .user-search-card{padding:24px;}
+    .user-search-hero{
+      padding:24px;
+      margin-bottom:24px;
+    }
+    .user-search-top{
+      display:flex;
+      flex-wrap:wrap;
+      justify-content:space-between;
+      gap:18px;
+    }
+    .user-search-brand{
+      display:flex;
+      gap:14px;
+      align-items:flex-start;
+    }
+    .user-search-logo{
+      width:48px;
+      height:48px;
+      border-radius:18px;
+      display:grid;
+      place-items:center;
+      background:rgba(52,211,153,.15);
+      color:#86efac;
+      font-size:20px;
+      font-weight:900;
+    }
+    .user-search-kicker{
+      margin:0;
+      color:#86efac;
+      font-size:12px;
+      letter-spacing:.24em;
+      text-transform:uppercase;
+      font-weight:800;
+    }
+    .user-search-title{
+      margin:6px 0 0;
+      font-size:34px;
+      line-height:1.05;
+      letter-spacing:-.04em;
+    }
+    .user-search-subtitle{
+      margin:14px 0 0;
+      max-width:760px;
+      color:#9ca3af;
+      font-size:14px;
+      line-height:1.55;
+    }
+    .user-search-feedback{
+      align-self:flex-start;
+      border-radius:24px;
+      border:1px solid rgba(16,185,129,.2);
+      background:rgba(16,185,129,.1);
+      color:#b7f7d7;
+      padding:14px 16px;
+      font-size:14px;
+      font-weight:600;
+    }
+    .search-panel{
+      margin-top:24px;
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:28px;
+      background:rgba(0,0,0,.25);
+      padding:18px;
+    }
+    .search-label{
+      display:block;
+      color:#d4d4d8;
+      font-size:14px;
+      margin-bottom:10px;
+    }
+    .search-input-row{
+      display:flex;
+      gap:12px;
+      align-items:center;
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:20px;
+      background:rgba(0,0,0,.2);
+      padding:14px 16px;
+    }
+    .search-input-row input{
+      width:100%;
+      border:0;
+      outline:0;
+      background:transparent;
+      color:#fff;
+      font:inherit;
+      font-size:14px;
+    }
+    .search-input-row input::placeholder{color:#71717a;}
+    .icon-btn,
+    .chip-btn,
+    .primary-btn,
+    .ghost-btn,
+    .tab-btn{
+      border-radius:999px;
+      font:inherit;
+      cursor:pointer;
+    }
+    .icon-btn{
+      border:0;
+      background:transparent;
+      color:#9ca3af;
+      padding:0;
+      width:20px;
+      height:20px;
+      display:grid;
+      place-items:center;
+      font-size:16px;
+    }
+    .action-row,
+    .chip-row,
+    .tab-row,
+    .stats-grid,
+    .feed-nav{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+    .action-row{margin-top:16px;}
+    .primary-btn{
+      border:1px solid #34d399;
+      background:#34d399;
+      color:#04130d;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:800;
+    }
+    .ghost-btn,
+    .chip-btn,
+    .tab-btn{
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.08);
+      color:#e5e7eb;
+      padding:12px 16px;
+      font-size:14px;
+      font-weight:700;
+    }
+    .ghost-btn.is-active,
+    .tab-btn.is-active{
+      background:#34d399;
+      border-color:#34d399;
+      color:#04130d;
+    }
+    .sort-wrap{
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.08);
+      color:#e5e7eb;
+      padding:0 14px;
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .sort-wrap select{
+      border:0;
+      background:transparent;
+      color:#fff;
+      font:inherit;
+      outline:0;
+      padding:12px 0;
+    }
+    .sort-wrap option{background:#09090b;color:#fff;}
+    .stats-grid{
+      margin-top:18px;
+      display:grid;
+      grid-template-columns:repeat(2, minmax(0,1fr));
+    }
+    .stat-box{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:24px;
+      background:rgba(0,0,0,.2);
+      padding:16px;
+    }
+    .stat-box p:first-child{margin:0;color:#d4d4d8;font-size:14px;font-weight:700;}
+    .stat-box p:last-child{margin:10px 0 0;color:#9ca3af;font-size:13px;line-height:1.45;}
+    .user-search-feed,
+    .user-search-results{margin-top:24px;padding:24px;}
+    .section-head{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:flex-start;
+      margin-bottom:16px;
+    }
+    .section-head p{margin:0;color:#9ca3af;font-size:14px;}
+    .section-head h2{margin:6px 0 0;font-size:22px;}
+    .counter-pill{
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.05);
+      color:#d4d4d8;
+      padding:8px 12px;
+      font-size:12px;
+      font-weight:700;
+    }
+    .feed-card{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:28px;
+      background:rgba(0,0,0,.2);
+      padding:18px;
+    }
+    .feed-grid{
+      display:grid;
+      gap:16px;
+      grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);
+    }
+    .feed-media{
+      position:relative;
+      min-height:540px;
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:24px;
+      overflow:hidden;
+      background:linear-gradient(135deg, rgba(217,70,239,.2), rgba(0,0,0,.92), rgba(52,211,153,.2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+    .feed-media.is-photo{
+      background:linear-gradient(135deg, rgba(59,130,246,.2), rgba(0,0,0,.92), rgba(52,211,153,.2));
+    }
+    .feed-media-center{
+      color:#fff;
+      font-size:74px;
+      opacity:.9;
+      user-select:none;
+    }
+    .feed-badges,
+    .feed-actions,
+    .feed-user-actions,
+    .result-tags{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+    }
+    .feed-badges{
+      position:absolute;
+      top:16px;
+      left:16px;
+    }
+    .badge{
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(0,0,0,.5);
+      color:#fff;
+      padding:8px 12px;
+      font-size:12px;
+      font-weight:700;
+    }
+    .nav-side{
+      position:absolute;
+      top:50%;
+      transform:translateY(-50%);
+      width:42px;
+      height:42px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(0,0,0,.45);
+      color:#fff;
+      display:grid;
+      place-items:center;
+      font-size:18px;
+      cursor:pointer;
+    }
+    .nav-side[disabled]{
+      opacity:.35;
+      cursor:not-allowed;
+    }
+    .nav-side.prev{left:12px;}
+    .nav-side.next{right:12px;}
+    .feed-overlay{
+      position:absolute;
+      left:16px;
+      right:16px;
+      bottom:16px;
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-end;
+      gap:14px;
+    }
+    .feed-overlay h3{margin:12px 0 0;font-size:18px;}
+    .feed-overlay p{margin:6px 0 0;color:#e4e4e7;font-size:14px;line-height:1.45;}
+    .feed-link-btn{
+      border:0;
+      background:none;
+      color:#fff;
+      font:inherit;
+      cursor:pointer;
+      padding:0;
+      text-align:left;
+    }
+    .feed-side-box{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:24px;
+      background:rgba(0,0,0,.2);
+      padding:16px;
+    }
+    .feed-side-box h3{margin:0;font-size:16px;}
+    .feed-side-box p{margin:10px 0 0;color:#9ca3af;font-size:14px;line-height:1.5;}
+    .comment-list{
+      margin-top:12px;
+      display:grid;
+      gap:10px;
+    }
+    .comment-item{
+      border-radius:16px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.05);
+      padding:10px 12px;
+      font-size:14px;
+      color:#d4d4d8;
+    }
+    .result-list{
+      display:grid;
+      gap:14px;
+    }
+    .result-card{
+      border:1px solid rgba(255,255,255,.1);
+      border-radius:24px;
+      background:rgba(0,0,0,.2);
+      padding:16px;
+      transition:border-color .18s ease, background .18s ease;
+    }
+    .result-card:hover{
+      border-color:rgba(52,211,153,.2);
+      background:rgba(0,0,0,.28);
+    }
+    .result-top{
+      display:flex;
+      justify-content:space-between;
+      gap:14px;
+      align-items:flex-start;
+    }
+    .result-user{
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+      min-width:0;
+    }
+    .result-avatar{
+      width:56px;
+      height:56px;
+      border-radius:20px;
+      overflow:hidden;
+      display:grid;
+      place-items:center;
+      background:linear-gradient(135deg, rgba(52,211,153,.2), rgba(59,130,246,.2));
+      font-size:18px;
+      font-weight:800;
+      flex:none;
+    }
+    .result-avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .result-user h3{
+      margin:0;
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:17px;
+    }
+    .result-user p{
+      margin:6px 0 0;
+      color:#9ca3af;
+      font-size:14px;
+      line-height:1.45;
+    }
+    .result-action-col{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex:none;
+    }
+    .small-btn{
+      width:40px;
+      height:40px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      display:grid;
+      place-items:center;
+      cursor:pointer;
+    }
+    .small-btn.is-favorite{
+      background:#fbbf24;
+      color:#000;
+    }
+    .verified-dot,
+    .private-dot{
+      font-size:12px;
+      font-weight:800;
+      color:#86efac;
+    }
+    .private-dot{color:#a1a1aa;}
+    .empty-box{
+      border:1px dashed rgba(255,255,255,.12);
+      border-radius:24px;
+      background:rgba(0,0,0,.12);
+      padding:32px;
+      text-align:center;
+      color:#9ca3af;
+    }
+    .test-box{
+      margin-top:24px;
+      border-radius:24px;
+      padding:14px 16px;
+      border:1px solid rgba(255,255,255,.1);
+      background:rgba(0,0,0,.2);
+      font-size:14px;
+    }
+    .test-box.is-ok{
+      border-color:rgba(16,185,129,.24);
+      background:rgba(16,185,129,.12);
+      color:#b7f7d7;
+    }
+    .test-box.is-bad{
+      border-color:rgba(239,68,68,.24);
+      background:rgba(239,68,68,.12);
+      color:#fecaca;
+    }
+    @media (max-width: 960px){
+      .feed-grid{grid-template-columns:1fr;}
+      .stats-grid{grid-template-columns:1fr;}
+      .section-head,
+      .result-top,
+      .user-search-top{flex-direction:column;}
+      .feed-overlay{flex-direction:column;align-items:flex-start;}
+    }
+  </style>
 </head>
-<body>
-  <div class="nav">
-    <div class="nav-inner">
-      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
-      <div class="menu">
-        <a class="pill" href="/recherche/recherche.html">Recherche musique</a>
-        <a class="pill" href="/connexion/connexion.html">Connexion</a>
-      </div>
-    </div>
-  </div>
-
-  <div class="container">
-    <div class="grid">
-      <div class="card span12">
-        <div class="row" style="justify-content:space-between;align-items:center;gap:12px">
-          <h2 style="margin:0">Explorer les comptes</h2>
-          <small style="color:var(--muted)">Recherche par pseudo ou nom</small>
+<body class="user-search-page">
+  <div class="user-search-shell">
+    <section class="user-search-hero">
+      <div class="user-search-top">
+        <div>
+          <div class="user-search-brand">
+            <div class="user-search-logo">U</div>
+            <div>
+              <p class="user-search-kicker">Recherche utilisateurs</p>
+              <h1 class="user-search-title">Explorer les comptes</h1>
+            </div>
+          </div>
+          <p class="user-search-subtitle">
+            Cherche par pseudo, nom affiche ou bio. Tu peux aussi filtrer, trier, suivre, mettre en favori et decouvrir
+            les profils via un fil immersif de photos et videos.
+          </p>
         </div>
-        <form id="usersSearchForm" class="row" style="margin-top:12px;gap:8px">
-          <input class="input" name="q" placeholder="@pseudo ou nom affiché" required />
-          <button class="btn primary" type="submit">Rechercher</button>
-        </form>
+
+        <div id="usersFeedback" class="user-search-feedback">
+          Cherche un pseudo ou un nom pour voir les profils.
+        </div>
       </div>
-      <div class="card span12">
-        <div id="usersResults"><small>Fais une recherche pour commencer.</small></div>
+
+      <div class="search-panel">
+        <label class="search-label" for="usersSearchInput">Recherche par pseudo ou nom</label>
+        <div class="search-input-row">
+          <span style="color:#9ca3af;">@</span>
+          <input id="usersSearchInput" type="text" placeholder="@pseudo ou nom affiche" />
+          <button id="usersClearBtn" type="button" class="icon-btn" hidden>x</button>
+        </div>
+
+        <div class="action-row">
+          <button id="usersSearchBtn" type="button" class="primary-btn">Rechercher</button>
+          <button id="usersVerifiedBtn" type="button" class="ghost-btn">Verifies seulement</button>
+          <div class="sort-wrap">
+            <span>Trier</span>
+            <select id="usersSortSelect">
+              <option value="pertinence">Pertinence</option>
+              <option value="mutuals">Plus d'abonnements en commun</option>
+              <option value="followers">Plus suivis</option>
+              <option value="alphabetique">Alphabetique</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="usersTabRow" class="tab-row" style="margin-top:16px;">
+          <button type="button" class="tab-btn is-active" data-tab="all">Tout</button>
+          <button type="button" class="tab-btn" data-tab="verified">Verifies</button>
+          <button type="button" class="tab-btn" data-tab="mutuals">Proches</button>
+          <button type="button" class="tab-btn" data-tab="following">Suivis</button>
+          <button type="button" class="tab-btn" data-tab="favorites">Favoris</button>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-box">
+            <p>Tendances</p>
+            <div id="trendingSearches" class="chip-row" style="margin-top:12px;"></div>
+          </div>
+          <div class="stat-box">
+            <p>Recherches recentes</p>
+            <div id="recentSearches" class="chip-row" style="margin-top:12px;"></div>
+          </div>
+        </div>
       </div>
-    </div>
+    </section>
+
+    <section class="user-search-feed">
+      <div class="section-head">
+        <div>
+          <p>Decouvrir par le contenu</p>
+          <h2>Fil photos & videos, un par un</h2>
+        </div>
+        <span id="feedCounter" class="counter-pill">0/0</span>
+      </div>
+
+      <p style="margin:0 0 16px;color:#9ca3af;font-size:14px;">
+        Utilise les fleches du clavier ou les boutons lateraux pour passer au contenu suivant ou precedent.
+      </p>
+
+      <div id="contentFeedStage"></div>
+    </section>
+
+    <section class="user-search-results">
+      <div class="section-head">
+        <div>
+          <p>Resultats</p>
+          <h2><span id="resultsCount">0</span> profil(s)</h2>
+        </div>
+        <span id="queryChip" class="counter-pill" hidden></span>
+      </div>
+
+      <div id="usersResults" class="result-list">
+        <div class="empty-box">Fais une recherche pour commencer.</div>
+      </div>
+    </section>
+
+    <div id="usersTests" class="test-box is-ok">Tests recherche utilisateurs passes</div>
   </div>
 
   <div id="toast" class="toast"></div>
@@ -40,4 +569,3 @@
   <script type="module" src="/noyau/footer.js"></script>
 </body>
 </html>
-

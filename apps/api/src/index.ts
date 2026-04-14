@@ -16,6 +16,9 @@ import { ensureFollowTables } from "./db/follows";
 import { ensureSpotifyLinksTable, getSpotifyLinkByUserId, upsertSpotifyLink } from "./db/spotifyLinks";
 import { ensurePasswordResetTable } from "./db/passwordResets";
 import { ensureProfilePostsTable } from "./db/profilePosts";
+import { ensureChatTables } from "./db/chat";
+import { ensureLiveTables } from "./db/live";
+import { ensureShopTables } from "./db/shop";
 import {
   spotifyGet,
   spotifyGetPlaylistTracks,
@@ -34,6 +37,9 @@ import followsRoutes from "./routes/follows";
 import feedRoutes from "./routes/feed";
 import notificationsRoutes from "./routes/notifications";
 import profilePostsRoutes from "./routes/profilePosts";
+import chatRoutes from "./routes/chat";
+import liveRoutes from "./routes/live";
+import shopRoutes from "./routes/shop";
 import { AuthedRequest, requireAuth } from "./middleware/requireAuth";
 
 const app = express();
@@ -128,6 +134,8 @@ const endpointCatalog: EndpointDef[] = [
   { method: "put", path: "/follows/swipe/preferences", tag: "Follows", auth: true },
   { method: "get", path: "/follows/swipe/profiles", tag: "Follows", auth: true },
   { method: "post", path: "/follows/swipe/profiles/{targetUserId}", tag: "Follows", auth: true },
+  { method: "get", path: "/follows/swipe/likes-you", tag: "Follows", auth: true },
+  { method: "get", path: "/follows/swipe/matches/me", tag: "Follows", auth: true },
   { method: "get", path: "/follows/swipe/music", tag: "Follows", auth: true },
   { method: "post", path: "/follows/swipe/music", tag: "Follows", auth: true },
   { method: "get", path: "/follows/swipe/invitations/me", tag: "Follows", auth: true },
@@ -144,6 +152,27 @@ const endpointCatalog: EndpointDef[] = [
   { method: "delete", path: "/profile-posts/{id}", tag: "ProfilePosts", auth: true },
   { method: "get", path: "/feed/me", tag: "Feed", auth: true },
   { method: "get", path: "/notifications/me", tag: "Notifications", auth: true },
+  { method: "get", path: "/chat/threads", tag: "Chat", auth: true },
+  { method: "post", path: "/chat/threads", tag: "Chat", auth: true },
+  { method: "get", path: "/chat/threads/{threadId}/messages", tag: "Chat", auth: true },
+  { method: "post", path: "/chat/threads/{threadId}/messages", tag: "Chat", auth: true },
+  { method: "get", path: "/live/rooms", tag: "Live" },
+  { method: "post", path: "/live/rooms/{roomId}/join", tag: "Live", auth: true },
+  { method: "post", path: "/live/rooms/{roomId}/like", tag: "Live", auth: true },
+  { method: "post", path: "/live/rooms/{roomId}/gift", tag: "Live", auth: true },
+  { method: "post", path: "/live/rooms/{roomId}/messages", tag: "Live", auth: true },
+  { method: "post", path: "/live/rooms/{roomId}/preferences", tag: "Live", auth: true },
+  { method: "post", path: "/live/rooms/{roomId}/reminder", tag: "Live", auth: true },
+  { method: "get", path: "/shop/products", tag: "Shop" },
+  { method: "get", path: "/shop/spotlight", tag: "Shop" },
+  { method: "get", path: "/shop/cart", tag: "Shop", auth: true },
+  { method: "get", path: "/shop/favorites", tag: "Shop", auth: true },
+  { method: "post", path: "/shop/products", tag: "Shop", auth: true },
+  { method: "post", path: "/shop/favorites/{productId}", tag: "Shop", auth: true },
+  { method: "post", path: "/shop/cart/items", tag: "Shop", auth: true },
+  { method: "post", path: "/shop/checkout", tag: "Shop", auth: true },
+  { method: "delete", path: "/shop/favorites/{productId}", tag: "Shop", auth: true },
+  { method: "delete", path: "/shop/cart/items/{cartItemId}", tag: "Shop", auth: true },
 ];
 
 const buildOpenApiSpec = (baseUrl: string) => {
@@ -181,6 +210,9 @@ const buildOpenApiSpec = (baseUrl: string) => {
       { name: "ProfilePosts" },
       { name: "Feed" },
       { name: "Notifications" },
+      { name: "Chat" },
+      { name: "Live" },
+      { name: "Shop" },
       { name: "Upload" },
     ],
     components: {
@@ -208,6 +240,9 @@ app.use("/follows", followsRoutes);
 app.use("/profile-posts", profilePostsRoutes);
 app.use("/feed", feedRoutes);
 app.use("/notifications", notificationsRoutes);
+app.use("/chat", chatRoutes);
+app.use("/live", liveRoutes);
+app.use("/shop", shopRoutes);
 
 app.get("/openapi.json", (req, res) => {
   const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "https");
@@ -1320,5 +1355,14 @@ ensurePasswordResetTable().catch((err) => {
 
 ensureProfilePostsTable().catch((err) => {
   console.error("Profile posts table init failed (non-blocking):", err?.message || err);
+});
+ensureChatTables().catch((err) => {
+  console.error("Chat tables init failed (non-blocking):", err?.message || err);
+});
+ensureLiveTables().catch((err) => {
+  console.error("Live tables init failed (non-blocking):", err?.message || err);
+});
+ensureShopTables().catch((err) => {
+  console.error("Shop tables init failed (non-blocking):", err?.message || err);
 });
 

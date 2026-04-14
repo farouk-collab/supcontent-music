@@ -9,7 +9,7 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
   const limitRaw = Number.parseInt(String(req.query.limit || "12"), 10);
   const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(40, limitRaw)) : 12;
 
-  const [followersRes, suggestionsRes, repliesRes] = await Promise.all([
+  const [followersRes, suggestionsRes, repliesRes, chatMessagesRes] = await Promise.all([
     pool.query(
       `
         SELECT
@@ -78,12 +78,37 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
       `,
       [userId, limit]
     ),
+    pool.query(
+      `
+        SELECT
+          ct.id AS thread_id,
+          cm.id AS message_id,
+          cm.body,
+          cm.message_type,
+          cm.created_at,
+          other.id AS actor_id,
+          other.display_name,
+          other.username,
+          other.avatar_url
+        FROM chat_threads ct
+        JOIN chat_messages cm ON cm.thread_id = ct.id
+        JOIN users other
+          ON other.id = CASE WHEN ct.user_a_id = $1 THEN ct.user_b_id ELSE ct.user_a_id END
+        WHERE $1 IN (ct.user_a_id, ct.user_b_id)
+          AND cm.sender_id <> $1
+          AND cm.read_at IS NULL
+        ORDER BY cm.created_at DESC
+        LIMIT $2
+      `,
+      [userId, limit]
+    ),
   ]);
 
   return res.json({
     followers: followersRes.rows,
     suggestions: suggestionsRes.rows,
     comment_replies: repliesRes.rows,
+    chat_messages: chatMessagesRes.rows,
   });
 });
 

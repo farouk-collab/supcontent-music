@@ -21,7 +21,7 @@ function optionalUserIdFromAuthHeader(authHeader: string | undefined) {
 async function readUserBasic(userId: string) {
   const r = await pool.query(
     `
-      SELECT id, display_name, username, avatar_url, bio
+      SELECT id, display_name, username, avatar_url, bio, location
       FROM users
       WHERE id = $1
       LIMIT 1
@@ -29,6 +29,201 @@ async function readUserBasic(userId: string) {
     [userId]
   );
   return r.rows[0] || null;
+}
+
+function isUuid(value: string) {
+  return /^[0-9a-fA-F-]{36}$/.test(value);
+}
+
+function toOrderedPair(userA: string, userB: string) {
+  return userA < userB ? { userAId: userA, userBId: userB } : { userAId: userB, userBId: userA };
+}
+
+function isPositiveSwipe(direction: string) {
+  return direction === "like" || direction === "superlike";
+}
+
+async function ensureMatchRecord(input: {
+  actorId: string;
+  targetUserId: string;
+  actionId: string;
+}) {
+  const { userAId, userBId } = toOrderedPair(input.actorId, input.targetUserId);
+  const matchIdRes = await pool.query(
+    `
+      INSERT INTO swipe_matches (id, user_a_id, user_b_id, matched_by_user_id, created_by_action_id, created_at, updated_at)
+      VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      ON CONFLICT (user_a_id, user_b_id)
+      DO UPDATE SET
+        matched_by_user_id = EXCLUDED.matched_by_user_id,
+        created_by_action_id = EXCLUDED.created_by_action_id,
+        updated_at = NOW()
+      RETURNING id, created_at, updated_at
+    `,
+    [randomUUID(), userAId, userBId, input.actorId, input.actionId]
+  );
+  return matchIdRes.rows[0] || null;
+}
+
+async function buildLikesYouList(userId: string, limit: number) {
+  const r = await pool.query(
+    `
+      WITH latest_incoming AS (
+        SELECT DISTINCT ON (sa.actor_id)
+          sa.id,
+          sa.actor_id,
+          sa.target_user_id,
+          sa.direction,
+          sa.is_superlike,
+          sa.message,
+          sa.created_at
+        FROM swipe_actions sa
+        WHERE sa.target_user_id = $1
+          AND sa.actor_id <> $1
+          AND sa.target_user_id IS NOT NULL
+        ORDER BY sa.actor_id, sa.created_at DESC
+      ),
+      latest_outgoing AS (
+        SELECT DISTINCT ON (sa.target_user_id)
+          sa.target_user_id,
+          sa.direction,
+          sa.is_superlike,
+          sa.created_at
+        FROM swipe_actions sa
+        WHERE sa.actor_id = $1
+          AND sa.target_user_id IS NOT NULL
+        ORDER BY sa.target_user_id, sa.created_at DESC
+      )
+      SELECT
+        li.id AS swipe_id,
+        li.actor_id,
+        li.direction,
+        li.is_superlike,
+        li.message,
+        li.created_at,
+        u.id,
+        u.display_name,
+        u.username,
+        u.avatar_url,
+        u.bio,
+        u.location,
+        EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = li.actor_id AND f.following_id = $1) AS actor_follows_me,
+        EXISTS(SELECT 1 FROM follows f WHERE f.follower_id = $1 AND f.following_id = li.actor_id) AS i_follow_actor,
+        sm.id AS match_id,
+        sm.created_at AS match_created_at
+      FROM latest_incoming li
+      JOIN users u ON u.id = li.actor_id
+      LEFT JOIN latest_outgoing lo ON lo.target_user_id = li.actor_id
+      LEFT JOIN swipe_matches sm
+        ON (
+          (sm.user_a_id = li.actor_id AND sm.user_b_id = $1)
+          OR (sm.user_b_id = li.actor_id AND sm.user_a_id = $1)
+        )
+      WHERE (li.direction IN ('like', 'superlike') OR (li.direction = 'like' AND li.is_superlike = TRUE))
+        AND lo.target_user_id IS NULL
+      ORDER BY
+        CASE WHEN COALESCE(li.is_superlike, FALSE) OR li.direction = 'superlike' THEN 0 ELSE 1 END,
+        li.created_at DESC
+      LIMIT $2
+    `,
+    [userId, limit]
+  );
+
+  return r.rows.map((row: any) => ({
+    swipe_id: String(row.swipe_id || ""),
+    profile_id: String(row.id || row.actor_id || ""),
+    direction: Boolean(row.is_superlike) || String(row.direction || "") === "superlike" ? "superlike" : String(row.direction || "like"),
+    is_superlike: Boolean(row.is_superlike) || String(row.direction || "") === "superlike",
+    message: row.message == null ? null : String(row.message || ""),
+    created_at: row.created_at,
+    match_id: row.match_id ? String(row.match_id) : null,
+    match_created_at: row.match_created_at || null,
+    can_chat_direct: Boolean(row.actor_follows_me) && Boolean(row.i_follow_actor),
+    source_label:
+      (Boolean(row.is_superlike) || String(row.direction || "") === "superlike") ? "Super like recu" : "Like recu",
+    user: {
+      id: String(row.id || row.actor_id || ""),
+      display_name: String(row.display_name || row.username || "Utilisateur"),
+      username: row.username == null ? null : String(row.username || ""),
+      avatar_url: row.avatar_url == null ? null : String(row.avatar_url || ""),
+      bio: row.bio == null ? null : String(row.bio || ""),
+      location: row.location == null ? null : String(row.location || ""),
+    },
+  }));
+}
+
+async function buildMatchesList(userId: string, limit: number) {
+  const r = await pool.query(
+    `
+      SELECT
+        sm.id,
+        sm.created_at,
+        sm.updated_at,
+        sm.matched_by_user_id,
+        CASE WHEN sm.user_a_id = $1 THEN sm.user_b_id ELSE sm.user_a_id END AS other_user_id,
+        u.display_name,
+        u.username,
+        u.avatar_url,
+        u.bio,
+        u.location,
+        la.direction AS my_direction,
+        la.is_superlike AS my_is_superlike,
+        lb.direction AS their_direction,
+        lb.is_superlike AS their_is_superlike,
+        la.created_at AS my_swipe_created_at,
+        lb.created_at AS their_swipe_created_at
+      FROM swipe_matches sm
+      JOIN users u
+        ON u.id = CASE WHEN sm.user_a_id = $1 THEN sm.user_b_id ELSE sm.user_a_id END
+      LEFT JOIN LATERAL (
+        SELECT sa.direction, sa.is_superlike, sa.created_at
+        FROM swipe_actions sa
+        WHERE sa.actor_id = $1
+          AND sa.target_user_id = u.id
+        ORDER BY sa.created_at DESC
+        LIMIT 1
+      ) la ON TRUE
+      LEFT JOIN LATERAL (
+        SELECT sa.direction, sa.is_superlike, sa.created_at
+        FROM swipe_actions sa
+        WHERE sa.actor_id = u.id
+          AND sa.target_user_id = $1
+        ORDER BY sa.created_at DESC
+        LIMIT 1
+      ) lb ON TRUE
+      WHERE sm.user_a_id = $1 OR sm.user_b_id = $1
+      ORDER BY sm.updated_at DESC, sm.created_at DESC
+      LIMIT $2
+    `,
+    [userId, limit]
+  );
+
+  return r.rows.map((row: any) => ({
+    match_id: String(row.id || ""),
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+    matched_by_user_id: String(row.matched_by_user_id || ""),
+    can_chat_direct: true,
+    my_direction:
+      row.my_direction ? (Boolean(row.my_is_superlike) || String(row.my_direction) === "superlike" ? "superlike" : String(row.my_direction)) : null,
+    their_direction:
+      row.their_direction ? (Boolean(row.their_is_superlike) || String(row.their_direction) === "superlike" ? "superlike" : String(row.their_direction)) : null,
+    my_swipe_created_at: row.my_swipe_created_at || null,
+    their_swipe_created_at: row.their_swipe_created_at || null,
+    is_superlike:
+      Boolean(row.my_is_superlike) ||
+      Boolean(row.their_is_superlike) ||
+      String(row.my_direction || "") === "superlike" ||
+      String(row.their_direction || "") === "superlike",
+    user: {
+      id: String(row.other_user_id || ""),
+      display_name: String(row.display_name || row.username || "Utilisateur"),
+      username: row.username == null ? null : String(row.username || ""),
+      avatar_url: row.avatar_url == null ? null : String(row.avatar_url || ""),
+      bio: row.bio == null ? null : String(row.bio || ""),
+      location: row.location == null ? null : String(row.location || ""),
+    },
+  }));
 }
 
 async function readUserAge(userId: string): Promise<number | null> {
@@ -174,7 +369,7 @@ router.get("/settings/blocked", requireAuth, async (req: AuthedRequest, res) => 
 router.post("/settings/blocked/:targetUserId", requireAuth, async (req: AuthedRequest, res) => {
   const blockerId = req.user!.id;
   const blockedId = String(req.params.targetUserId || "");
-  if (!/^[0-9a-fA-F-]{36}$/.test(blockedId)) return res.status(400).json({ erreur: "targetUserId invalide" });
+  if (!isUuid(blockedId)) return res.status(400).json({ erreur: "targetUserId invalide" });
   if (blockerId === blockedId) return res.status(400).json({ erreur: "Action impossible sur soi-meme" });
   const target = await readUserBasic(blockedId);
   if (!target) return res.status(404).json({ erreur: "Utilisateur introuvable" });
@@ -192,7 +387,7 @@ router.post("/settings/blocked/:targetUserId", requireAuth, async (req: AuthedRe
 router.delete("/settings/blocked/:targetUserId", requireAuth, async (req: AuthedRequest, res) => {
   const blockerId = req.user!.id;
   const blockedId = String(req.params.targetUserId || "");
-  if (!/^[0-9a-fA-F-]{36}$/.test(blockedId)) return res.status(400).json({ erreur: "targetUserId invalide" });
+  if (!isUuid(blockedId)) return res.status(400).json({ erreur: "targetUserId invalide" });
   await pool.query(`DELETE FROM blocked_users WHERE blocker_id = $1 AND blocked_id = $2`, [blockerId, blockedId]);
   return res.json({ ok: true });
 });
@@ -420,11 +615,11 @@ router.get("/swipe/profiles", requireAuth, async (req: AuthedRequest, res) => {
 router.post("/swipe/profiles/:targetUserId", requireAuth, async (req: AuthedRequest, res) => {
   const actorId = req.user!.id;
   const targetUserId = String(req.params.targetUserId || "");
-  if (!/^[0-9a-fA-F-]{36}$/.test(targetUserId)) return res.status(400).json({ erreur: "targetUserId invalide" });
+  if (!isUuid(targetUserId)) return res.status(400).json({ erreur: "targetUserId invalide" });
   if (actorId === targetUserId) return res.status(400).json({ erreur: "Action impossible sur soi-meme" });
 
   const direction = String(req.body?.direction || "").trim().toLowerCase();
-  if (!["like", "pass"].includes(direction)) return res.status(400).json({ erreur: "direction invalide" });
+  if (!["like", "pass", "superlike"].includes(direction)) return res.status(400).json({ erreur: "direction invalide" });
   const message = String(req.body?.message || "").trim();
 
   const target = await readUserBasic(targetUserId);
@@ -437,15 +632,16 @@ router.post("/swipe/profiles/:targetUserId", requireAuth, async (req: AuthedRequ
     return res.status(403).json({ erreur: "Swipe non autorise entre mineur et majeur" });
   }
 
+  const actionId = randomUUID();
   await pool.query(
     `
-      INSERT INTO swipe_actions (id, actor_id, target_user_id, direction, message)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO swipe_actions (id, actor_id, target_user_id, direction, is_superlike, message)
+      VALUES ($1, $2, $3, $4, $5, $6)
     `,
-    [randomUUID(), actorId, targetUserId, direction, message || null]
+    [actionId, actorId, targetUserId, direction === "superlike" ? "like" : direction, direction === "superlike", message || null]
   );
 
-  if (direction === "like") {
+  if (isPositiveSwipe(direction)) {
     await pool.query(
       `
         INSERT INTO follows (follower_id, following_id)
@@ -469,13 +665,38 @@ router.post("/swipe/profiles/:targetUserId", requireAuth, async (req: AuthedRequ
   }
 
   const relation = await isMutualFollow(actorId, targetUserId);
+  const match = relation.mutual ? await ensureMatchRecord({ actorId, targetUserId, actionId }) : null;
   return res.json({
     ok: true,
-    direction,
+    direction: direction === "superlike" ? "superlike" : direction,
+    is_superlike: direction === "superlike",
     relation,
     can_chat_direct: relation.mutual,
     invitation_created: invitationCreated,
+    match: match
+      ? {
+          id: String(match.id || ""),
+          created_at: match.created_at,
+          updated_at: match.updated_at,
+        }
+      : null,
   });
+});
+
+router.get("/swipe/likes-you", requireAuth, async (req: AuthedRequest, res) => {
+  const userId = req.user!.id;
+  const limitRaw = Number.parseInt(String(req.query.limit || "20"), 10);
+  const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(100, limitRaw)) : 20;
+  const items = await buildLikesYouList(userId, limit);
+  return res.json({ items, count: items.length });
+});
+
+router.get("/swipe/matches/me", requireAuth, async (req: AuthedRequest, res) => {
+  const userId = req.user!.id;
+  const limitRaw = Number.parseInt(String(req.query.limit || "20"), 10);
+  const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(100, limitRaw)) : 20;
+  const items = await buildMatchesList(userId, limit);
+  return res.json({ items, count: items.length });
 });
 
 router.get("/swipe/music", requireAuth, async (req: AuthedRequest, res) => {
@@ -617,7 +838,7 @@ router.get("/swipe/invitations/me", requireAuth, async (req: AuthedRequest, res)
 router.get("/can-chat/:targetUserId", requireAuth, async (req: AuthedRequest, res) => {
   const userId = req.user!.id;
   const targetUserId = String(req.params.targetUserId || "");
-  if (!/^[0-9a-fA-F-]{36}$/.test(targetUserId)) return res.status(400).json({ erreur: "targetUserId invalide" });
+  if (!isUuid(targetUserId)) return res.status(400).json({ erreur: "targetUserId invalide" });
   const relation = await isMutualFollow(userId, targetUserId);
   return res.json({ can_chat_direct: relation.mutual, relation });
 });
@@ -625,7 +846,7 @@ router.get("/can-chat/:targetUserId", requireAuth, async (req: AuthedRequest, re
 router.post("/:targetUserId", requireAuth, async (req: AuthedRequest, res) => {
   const followerId = req.user!.id;
   const targetUserId = String(req.params.targetUserId || "");
-  if (!/^[0-9a-fA-F-]{36}$/.test(targetUserId)) return res.status(400).json({ erreur: "targetUserId invalide" });
+  if (!isUuid(targetUserId)) return res.status(400).json({ erreur: "targetUserId invalide" });
   if (followerId === targetUserId) return res.status(400).json({ erreur: "Impossible de se suivre soi-meme" });
 
   const target = await readUserBasic(targetUserId);
@@ -646,7 +867,7 @@ router.post("/:targetUserId", requireAuth, async (req: AuthedRequest, res) => {
 router.delete("/:targetUserId", requireAuth, async (req: AuthedRequest, res) => {
   const followerId = req.user!.id;
   const targetUserId = String(req.params.targetUserId || "");
-  if (!/^[0-9a-fA-F-]{36}$/.test(targetUserId)) return res.status(400).json({ erreur: "targetUserId invalide" });
+  if (!isUuid(targetUserId)) return res.status(400).json({ erreur: "targetUserId invalide" });
 
   await pool.query(
     `
@@ -699,7 +920,7 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
 
 router.get("/users/:userId", async (req, res) => {
   const userId = String(req.params.userId || "");
-  if (!/^[0-9a-fA-F-]{36}$/.test(userId)) return res.status(400).json({ erreur: "userId invalide" });
+  if (!isUuid(userId)) return res.status(400).json({ erreur: "userId invalide" });
 
   const viewerId = optionalUserIdFromAuthHeader(req.headers.authorization);
   const user = await readUserBasic(userId);

@@ -3,7 +3,21 @@ import { escapeHtml } from "/noyau/app.js";
 const STORAGE_KEY = "supcontent_global_player_v1";
 const DISMISS_KEY = "supcontent_global_player_dismissed_v1";
 
+const DEMO_LYRICS = [
+  { start: 0, end: 12, text: "Late night driving, city lights glow slow" },
+  { start: 12, end: 26, text: "On danse encore meme quand le ciel tombe" },
+  { start: 26, end: 40, text: "Your voice in the speakers, soft and low" },
+  { start: 40, end: 58, text: "Je suis le rythme, tu suis l'ombre" },
+  { start: 58, end: 76, text: "Afro sunset, colors on my skin" },
+  { start: 76, end: 96, text: "Chaque minute frappe comme un tambour" },
+  { start: 96, end: 120, text: "We move together, let the night begin" },
+  { start: 120, end: 148, text: "Les paroles tombent au bon tempo toujours" },
+  { start: 148, end: 176, text: "Hold that moment, don't let it fade away" },
+  { start: 176, end: 214, text: "Encore une boucle avant le lever du jour" },
+];
+
 let root = null;
+let expandedShellEl = null;
 let coverEl = null;
 let titleEl = null;
 let subEl = null;
@@ -20,6 +34,11 @@ let seekEl = null;
 let volEl = null;
 let curEl = null;
 let durEl = null;
+let stageMetaEl = null;
+let lyricsPanelEl = null;
+let subtitleOverlayEl = null;
+let lyricsToggleBtn = null;
+let subtitleToggleBtn = null;
 
 let ytApiReady = null;
 let ytPlayer = null;
@@ -137,6 +156,22 @@ function formatTime(seconds) {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
+function normalizeLyrics(rawLyrics, fallbackTitle) {
+  const base = Array.isArray(rawLyrics) && rawLyrics.length
+    ? rawLyrics
+    : String(fallbackTitle || "").trim().toLowerCase() === "afro sunset"
+      ? DEMO_LYRICS
+      : [];
+
+  return base
+    .map((line) => ({
+      start: Math.max(0, Number(line?.start || 0)),
+      end: Math.max(0, Number(line?.end || 0)),
+      text: String(line?.text || "").trim(),
+    }))
+    .filter((line) => line.text && line.end > line.start);
+}
+
 function getCurrentTimeSeconds() {
   if (!current) return 0;
 
@@ -152,7 +187,7 @@ function getCurrentTimeSeconds() {
     }
   }
 
-  return 0;
+  return Number(current.time || 0);
 }
 
 function getDurationSeconds() {
@@ -170,25 +205,79 @@ function getDurationSeconds() {
     }
   }
 
-  return 0;
+  return Number(current.duration || 0);
 }
 
 function setPlayPauseIcon(playing) {
   if (!playPauseBtn) return;
   const isPlaying = Boolean(playing);
-  playPauseBtn.textContent = isPlaying ? "⏸️" : "▶️";
+  playPauseBtn.textContent = isPlaying ? "||" : ">";
   playPauseBtn.title = isPlaying ? "Pause" : "Lecture";
   playPauseBtn.setAttribute("aria-label", playPauseBtn.title);
+}
+
+function findActiveLyric() {
+  const lyrics = Array.isArray(current?.lyrics) ? current.lyrics : [];
+  if (!lyrics.length) return { activeLine: null, nearby: [] };
+
+  const now = getCurrentTimeSeconds();
+  const index = lyrics.findIndex((line) => now >= line.start && now < line.end);
+  const safeIndex = index === -1 ? 0 : index;
+  return {
+    activeLine: lyrics[safeIndex] || null,
+    nearby: lyrics.slice(Math.max(0, safeIndex - 1), Math.min(lyrics.length, safeIndex + 3)),
+  };
+}
+
+function renderLyrics() {
+  if (!lyricsPanelEl || !subtitleOverlayEl || !lyricsToggleBtn || !subtitleToggleBtn) return;
+
+  const hasLyrics = Array.isArray(current?.lyrics) && current.lyrics.length > 0;
+  const enabled = Boolean(current?.lyricsEnabled);
+  const subtitleStyle = String(current?.subtitleStyle || "overlay");
+  const mode = String(current?.mode || "audio");
+  const { activeLine, nearby } = findActiveLyric();
+
+  lyricsToggleBtn.classList.toggle("is-active", enabled);
+  subtitleToggleBtn.classList.toggle("is-active", subtitleStyle === "overlay");
+  subtitleToggleBtn.textContent = subtitleStyle === "overlay" ? "Sous-titres overlay" : "Paroles panneau";
+  lyricsToggleBtn.disabled = !hasLyrics;
+  subtitleToggleBtn.disabled = !hasLyrics;
+
+  const showOverlay = hasLyrics && enabled && mode === "video" && subtitleStyle === "overlay" && activeLine;
+  subtitleOverlayEl.hidden = !showOverlay;
+  subtitleOverlayEl.textContent = showOverlay ? activeLine.text : "";
+
+  if (!hasLyrics) {
+    lyricsPanelEl.innerHTML = `<p class="gmp-lyrics-empty">Paroles indisponibles pour cette lecture.</p>`;
+    return;
+  }
+
+  if (!enabled) {
+    lyricsPanelEl.innerHTML = `<p class="gmp-lyrics-empty">Active le bouton paroles pour afficher les mots au bon moment.</p>`;
+    return;
+  }
+
+  if (mode === "video" && subtitleStyle === "overlay") {
+    lyricsPanelEl.innerHTML = `<p class="gmp-lyrics-empty">Les paroles sont affichees directement sur la video.</p>`;
+    return;
+  }
+
+  lyricsPanelEl.innerHTML = nearby
+    .map((line) => `<p class="gmp-lyric-line ${activeLine?.text === line.text ? "is-active" : ""}">${escapeHtml(line.text)}</p>`)
+    .join("");
 }
 
 function updateTimeline() {
   if (!curEl || !durEl || !seekEl) return;
   const cur = getCurrentTimeSeconds();
   const dur = getDurationSeconds();
+  current.time = cur;
+  current.duration = dur;
   curEl.textContent = formatTime(cur);
   durEl.textContent = formatTime(dur);
-  const pct = dur > 0 ? Math.max(0, Math.min(100, (cur / dur) * 100)) : 0;
-  seekEl.value = String(pct);
+  seekEl.value = String(dur > 0 ? Math.max(0, Math.min(100, (cur / dur) * 100)) : 0);
+  renderLyrics();
 }
 
 function setUiVisible(visible) {
@@ -201,10 +290,11 @@ function setExpanded(on) {
   if (!root) return;
   expanded = Boolean(on);
   root.classList.toggle("is-expanded", expanded);
+  if (expandedShellEl) expandedShellEl.hidden = !expanded;
   if (backBtn) backBtn.hidden = !expanded;
   if (expandBtn) {
-    expandBtn.textContent = expanded ? "↩" : "⛶";
-    expandBtn.title = expanded ? "Retour" : "Grand ecran";
+    expandBtn.textContent = expanded ? "-" : "+";
+    expandBtn.title = expanded ? "Reduire" : "Agrandir";
     expandBtn.setAttribute("aria-label", expandBtn.title);
   }
 }
@@ -214,23 +304,24 @@ function renderMeta(meta) {
 
   titleEl.textContent = String(meta?.title || "Lecture");
   subEl.textContent = String(meta?.subtitle || "");
+  coverEl.innerHTML = meta?.cover
+    ? `<img src="${escapeHtml(String(meta.cover))}" alt="" />`
+    : `<span class="gmp-cover-fallback">${meta?.mode === "video" ? "V" : "A"}</span>`;
 
-  if (meta?.cover) {
-    coverEl.innerHTML = `<img src="${escapeHtml(String(meta.cover))}" alt="" />`;
-  } else {
-    coverEl.innerHTML = "";
-  }
-
-  const mode = String(meta?.mode || "audio");
-  root.classList.toggle("audio-only", mode === "audio");
-  modeBtn.textContent = mode === "audio" ? "🎵" : "🎬";
-  modeBtn.title = mode === "audio" ? "Mode audio" : "Mode video";
+  root.classList.toggle("audio-only", String(meta?.mode || "audio") === "audio");
+  modeBtn.textContent = meta?.mode === "audio" ? "A" : "V";
+  modeBtn.title = meta?.mode === "audio" ? "Mode audio" : "Mode video";
   modeBtn.setAttribute("aria-label", modeBtn.title);
 
-  if (expandBtn) {
-    // Keep fullscreen access even in audio mode for YouTube playback recovery.
-    expandBtn.hidden = false;
+  if (stageMetaEl) {
+    stageMetaEl.innerHTML = `
+      <p class="gmp-kicker">Now Playing</p>
+      <p class="gmp-stage-title">${escapeHtml(String(meta?.title || "Lecture"))}</p>
+      <p class="gmp-stage-sub">${escapeHtml(String(meta?.subtitle || ""))}</p>
+    `;
   }
+
+  renderLyrics();
 }
 
 function destroyEngines() {
@@ -249,7 +340,6 @@ function destroyEngines() {
   }
   ytPlayer = null;
 
-  // Keep host mounted for file video playback. Remove only previous youtube host.
   const ytHost = hostEl?.querySelector("#sc-global-yt-host");
   if (ytHost) ytHost.remove();
 
@@ -266,11 +356,13 @@ function snapshot() {
   const next = { ...current, updatedAt: Date.now() };
   if (next.provider === "file" && fileMediaEl) {
     next.time = Number(fileMediaEl.currentTime || 0);
+    next.duration = Number(fileMediaEl.duration || next.duration || 0);
     next.playing = !fileMediaEl.paused;
   }
   if (next.provider === "youtube" && ytPlayer?.getCurrentTime) {
     try {
       next.time = Number(ytPlayer.getCurrentTime() || 0);
+      next.duration = Number(ytPlayer.getDuration?.() || next.duration || 0);
       const st = Number(ytPlayer.getPlayerState?.() ?? -1);
       next.playing = st === 1 || st === 3;
     } catch {
@@ -321,12 +413,10 @@ async function playYouTube(state) {
     events: {
       onReady: () => {
         const targetVolume = Math.round(Math.max(0, Math.min(1, Number(volEl?.value || 1))) * 100);
-        if (ytPlayer?.setVolume) {
-          try {
-            ytPlayer.setVolume(targetVolume);
-          } catch {
-            // ignore
-          }
+        try {
+          ytPlayer?.setVolume?.(targetVolume);
+        } catch {
+          // ignore
         }
 
         if (listId && !videoId && ytPlayer?.loadPlaylist) {
@@ -338,71 +428,22 @@ async function playYouTube(state) {
               startSeconds: Math.max(0, Math.floor(Number(state.time || 0))),
             });
           } catch {
-            try {
-              ytPlayer.loadPlaylist(listId, 0, Math.max(0, Math.floor(Number(state.time || 0))));
-            } catch {
-              // ignore
-            }
+            // ignore
           }
         }
 
-        const tryStartPlayback = () => {
-          if (!state.playing || !ytPlayer?.playVideo) return;
+        if (state.playing) {
           try {
-            ytPlayer.playVideo();
+            ytPlayer?.playVideo?.();
           } catch {
             // ignore
           }
-
-          // Autoplay may be blocked on some browsers; muted retry usually unlocks start.
-          window.setTimeout(() => {
-            try {
-              const st = Number(ytPlayer?.getPlayerState?.() ?? -1);
-              if (st === 1 || st === 3) return;
-              ytPlayer?.mute?.();
-              ytPlayer?.playVideo?.();
-              window.setTimeout(() => {
-                try {
-                  ytPlayer?.unMute?.();
-                  ytPlayer?.setVolume?.(targetVolume);
-                } catch {
-                  // ignore
-                }
-                snapshot();
-              }, 300);
-            } catch {
-              // ignore
-            }
-          }, 350);
-
-          // Extra retry for playlist URLs (list=...) that initialize slower.
-          window.setTimeout(() => {
-            try {
-              const st = Number(ytPlayer?.getPlayerState?.() ?? -1);
-              if (st === 1 || st === 3) return;
-              ytPlayer?.playVideo?.();
-              snapshot();
-            } catch {
-              // ignore
-            }
-          }, 1200);
-        };
-
-        // Give playlist load a tiny head start when URL has only list=...
-        if (listId && !videoId) window.setTimeout(tryStartPlayback, 250);
-        else tryStartPlayback();
+        }
+        snapshot();
       },
       onStateChange: () => snapshot(),
     },
   });
-
-  if (ytPlayer?.setVolume) {
-    try {
-      ytPlayer.setVolume(Math.round(Number(volEl?.value || 1) * 100));
-    } catch {
-      // ignore
-    }
-  }
 
   startSnapshotLoop();
   return true;
@@ -418,7 +459,7 @@ function playFile(state) {
 
   fileMediaEl.src = src;
   fileMediaEl.currentTime = Math.max(0, Number(state.time || 0));
-  fileMediaEl.volume = Math.max(0, Math.min(1, Number(volEl?.value || 1)));
+  fileMediaEl.volume = Math.max(0, Math.min(1, Number(state.volume ?? volEl?.value ?? 1)));
   if (state.playing) {
     fileMediaEl.play().catch(() => setPlayPauseIcon(false));
   }
@@ -441,8 +482,15 @@ function start(state) {
     mode: state.mode === "audio" ? "audio" : "video",
     playing: state.playing !== false,
     time: Math.max(0, Number(state.time || 0)),
+    duration: Math.max(0, Number(state.duration || 0)),
+    volume: Math.max(0, Math.min(1, Number(state.volume ?? volEl?.value ?? 1))),
+    lyrics: normalizeLyrics(state.lyrics, state.title),
+    lyricsEnabled: state.lyricsEnabled !== false,
+    subtitleStyle: state.subtitleStyle === "panel" ? "panel" : "overlay",
     updatedAt: Date.now(),
   };
+
+  if (volEl) volEl.value = String(current.volume);
 
   renderMeta(current);
   clearDismissed();
@@ -454,9 +502,8 @@ function start(state) {
     playYouTube(current).then((ok) => {
       if (!ok) stop();
     });
-  } else {
-    const ok = playFile(current);
-    if (!ok) stop();
+  } else if (!playFile(current)) {
+    stop();
   }
 
   setPlayPauseIcon(current.playing);
@@ -491,7 +538,7 @@ function previousAction() {
       snapshot();
       return;
     } catch {
-      // fallback below
+      // ignore
     }
   }
 
@@ -503,8 +550,7 @@ function previousAction() {
 
   if (current.provider === "youtube" && ytPlayer?.seekTo && ytPlayer?.getCurrentTime) {
     try {
-      const now = Number(ytPlayer.getCurrentTime() || 0);
-      ytPlayer.seekTo(Math.max(0, now - 10), true);
+      ytPlayer.seekTo(Math.max(0, Number(ytPlayer.getCurrentTime() || 0) - 10), true);
       snapshot();
     } catch {
       // ignore
@@ -521,7 +567,7 @@ function nextAction() {
       snapshot();
       return;
     } catch {
-      // fallback below
+      // ignore
     }
   }
 
@@ -533,8 +579,7 @@ function nextAction() {
 
   if (current.provider === "youtube" && ytPlayer?.seekTo && ytPlayer?.getCurrentTime) {
     try {
-      const now = Number(ytPlayer.getCurrentTime() || 0);
-      ytPlayer.seekTo(Math.max(0, now + 10), true);
+      ytPlayer.seekTo(Math.max(0, Number(ytPlayer.getCurrentTime() || 0) + 10), true);
       snapshot();
     } catch {
       // ignore
@@ -547,7 +592,21 @@ function toggleMode() {
   current.mode = current.mode === "audio" ? "video" : "audio";
   renderMeta(current);
   if (current.mode === "audio") setExpanded(false);
-  snapshot();
+  writeState(current);
+}
+
+function toggleLyrics() {
+  if (!current?.lyrics?.length) return;
+  current.lyricsEnabled = !current.lyricsEnabled;
+  renderLyrics();
+  writeState(current);
+}
+
+function toggleSubtitleStyle() {
+  if (!current?.lyrics?.length) return;
+  current.subtitleStyle = current.subtitleStyle === "overlay" ? "panel" : "overlay";
+  renderLyrics();
+  writeState(current);
 }
 
 function toggleExpanded() {
@@ -562,31 +621,7 @@ function stop() {
   if (root) root.remove();
 
   root = null;
-  coverEl = null;
-  titleEl = null;
-  subEl = null;
-  playPauseBtn = null;
-  prevBtn = null;
-  nextBtn = null;
-  modeBtn = null;
-  expandBtn = null;
-  closeBtn = null;
-  hostEl = null;
-  fileMediaEl = null;
-  seekEl = null;
-  volEl = null;
-  curEl = null;
-  durEl = null;
-  current = null;
-
-  markDismissed();
-  clearState();
-  document.body.classList.remove("has-global-player");
-}
-
-function disposeDomOnly() {
-  if (root) root.remove();
-  root = null;
+  expandedShellEl = null;
   coverEl = null;
   titleEl = null;
   subEl = null;
@@ -603,6 +638,43 @@ function disposeDomOnly() {
   volEl = null;
   curEl = null;
   durEl = null;
+  stageMetaEl = null;
+  lyricsPanelEl = null;
+  subtitleOverlayEl = null;
+  lyricsToggleBtn = null;
+  subtitleToggleBtn = null;
+  current = null;
+
+  markDismissed();
+  clearState();
+  document.body.classList.remove("has-global-player");
+}
+
+function disposeDomOnly() {
+  if (root) root.remove();
+  root = null;
+  expandedShellEl = null;
+  coverEl = null;
+  titleEl = null;
+  subEl = null;
+  playPauseBtn = null;
+  prevBtn = null;
+  nextBtn = null;
+  modeBtn = null;
+  expandBtn = null;
+  closeBtn = null;
+  backBtn = null;
+  hostEl = null;
+  fileMediaEl = null;
+  seekEl = null;
+  volEl = null;
+  curEl = null;
+  durEl = null;
+  stageMetaEl = null;
+  lyricsPanelEl = null;
+  subtitleOverlayEl = null;
+  lyricsToggleBtn = null;
+  subtitleToggleBtn = null;
 }
 
 function restore() {
@@ -623,10 +695,8 @@ function bindUiEvents() {
   modeBtn?.addEventListener("click", toggleMode);
   expandBtn?.addEventListener("click", toggleExpanded);
   backBtn?.addEventListener("click", () => setExpanded(false));
-
-  hostEl?.addEventListener("click", (ev) => {
-    if (ev.target === hostEl && expanded) setExpanded(false);
-  });
+  lyricsToggleBtn?.addEventListener("click", toggleLyrics);
+  subtitleToggleBtn?.addEventListener("click", toggleSubtitleStyle);
 
   const hardClose = (ev) => {
     ev?.preventDefault?.();
@@ -634,20 +704,11 @@ function bindUiEvents() {
     stop();
   };
   closeBtn?.addEventListener("click", hardClose);
-  closeBtn?.addEventListener("pointerdown", hardClose);
-  root?.addEventListener("click", (ev) => {
-    const target = ev.target;
-    if (!(target instanceof Element)) return;
-    if (target.closest("#gmpClose")) {
-      hardClose(ev);
-    }
-  });
 
   seekEl?.addEventListener("input", () => {
     if (!current) return;
     const dur = getDurationSeconds();
-    const pct = Number(seekEl.value || 0);
-    const target = dur > 0 ? (pct / 100) * dur : 0;
+    const target = dur > 0 ? (Number(seekEl.value || 0) / 100) * dur : 0;
 
     if (current.provider === "file" && fileMediaEl) {
       fileMediaEl.currentTime = Math.max(0, target);
@@ -667,16 +728,14 @@ function bindUiEvents() {
 
   volEl?.addEventListener("input", () => {
     const v = Math.max(0, Math.min(1, Number(volEl.value || 1)));
-
+    if (current) current.volume = v;
     if (fileMediaEl) fileMediaEl.volume = v;
-
-    if (ytPlayer?.setVolume) {
-      try {
-        ytPlayer.setVolume(Math.round(v * 100));
-      } catch {
-        // ignore
-      }
+    try {
+      ytPlayer?.setVolume?.(Math.round(v * 100));
+    } catch {
+      // ignore
     }
+    if (current) writeState(current);
   });
 
   fileMediaEl?.addEventListener("timeupdate", snapshot);
@@ -689,6 +748,7 @@ function buildUi() {
   const existing = document.querySelector("#globalMiniPlayer");
   if (existing) {
     root = existing;
+    expandedShellEl = existing.querySelector("#gmpExpandedShell");
     coverEl = existing.querySelector("#gmpCover");
     titleEl = existing.querySelector("#gmpTitle");
     subEl = existing.querySelector("#gmpSub");
@@ -704,6 +764,11 @@ function buildUi() {
     volEl = existing.querySelector("#gmpVol");
     curEl = existing.querySelector("#gmpCur");
     durEl = existing.querySelector("#gmpDur");
+    stageMetaEl = existing.querySelector("#gmpStageMeta");
+    lyricsPanelEl = existing.querySelector("#gmpLyricsPanel");
+    subtitleOverlayEl = existing.querySelector("#gmpSubtitleOverlay");
+    lyricsToggleBtn = existing.querySelector("#gmpLyricsToggle");
+    subtitleToggleBtn = existing.querySelector("#gmpSubtitleToggle");
     fileMediaEl = existing.querySelector("video");
     bindUiEvents();
     return;
@@ -714,38 +779,66 @@ function buildUi() {
   el.className = "spotify-player audio-only";
   el.hidden = true;
   el.innerHTML = `
-    <div class="gmp-left">
-      <div class="gmp-cover" id="gmpCover"></div>
-      <div class="gmp-meta">
-        <div class="gmp-title" id="gmpTitle">Lecture</div>
-        <div class="gmp-sub" id="gmpSub"></div>
+    <div class="gmp-expanded-shell" id="gmpExpandedShell" hidden>
+      <div class="gmp-expanded-card">
+        <div class="gmp-stage">
+          <div class="gmp-stage-media">
+            <div class="gmp-video-host" id="gmpHost">
+              <button class="btn icon gmp-video-back" type="button" id="gmpBack" aria-label="Retour" title="Retour" hidden><</button>
+            </div>
+            <div class="gmp-subtitle-overlay" id="gmpSubtitleOverlay" hidden></div>
+          </div>
+          <div class="gmp-stage-meta" id="gmpStageMeta"></div>
+        </div>
+        <div class="gmp-expanded-side">
+          <div class="gmp-side-card">
+            <div class="gmp-side-row">
+              <p class="gmp-side-title">Paroles synchronisees</p>
+              <div class="gmp-toggle-row">
+                <button class="gmp-pill-btn" type="button" id="gmpLyricsToggle">Paroles</button>
+                <button class="gmp-pill-btn" type="button" id="gmpSubtitleToggle">Sous-titres overlay</button>
+              </div>
+            </div>
+            <div class="gmp-lyrics-panel" id="gmpLyricsPanel"></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="gmp-center">
-      <div class="gmp-actions">
-        <button class="btn icon" type="button" id="gmpMode" aria-label="Mode video" title="Mode video">🎬</button>
-        <button class="btn icon" type="button" id="gmpPrev" aria-label="Precedent" title="Precedent">⏮️</button>
-        <button class="btn icon main" type="button" id="gmpPlayPause" aria-label="Lecture/Pause" title="Lecture/Pause">▶️</button>
-        <button class="btn icon" type="button" id="gmpNext" aria-label="Suivant" title="Suivant">⏭️</button>
+    <div class="gmp-bar">
+      <div class="gmp-left">
+        <div class="gmp-cover" id="gmpCover"></div>
+        <div class="gmp-meta">
+          <div class="gmp-title" id="gmpTitle">Lecture</div>
+          <div class="gmp-sub" id="gmpSub"></div>
+        </div>
       </div>
-      <div class="gmp-progress">
-        <small id="gmpCur">0:00</small>
-        <input id="gmpSeek" class="gmp-seek" type="range" min="0" max="100" step="1" value="0" />
-        <small id="gmpDur">0:00</small>
+      <div class="gmp-center">
+        <div class="gmp-actions">
+          <button class="btn icon" type="button" id="gmpMode" aria-label="Mode video" title="Mode video">V</button>
+          <button class="btn icon" type="button" id="gmpPrev" aria-label="Precedent" title="Precedent"><<</button>
+          <button class="btn icon main" type="button" id="gmpPlayPause" aria-label="Lecture/Pause" title="Lecture/Pause">></button>
+          <button class="btn icon" type="button" id="gmpNext" aria-label="Suivant" title="Suivant">>></button>
+        </div>
+        <div class="gmp-progress">
+          <small id="gmpCur">0:00</small>
+          <input id="gmpSeek" class="gmp-seek" type="range" min="0" max="100" step="1" value="0" />
+          <small id="gmpDur">0:00</small>
+        </div>
       </div>
-    </div>
-    <div class="gmp-right">
-      <button class="btn icon" type="button" id="gmpExpand" aria-label="Grand ecran" title="Grand ecran">⛶</button>
-      <input id="gmpVol" class="gmp-vol" type="range" min="0" max="1" step="0.01" value="1" />
-      <button class="btn danger icon" type="button" id="gmpClose" aria-label="Fermer" title="Fermer">✖️</button>
-    </div>
-    <div class="gmp-video-host" id="gmpHost">
-      <button class="btn icon gmp-video-back" type="button" id="gmpBack" aria-label="Retour" title="Retour" hidden>↩</button>
+      <div class="gmp-right">
+        <div class="gmp-volume-box">
+          <span class="gmp-volume-label">Vol</span>
+          <input id="gmpVol" class="gmp-vol" type="range" min="0" max="1" step="0.01" value="1" />
+        </div>
+        <button class="btn icon" type="button" id="gmpExpand" aria-label="Agrandir" title="Agrandir">+</button>
+        <button class="btn danger icon" type="button" id="gmpClose" aria-label="Fermer" title="Fermer">x</button>
+      </div>
     </div>
   `;
   document.body.appendChild(el);
 
   root = el;
+  expandedShellEl = el.querySelector("#gmpExpandedShell");
   coverEl = el.querySelector("#gmpCover");
   titleEl = el.querySelector("#gmpTitle");
   subEl = el.querySelector("#gmpSub");
@@ -761,6 +854,11 @@ function buildUi() {
   volEl = el.querySelector("#gmpVol");
   curEl = el.querySelector("#gmpCur");
   durEl = el.querySelector("#gmpDur");
+  stageMetaEl = el.querySelector("#gmpStageMeta");
+  lyricsPanelEl = el.querySelector("#gmpLyricsPanel");
+  subtitleOverlayEl = el.querySelector("#gmpSubtitleOverlay");
+  lyricsToggleBtn = el.querySelector("#gmpLyricsToggle");
+  subtitleToggleBtn = el.querySelector("#gmpSubtitleToggle");
 
   fileMediaEl = document.createElement("video");
   fileMediaEl.preload = "metadata";
@@ -768,7 +866,7 @@ function buildUi() {
   fileMediaEl.playsInline = true;
   fileMediaEl.style.width = "100%";
   fileMediaEl.style.height = "100%";
-  fileMediaEl.style.objectFit = "contain";
+  fileMediaEl.style.objectFit = "cover";
   fileMediaEl.volume = 1;
   hostEl.appendChild(fileMediaEl);
 
@@ -779,7 +877,6 @@ function buildUi() {
 export function initGlobalPlayer() {
   buildUi();
 
-  // If user closed the player previously, force hidden state on boot.
   if (isDismissed()) {
     clearState();
     destroyEngines();
@@ -790,11 +887,11 @@ export function initGlobalPlayer() {
   restore();
 
   window.supcontentPlayer = {
-    playYouTube({ url, title = "YouTube", subtitle = "", cover = "", mode = "audio" }) {
-      start({ provider: "youtube", url, title, subtitle, cover, mode, playing: true });
+    playYouTube({ url, title = "YouTube", subtitle = "", cover = "", mode = "audio", lyrics = [] }) {
+      start({ provider: "youtube", url, title, subtitle, cover, mode, lyrics, playing: true });
     },
-    playMedia({ url, title = "Media", subtitle = "", cover = "", mode = "video" }) {
-      start({ provider: "file", url, title, subtitle, cover, mode, playing: true });
+    playMedia({ url, title = "Media", subtitle = "", cover = "", mode = "video", lyrics = [] }) {
+      start({ provider: "file", url, title, subtitle, cover, mode, lyrics, playing: true });
     },
     stop,
     state: () => ({ ...(current || {}) }),

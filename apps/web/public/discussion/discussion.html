@@ -3,40 +3,208 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Chat — SUPCONTENT</title>
+  <title>Chat - SUPCONTENT</title>
   <link rel="stylesheet" href="/noyau/styles.css" />
+  <style>
+    body.chat-redesign-page{min-height:100vh;background:radial-gradient(circle at top, rgba(34,197,94,.16), transparent 20%),radial-gradient(circle at right, rgba(217,70,239,.14), transparent 22%),linear-gradient(180deg,#050505,#0d0d0d);color:#fff}
+    .chat-redesign-shell{max-width:1360px;margin:0 auto;padding:24px 16px 112px}
+    .chat-redesign-header,.chat-redesign-sidebar,.chat-redesign-main,.chat-redesign-context,.chat-notif-panel,.chat-hero-card{border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05);backdrop-filter:blur(20px);box-shadow:0 24px 60px rgba(0,0,0,.28)}
+    .chat-redesign-header{position:relative;z-index:4;display:flex;justify-content:space-between;gap:16px;align-items:flex-start;border-radius:32px;padding:20px;margin-bottom:24px;background:radial-gradient(circle at top left, rgba(34,197,94,.12), transparent 32%),radial-gradient(circle at top right, rgba(217,70,239,.10), transparent 24%),rgba(255,255,255,.05)}
+    .chat-header-main{display:flex;gap:16px;align-items:flex-start}
+    .chat-brand-icon{width:54px;height:54px;border-radius:20px;display:grid;place-items:center;background:rgba(52,211,153,.14);color:#86efac;flex:0 0 auto;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+    .chat-brand-icon svg{width:24px;height:24px;display:block}
+    .chat-redesign-kicker{font-size:12px;letter-spacing:.26em;text-transform:uppercase;color:#86efac}
+    .chat-redesign-title{margin:6px 0 0;font-size:clamp(30px,4vw,42px);line-height:1.04;letter-spacing:-.03em}
+    .chat-redesign-subtitle{margin:10px 0 0;max-width:720px;color:#a1a1aa;font-size:14px;line-height:1.6}
+    .chat-redesign-header-actions{position:relative;display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-end}
+    .chat-hero-strip{display:grid;gap:12px;margin-bottom:24px;grid-template-columns:repeat(3,minmax(0,1fr))}
+    .chat-hero-card{border-radius:24px;padding:16px 18px}
+    .chat-hero-card strong{display:block;color:#fff;font-size:18px}
+    .chat-hero-card p{margin:8px 0 0;color:#94a3b8;font-size:13px;line-height:1.45}
+    .chat-pill,.chat-action-btn,.chat-mini-btn,.chat-icon-btn,.chat-attachment-btn{border:1px solid rgba(255,255,255,.1);border-radius:999px;background:rgba(255,255,255,.08);color:#fff;transition:.2s ease}
+    .chat-action-btn,.chat-mini-btn,.chat-icon-btn,.chat-attachment-btn{cursor:pointer}
+    .chat-pill{padding:11px 16px;color:#d4d4d8;font-size:14px}
+    .chat-action-btn:hover,.chat-mini-btn:hover,.chat-icon-btn:hover,.chat-attachment-btn:hover{transform:translateY(-1px);border-color:rgba(52,211,153,.38)}
+    .chat-action-btn{position:relative;padding:11px 16px;font-weight:700;background:#34d399;color:#09090b;border-color:transparent}
+    .chat-action-btn.is-open{background:#facc15}
+    .chat-notif-badge{position:absolute;right:-6px;top:-6px;min-width:24px;height:24px;border-radius:999px;display:grid;place-items:center;padding:0 6px;font-size:11px;font-weight:800;background:#d946ef;color:#fff;box-shadow:0 10px 24px rgba(217,70,239,.4)}
+    .chat-notif-panel{position:absolute;right:0;top:calc(100% + 12px);width:min(360px, calc(100vw - 32px));border-radius:24px;overflow:hidden}
+    .chat-notif-panel[hidden]{display:none}
+    .chat-notif-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .chat-notif-body{max-height:420px;overflow:auto;padding:12px}
+    .chat-test-pill{margin-bottom:10px;padding:10px 12px;border-radius:16px;border:1px solid rgba(52,211,153,.18);background:rgba(34,197,94,.12);color:#bbf7d0;font-size:12px}
+    .chat-test-pill.is-error{border-color:rgba(248,113,113,.2);background:rgba(239,68,68,.12);color:#fecaca}
+    .chat-notif-list,.chat-thread-list,.chat-invite-list{display:grid;gap:12px}
+    .chat-notif-item,.chat-thread-card,.chat-invite-card{width:100%;text-align:left;border-radius:24px;border:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.22);color:#fff;padding:16px;cursor:pointer;transition:.2s ease}
+    .chat-notif-item.is-unread{border-color:rgba(217,70,239,.24);background:rgba(217,70,239,.12)}
+    .chat-thread-card.is-active{border-color:rgba(52,211,153,.28);background:rgba(16,185,129,.1)}
+    .chat-thread-card:hover,.chat-invite-card:hover{transform:translateY(-1px)}
+    .chat-notif-row,.chat-thread-top,.chat-context-row,.chat-invite-top,.chat-main-person,.chat-media-row{display:flex;gap:12px}
+    .chat-notif-icon,.chat-media-icon{width:40px;height:40px;border-radius:999px;display:grid;place-items:center;background:rgba(255,255,255,.1);flex:0 0 auto}
+    .chat-grid{display:grid;gap:24px;grid-template-columns:360px minmax(0,1fr) 320px}
+    .chat-redesign-sidebar,.chat-redesign-context{border-radius:32px;padding:20px}
+    .chat-panel-title{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:24px;margin:0}
+    .chat-panel-badge{border-radius:999px;padding:6px 12px;background:rgba(255,255,255,.06);color:#d4d4d8;font-size:12px;border:1px solid rgba(255,255,255,.08)}
+    .chat-redesign-main{display:flex;flex-direction:column;border-radius:32px;overflow:hidden;min-height:760px}
+    .chat-main-hero{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.08);background:linear-gradient(90deg, rgba(217,70,239,.24), rgba(24,24,27,.58), rgba(16,185,129,.18))}
+    .chat-main-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .chat-avatar{width:56px;height:56px;border-radius:999px;display:grid;place-items:center;font-weight:800;color:#fff;background:linear-gradient(135deg, rgba(217,70,239,.9), rgba(52,211,153,.9));box-shadow:0 16px 34px rgba(0,0,0,.28)}
+    .chat-main-name{margin:0;font-size:28px}
+    .chat-main-status{margin:6px 0 0;color:#e4e4e7;font-size:14px}
+    .chat-main-actions,.chat-context-tags,.chat-attachment-row{display:flex;flex-wrap:wrap;gap:8px}
+    .chat-icon-btn{padding:10px 14px;background:rgba(0,0,0,.22)}
+    .chat-tag{border-radius:999px;padding:8px 12px;font-size:12px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.08)}
+    .chat-tag.is-green{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.24);color:#bbf7d0}
+    .chat-message-scroll{flex:1;overflow:auto;padding:20px;background:rgba(0,0,0,.16);display:grid;gap:14px;align-content:start;min-height:420px}
+    .chat-bubble-row{display:flex}
+    .chat-bubble-row.is-me{justify-content:flex-end}
+    .chat-bubble-card{max-width:min(82%,720px);border-radius:28px;padding:14px 16px;box-shadow:0 14px 28px rgba(0,0,0,.2)}
+    .chat-bubble-row.is-me .chat-bubble-card{background:#34d399;color:#09090b}
+    .chat-bubble-row:not(.is-me) .chat-bubble-card{background:rgba(24,24,27,.92);border:1px solid rgba(255,255,255,.08);color:#fff}
+    .chat-message-text,.chat-context-copy,.chat-empty-copy{font-size:14px;line-height:1.65}
+    .chat-media-card,.chat-playlist-card,.chat-context-card{margin-top:12px;border-radius:20px;padding:12px;border:1px solid rgba(255,255,255,.08);color:#fff}
+    .chat-media-card,.chat-context-card{background:rgba(0,0,0,.22)}
+    .chat-playlist-card{background:rgba(217,70,239,.14);border-color:rgba(217,70,239,.22)}
+    .chat-playlist-kicker,.chat-context-kicker{font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+    .chat-playlist-kicker{color:#f5d0fe}
+    .chat-context-kicker,.chat-thread-status,.chat-thread-preview,.chat-thread-track,.chat-context-copy,.chat-context-sub,.chat-empty-copy{color:#a1a1aa}
+    .chat-message-meta{display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-top:10px;font-size:12px;opacity:.8}
+    .chat-bubble-row:not(.is-me) .chat-message-meta{color:#a1a1aa}
+    .chat-composer{padding:16px 20px 18px;border-top:1px solid rgba(255,255,255,.08);background:rgba(0,0,0,.22)}
+    .chat-attachment-btn{padding:10px 14px;font-size:13px;color:#e4e4e7}
+    .chat-attachment-btn.is-green{background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.22);color:#bbf7d0}
+    .chat-compose-row{display:flex;align-items:center;gap:10px;border:1px solid rgba(255,255,255,.08);background:rgba(24,24,27,.94);border-radius:999px;padding:10px}
+    .chat-mini-btn{width:40px;height:40px;display:grid;place-items:center}
+    .chat-compose-input{flex:1;min-width:0;background:transparent;border:0;outline:none;color:#fff;font-size:14px}
+    .chat-compose-input::placeholder{color:#71717a}
+    .chat-send-btn,.chat-context-play{border:0;border-radius:999px;background:#34d399;color:#09090b;padding:12px 18px;font-weight:800;cursor:pointer}
+    .chat-context-title{margin:12px 0 0;font-size:15px;font-weight:700}
+    .chat-context-score{margin:12px 0 0;font-size:38px;font-weight:800;color:#86efac}
+    .chat-empty-state{display:grid;place-items:center;min-height:100%;text-align:center}
+    .chat-empty-title{font-size:22px;font-weight:800}
+    @media (max-width:1180px){.chat-hero-strip,.chat-grid{grid-template-columns:1fr}.chat-redesign-context{grid-column:1 / -1}}
+    @media (max-width:860px){.chat-redesign-header,.chat-main-head{flex-direction:column;align-items:flex-start}.chat-header-main{align-items:flex-start}.chat-redesign-main{min-height:unset}.chat-message-scroll{min-height:380px}.chat-bubble-card{max-width:92%}.chat-compose-row{flex-wrap:wrap;border-radius:24px}.chat-compose-input{flex:1 1 100%;order:2}.chat-send-btn{width:100%}}
+  </style>
 </head>
-<body>
-  <div class="nav">
-    <div class="nav-inner">
-      <div class="brand"><span class="dot"></span> SUPCONTENT Music</div>
-      <div class="menu">
-        <a class="pill" href="/utilisateurs/utilisateurs.html">Recherche utilisateurs</a>
-        <a class="pill" href="/connexion/connexion.html">Connexion</a>
+<body class="chat-redesign-page">
+  <div class="chat-redesign-shell">
+    <header class="chat-redesign-header">
+      <div class="chat-header-main">
+        <div class="chat-brand-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6.5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 3v-3H5a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"></path></svg>
+        </div>
+        <div>
+          <div class="chat-redesign-kicker">Chat</div>
+          <h1 class="chat-redesign-title">Discussions musicales</h1>
+          <p class="chat-redesign-subtitle">Continue les matchs, partage des morceaux et garde la conversation vivante autour de vos gouts musicaux.</p>
+        </div>
       </div>
-    </div>
-  </div>
+      <div class="chat-redesign-header-actions" id="chatNotifDropdown">
+        <div id="chatHeaderStats" class="chat-pill">0 conversations - 0 non lus</div>
+        <button id="chatNotifBtn" class="chat-action-btn" type="button">Notifications<span id="chatNotifBadge" class="chat-notif-badge" hidden>0</span></button>
+        <div id="chatNotifPanel" class="chat-notif-panel" hidden>
+          <div class="chat-notif-head">
+            <div><div class="chat-redesign-kicker">Notifications</div><div style="margin-top:4px;font-weight:700;">Centre d'activite</div></div>
+            <button id="chatMarkAllReadBtn" class="chat-mini-btn" type="button" aria-label="Tout marquer comme lu">OK</button>
+          </div>
+          <div class="chat-notif-body">
+            <div id="chatNotifTests" class="chat-test-pill"></div>
+            <div id="chatLogicTests" class="chat-test-pill"></div>
+            <div id="chatNotifList" class="chat-notif-list"></div>
+          </div>
+        </div>
+      </div>
+    </header>
 
-  <div class="container">
-    <div class="card">
-      <h2 data-i18n="chats">Chats</h2>
-      <p data-i18n="chat_wip">Espace chat en cours de construction.</p>
-      <div class="row" style="margin-top:10px;gap:8px">
-        <a class="btn primary" href="/swipe/swipe.html" data-i18n="open_swipes">Ouvrir Swipes</a>
-      </div>
-      <hr />
-      <h3 style="margin:0 0 8px 0" data-i18n="invitations">Invitations</h3>
-      <div id="invitesBox"><small data-i18n="loading_invitations">Chargement invitations...</small></div>
-      <div class="row" style="margin-top:12px">
-        <a class="btn" href="/profil/profil.html" data-i18n="view_profile">Voir profil</a>
-        <a class="btn primary" href="/recherche/recherche.html" data-i18n="find_music">Trouver de la musique</a>
-      </div>
-    </div>
-  </div>
+    <section class="chat-hero-strip" aria-label="Temps forts discussion">
+      <article class="chat-hero-card">
+        <strong>Chat social + musique</strong>
+        <p>Les conversations, invitations et recos partent de vos matchs et gardent une vraie continuité produit.</p>
+      </article>
+      <article class="chat-hero-card">
+        <strong>Partage enrichi</strong>
+        <p>Tu peux envoyer son, fichier, note vocale et evenements d'appel dans le meme fil sans changer d'ecran.</p>
+      </article>
+      <article class="chat-hero-card">
+        <strong>Contexte vivant</strong>
+        <p>Le morceau partage, la compatibilite et les infos de vibe restent visibles pendant toute la discussion.</p>
+      </article>
+    </section>
 
-  <div id="toast" class="toast"></div>
+    <section class="chat-grid">
+      <aside class="chat-redesign-sidebar">
+        <h2 class="chat-panel-title"><span>Conversations</span><span id="chatThreadCount" class="chat-panel-badge">0</span></h2>
+        <div id="chatThreadList" class="chat-thread-list" style="margin-top:16px;"></div>
+        <div class="chat-context-card">
+          <div class="chat-panel-title" style="font-size:16px;"><span>Invitations</span><a class="chat-mini-btn" href="/swipe/swipe.html" style="text-decoration:none;display:grid;place-items:center;">Go</a></div>
+          <div id="chatInvitesBox" class="chat-invite-list" style="margin-top:16px;"></div>
+        </div>
+      </aside>
+
+      <main class="chat-redesign-main">
+        <div class="chat-main-hero">
+          <div class="chat-main-head">
+            <div class="chat-main-person">
+              <div id="chatMainAvatar" class="chat-avatar">NB</div>
+              <div>
+                <h2 id="chatMainName" class="chat-main-name">Nina.beats</h2>
+                <p id="chatMainStatus" class="chat-main-status">En ligne</p>
+              </div>
+            </div>
+            <div class="chat-main-actions">
+              <button class="chat-icon-btn" type="button" id="chatCallBtn">Appel</button>
+              <button class="chat-icon-btn" type="button" id="chatVideoBtn">Video</button>
+            </div>
+          </div>
+          <div id="chatMainTags" class="chat-context-tags"></div>
+        </div>
+
+        <div id="chatMessages" class="chat-message-scroll"></div>
+
+        <div class="chat-composer">
+          <div class="chat-attachment-row">
+            <button id="chatShareTrackBtn" class="chat-attachment-btn is-green" type="button">Partager un son</button>
+            <button id="chatEmojiBtn" class="chat-attachment-btn" type="button">Emoji</button>
+            <button id="chatFileBtn" class="chat-attachment-btn" type="button">Fichier</button>
+          </div>
+          <div class="chat-compose-row">
+            <button id="chatMicBtn" class="chat-mini-btn" type="button">Mic</button>
+            <input id="chatComposerInput" class="chat-compose-input" placeholder="Ecrire un message ou partager un son..." />
+            <button id="chatSendBtn" class="chat-send-btn" type="button">Envoyer</button>
+          </div>
+        </div>
+      </main>
+
+      <aside class="chat-redesign-context">
+        <h2 class="chat-panel-title"><span>Contexte musical</span></h2>
+        <div class="chat-context-card">
+          <div class="chat-context-kicker">Son partage</div>
+          <div class="chat-context-row" style="margin-top:14px;">
+            <div class="chat-media-row">
+              <div class="chat-media-icon">SON</div>
+              <div>
+                <div id="chatContextTrackTitle" class="chat-context-title">Timeless</div>
+                <div id="chatContextTrackArtist" class="chat-context-sub">The Weeknd</div>
+                <div id="chatContextTrackMeta" class="chat-context-sub" style="margin-top:4px;">Spotify - 3:24</div>
+              </div>
+            </div>
+          </div>
+          <button id="chatPlaySharedBtn" class="chat-context-play" type="button" style="width:100%;margin-top:14px;">Lancer la lecture</button>
+        </div>
+        <div class="chat-context-card">
+          <div class="chat-context-kicker">Compatibilite</div>
+          <div id="chatContextScore" class="chat-context-score">94%</div>
+          <p id="chatContextCopy" class="chat-context-copy"></p>
+        </div>
+        <div class="chat-context-card">
+          <div class="chat-context-kicker">Etat visuel / technique</div>
+          <p class="chat-context-copy" style="color:#86efac;">chat aligne sur les vrais matchs et invitations, messages en local</p>
+          <p id="chatFeedback" class="chat-context-copy"></p>
+        </div>
+      </aside>
+    </section>
+  </div>
   <script type="module" src="/discussion/discussion.js"></script>
   <script type="module" src="/noyau/footer.js"></script>
 </body>
 </html>
-

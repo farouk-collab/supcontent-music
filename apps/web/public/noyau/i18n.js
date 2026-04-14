@@ -1,11 +1,14 @@
 const LANG_KEY = "supcontent_language";
+export const LANGUAGE_EVENT = "supcontent:language-changed";
 
 const DICT = {
   fr: {
     home: "Accueil",
     search: "Recherche",
     swipe: "Swipe",
+    live: "Live",
     chat: "Chat",
+    shop: "Boutique",
     library: "Biblio",
     profile: "Profil",
     settings_activity: "Parametres et activite",
@@ -28,6 +31,19 @@ const DICT = {
     clear_position: "Effacer position",
     app_preferences: "Preference d'application",
     language: "Langue",
+    theme: "Theme",
+    accent_color: "Couleur d'accent",
+    dark: "Sombre",
+    light: "Clair",
+    autoplay_videos: "Lecture auto des videos",
+    sound_effects: "Effets sonores",
+    compact_mode: "Mode compact",
+    data_saver_mode: "Mode economie de donnees",
+    enhanced_security: "Mode securite renforce",
+    quick_summary: "Resume rapide",
+    validation: "Validation",
+    spanish: "Espanol",
+    german: "Deutsch",
     blocked: "Bloque",
     block_account_uuid: "Bloquer un compte (UUID)",
     save_all: "Enregistrer tout",
@@ -85,7 +101,9 @@ const DICT = {
     home: "Home",
     search: "Search",
     swipe: "Swipe",
+    live: "Live",
     chat: "Chat",
+    shop: "Shop",
     library: "Library",
     profile: "Profile",
     settings_activity: "Settings and activity",
@@ -108,6 +126,19 @@ const DICT = {
     clear_position: "Clear location",
     app_preferences: "App preferences",
     language: "Language",
+    theme: "Theme",
+    accent_color: "Accent color",
+    dark: "Dark",
+    light: "Light",
+    autoplay_videos: "Autoplay videos",
+    sound_effects: "Sound effects",
+    compact_mode: "Compact mode",
+    data_saver_mode: "Data saver mode",
+    enhanced_security: "Enhanced security mode",
+    quick_summary: "Quick summary",
+    validation: "Validation",
+    spanish: "Spanish",
+    german: "German",
     blocked: "Blocked",
     block_account_uuid: "Block an account (UUID)",
     save_all: "Save all",
@@ -137,7 +168,7 @@ const DICT = {
     view_profile: "View profile",
     find_music: "Find music",
     my_profile: "My profile",
-    refresh: "Refresh",
+    refresh: "Actualiser",
     logout_local: "Log out (local)",
     delete_account: "Delete my account",
     logout_note: "Note: log out only removes browser tokens.",
@@ -163,20 +194,78 @@ const DICT = {
   },
 };
 
+DICT.es = {
+  ...DICT.en,
+  home: "Inicio",
+  search: "Buscar",
+  swipe: "Swipe",
+  live: "Live",
+  chat: "Chat",
+  shop: "Tienda",
+  library: "Biblioteca",
+  profile: "Perfil",
+  settings_activity: "Configuracion y actividad",
+  back: "Volver",
+  language: "Idioma",
+  theme: "Tema",
+  accent_color: "Color de acento",
+  dark: "Oscuro",
+  light: "Claro",
+  french: "Frances",
+  english: "Ingles",
+  spanish: "Espanol",
+  german: "Aleman",
+  save_all: "Guardar todo",
+  validation: "Validacion",
+};
+
+DICT.de = {
+  ...DICT.en,
+  home: "Start",
+  search: "Suche",
+  swipe: "Swipe",
+  live: "Live",
+  chat: "Chat",
+  shop: "Shop",
+  library: "Bibliothek",
+  profile: "Profil",
+  settings_activity: "Einstellungen und Aktivitat",
+  back: "Zuruck",
+  language: "Sprache",
+  theme: "Thema",
+  accent_color: "Akzentfarbe",
+  dark: "Dunkel",
+  light: "Hell",
+  french: "Franzosisch",
+  english: "Englisch",
+  spanish: "Spanisch",
+  german: "Deutsch",
+  save_all: "Alles speichern",
+  validation: "Validierung",
+};
+
 export function getLanguage() {
   const raw = String(localStorage.getItem(LANG_KEY) || "fr").toLowerCase();
-  return raw === "en" ? "en" : "fr";
+  return ["fr", "en", "es", "de"].includes(raw) ? raw : "fr";
 }
 
 export function setLanguage(lang) {
-  const next = String(lang || "").toLowerCase() === "en" ? "en" : "fr";
+  const raw = String(lang || "").toLowerCase();
+  const next = ["fr", "en", "es", "de"].includes(raw) ? raw : "fr";
   localStorage.setItem(LANG_KEY, next);
   document.documentElement.lang = next;
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(LANGUAGE_EVENT, {
+        detail: { language: next },
+      })
+    );
+  }
 }
 
 export function t(key) {
   const lang = getLanguage();
-  return DICT[lang]?.[key] || DICT.fr[key] || key;
+  return DICT[lang]?.[key] || DICT.en?.[key] || DICT.fr[key] || key;
 }
 
 export function applyI18n(root = document) {
@@ -198,3 +287,25 @@ export function applyI18n(root = document) {
     el.setAttribute("aria-label", t(key));
   });
 }
+
+function installI18nSync() {
+  if (typeof window === "undefined" || typeof document === "undefined") return;
+  if (window.__supcontentI18nSyncInstalled) return;
+  window.__supcontentI18nSyncInstalled = true;
+
+  const sync = () => applyI18n(document);
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", sync, { once: true });
+  } else {
+    sync();
+  }
+
+  window.addEventListener(LANGUAGE_EVENT, sync);
+  window.addEventListener("storage", (event) => {
+    if (event.key && event.key !== LANG_KEY) return;
+    sync();
+  });
+}
+
+installI18nSync();

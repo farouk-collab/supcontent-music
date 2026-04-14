@@ -8,6 +8,111 @@ export const API_BASE = String(
   window.__API_BASE_URL__ || window.localStorage?.getItem("SUPCONTENT_API_BASE") || DEFAULT_API_BASE
 ).replace(/\/+$/, "");
 const LS = { access: "supcontent_access", refresh: "supcontent_refresh" };
+export const APP_SETTINGS_STORAGE_KEY = "supcontent-app-settings-v1";
+export const APP_PREFERENCES_EVENT = "supcontent:preferences-changed";
+
+const APP_THEME_PRESETS = {
+  Sombre: {
+    theme: "dark",
+    bg: "#0b1020",
+    card: "#111a33",
+    muted: "#9fb0d0",
+    text: "#eaf0ff",
+    border: "rgba(255,255,255,.08)",
+  },
+  Clair: {
+    theme: "light",
+    bg: "#f5f7fb",
+    card: "#ffffff",
+    muted: "#5b6476",
+    text: "#111827",
+    border: "rgba(15,23,42,.12)",
+  },
+};
+
+const APP_ACCENT_PRESETS = {
+  "Vert emeraude": { accent: "#34d399", accent2: "#10b981", contrast: "#04130d" },
+  Violet: { accent: "#a78bfa", accent2: "#8b5cf6", contrast: "#140a2b" },
+  Bleu: { accent: "#60a5fa", accent2: "#3b82f6", contrast: "#081426" },
+  Rose: { accent: "#f472b6", accent2: "#ec4899", contrast: "#2a0818" },
+  Rouge: { accent: "#f87171", accent2: "#ef4444", contrast: "#260909" },
+};
+
+export function readAppPreferences() {
+  try {
+    const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return {
+      theme: String(parsed.theme || "Sombre"),
+      accentColor: String(parsed.accentColor || "Vert emeraude"),
+    };
+  } catch {
+    return { theme: "Sombre", accentColor: "Vert emeraude" };
+  }
+}
+
+export function saveAppPreferences(preferences = {}) {
+  let stored = {};
+  try {
+    const raw = localStorage.getItem(APP_SETTINGS_STORAGE_KEY);
+    stored = raw ? JSON.parse(raw) : {};
+  } catch {
+    stored = {};
+  }
+  const next = {
+    ...stored,
+    ...readAppPreferences(),
+    ...preferences,
+  };
+  try {
+    localStorage.setItem(APP_SETTINGS_STORAGE_KEY, JSON.stringify(next));
+  } catch {
+    // ignore
+  }
+  applyAppPreferences(next);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(
+      new CustomEvent(APP_PREFERENCES_EVENT, {
+        detail: next,
+      })
+    );
+  }
+  return next;
+}
+
+export function applyAppPreferences(preferences = {}) {
+  if (typeof document === "undefined") return;
+  const themeLabel = String(preferences.theme || "Sombre");
+  const accentLabel = String(preferences.accentColor || "Vert emeraude");
+  const theme = APP_THEME_PRESETS[themeLabel] || APP_THEME_PRESETS.Sombre;
+  const accent = APP_ACCENT_PRESETS[accentLabel] || APP_ACCENT_PRESETS["Vert emeraude"];
+  const root = document.documentElement;
+
+  root.dataset.appTheme = theme.theme;
+  root.style.setProperty("--bg", theme.bg);
+  root.style.setProperty("--card", theme.card);
+  root.style.setProperty("--muted", theme.muted);
+  root.style.setProperty("--text", theme.text);
+  root.style.setProperty("--border", theme.border);
+  root.style.setProperty("--accent", accent.accent);
+  root.style.setProperty("--accent2", accent.accent2);
+  root.style.setProperty("--accent-contrast", accent.contrast);
+}
+
+function installPreferenceSync() {
+  if (typeof window === "undefined") return;
+  if (window.__supcontentPreferenceSyncInstalled) return;
+  window.__supcontentPreferenceSyncInstalled = true;
+
+  window.addEventListener(APP_PREFERENCES_EVENT, (event) => {
+    applyAppPreferences(event?.detail || readAppPreferences());
+  });
+
+  window.addEventListener("storage", (event) => {
+    if (event.key && event.key !== APP_SETTINGS_STORAGE_KEY) return;
+    applyAppPreferences(readAppPreferences());
+  });
+}
 
 export function getTokens() {
   return {
@@ -192,6 +297,9 @@ function installImageSrcGuard() {
 
   document.querySelectorAll("img[src]").forEach((img) => guardImageSrc(img));
 
+  const root = document.body || document.documentElement;
+  if (!root) return;
+
   const obs = new MutationObserver((mutations) => {
     for (const m of mutations) {
       if (m.type === "attributes" && m.target instanceof HTMLImageElement) {
@@ -207,7 +315,7 @@ function installImageSrcGuard() {
     }
   });
 
-  obs.observe(document.documentElement || document.body, {
+  obs.observe(root, {
     subtree: true,
     childList: true,
     attributes: true,
@@ -216,15 +324,15 @@ function installImageSrcGuard() {
 }
 
 installImageSrcGuard();
+installPreferenceSync();
+applyAppPreferences(readAppPreferences());
 
 function installDevIssueOverlay() {
   if (typeof window === "undefined" || typeof document === "undefined") return;
   if (window.__supcontentDevOverlayInstalled) return;
 
-  const host = String(window.location.hostname || "").toLowerCase();
   const forceOn = window.location.search.includes("debugOverlay=1") || localStorage.getItem("SUPCONTENT_DEV_OVERLAY") === "1";
-  const enabled = forceOn || host === "localhost" || host === "127.0.0.1";
-  if (!enabled) return;
+  if (!forceOn) return;
 
   window.__supcontentDevOverlayInstalled = true;
 

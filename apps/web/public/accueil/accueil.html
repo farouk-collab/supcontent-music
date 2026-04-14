@@ -8,207 +8,177 @@
   <link rel="apple-touch-icon" href="/assets/logo-supconnect.svg" />
   <link rel="stylesheet" href="/noyau/styles.css" />
 </head>
-<body>
+<body class="home-page">
+  <div class="container home-shell">
+    <header class="home-topbar">
+      <div>
+        <div class="home-kicker">Accueil</div>
+        <h1 class="home-title">Pour vous</h1>
+        <p class="home-subtitle">D?couverte musicale, activit? des abonnements et actualit?s en un seul endroit.</p>
+      </div>
 
-  <div class="container">
-    <div class="home-header-strip">
-      <button id="homeAddStoryBtn" class="btn home-head-icon" type="button" aria-label="Ajouter story/publication">+</button>
-      <div class="home-header-title">Pour vous</div>
-      <button id="homeNotifBtn" class="btn home-head-icon" type="button" aria-label="Notifications">&#9734;</button>
-    </div>
-    <div class="home-stories-header">
+      <div class="home-actions" id="homeNotifDropdown">
+        <button id="homeAddStoryBtn" class="btn home-soft-btn" type="button">+ Story</button>
+        <button id="homeAddPostBtn" class="btn home-soft-btn" type="button">+ Publication</button>
+        <button id="homeNotifBtn" class="btn home-notif-btn" type="button" aria-label="Notifications">
+          <span>Notifications</span>
+          <span id="homeNotifBadge" class="home-notif-badge" hidden>0</span>
+        </button>
+        <div id="homeRealtimeStateTop" class="home-live-pill is-live">Temps r?el connect?</div>
+
+        <div id="homeNotifPanel" class="home-notif-panel" hidden>
+          <div class="home-notif-head">
+            <div>
+              <div class="home-kicker">Notifications</div>
+              <h3>Centre d'activit?</h3>
+            </div>
+            <div class="row" style="gap:8px">
+              <button id="homeMarkAllReadBtn" class="btn home-soft-btn" type="button">Tout lire</button>
+            </div>
+          </div>
+
+          <div id="homeNotifStatus" class="home-notif-status"></div>
+          <div id="homeNotifStats" class="home-notif-stats"></div>
+          <div id="homeLastEvent" class="home-last-event"></div>
+          <div id="homeNotifList" class="home-notif-list"></div>
+        </div>
+      </div>
+    </header>
+
+    <section class="home-stories-card">
+      <div class="home-section-head">
+        <div>
+          <h2>Stories des comptes suivis</h2>
+          <p>Stories et activit? rapide des profils que tu suis.</p>
+        </div>
+        <button id="refreshStoriesBtn" class="btn home-soft-btn" type="button">Actualiser</button>
+      </div>
       <div id="homeStoriesTrack" class="carousel-track"></div>
-    </div>
+    </section>
 
-    <!-- HERO -->
-    <div class="hero">
-      <h1>SUPCONTENT Music 🎵</h1>
-      <p>
-        Découvre des titres, artistes et albums. Le backend est prêt (Auth + PostgreSQL + Redis + Spotify).
-        Maintenant on met un accueil “Netflix-like” avec des sections qui défilent.
-      </p>
-
-      <div class="row" style="margin-top:10px; gap:12px; flex-wrap:wrap">
-        <a class="btn primary" href="/recherche/recherche.html">Lancer une recherche</a>
-
-        <!-- CTA dynamiques -->
-        <a class="btn" href="/connexion/connexion.html" data-cta="auth">Créer un compte / Se connecter</a>
-        <a class="btn" href="/profil/profil.html" data-cta="profile" style="display:none">Aller au profil</a>
-      </div>
-
-      <div style="margin-top:12px">
-        <small id="sessionHint" style="color:var(--muted)"></small>
-      </div>
-    </div>
-
-    <!-- CAROUSELS (HOME FEED) -->
-    <div class="grid" style="margin-top:18px">
-      <div class="card span12">
-        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
-          <div>
-            <h2 style="margin:0">Fil des abonnements</h2>
-            <small style="color:var(--muted)">Activites recentes des profils suivis</small>
-          </div>
-          <button id="refreshFeedBtn" class="btn" type="button">Rafraichir feed</button>
+    <section class="home-feed-card">
+      <div class="home-section-head">
+        <div>
+          <h2>Feed des abonnements</h2>
+          <p>Charge le flux si l'utilisateur est connect? via <code>/feed/me</code>.</p>
         </div>
-        <div id="followingFeed" style="margin-top:12px"><small>Chargement...</small></div>
+        <button id="refreshFeedBtn" class="btn home-soft-btn" type="button">Actualiser le feed</button>
       </div>
+      <div id="followingFeed" class="home-feed-grid"><small>Chargement...</small></div>
+    </section>
 
-      <div class="card span12">
-        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+    <section class="home-sections-stack">
+      <div class="home-carousel-card">
+        <div class="home-section-head">
           <div>
-            <h2 style="margin:0">Tendances</h2>
-            <small style="color:var(--muted)">Survole pour pause • molette pour scroll • flèches pour naviguer</small>
+            <h2>Tendances</h2>
+            <p>Ce qui tourne le plus en ce moment.</p>
           </div>
           <div class="row" style="gap:10px">
-            <button class="btn" type="button" data-car-prev="trending" aria-label="Précédent">◀</button>
-            <button class="btn" type="button" data-car-next="trending" aria-label="Suivant">▶</button>
+            <button class="btn home-soft-btn" type="button" data-car-prev="trending">&#9664;</button>
+            <button class="btn home-soft-btn" type="button" data-car-next="trending">&#9654;</button>
           </div>
         </div>
-
-        <div class="carousel" data-carousel="trending" style="margin-top:14px">
-          <div class="carousel-track" data-track="trending">
-            <!-- injecté par /accueil/accueil.js -->
-          </div>
+        <div class="carousel" data-carousel="trending">
+          <div class="carousel-track" data-track="trending"></div>
         </div>
       </div>
 
-      <div class="card span12">
-        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+      <div class="home-carousel-card">
+        <div class="home-section-head">
           <div>
-            <h2 style="margin:0">Rap</h2>
-            <small style="color:var(--muted)">Sélection Rap (Spotify search)</small>
+            <h2>Rap</h2>
+            <p>S?lection rap et trap.</p>
           </div>
           <div class="row" style="gap:10px">
-            <button class="btn" type="button" data-car-prev="rap" aria-label="Précédent">◀</button>
-            <button class="btn" type="button" data-car-next="rap" aria-label="Suivant">▶</button>
+            <button class="btn home-soft-btn" type="button" data-car-prev="rap">&#9664;</button>
+            <button class="btn home-soft-btn" type="button" data-car-next="rap">&#9654;</button>
           </div>
         </div>
-
-        <div class="carousel" data-carousel="rap" style="margin-top:14px">
-          <div class="carousel-track" data-track="rap">
-            <!-- injecté par /accueil/accueil.js -->
-          </div>
+        <div class="carousel" data-carousel="rap">
+          <div class="carousel-track" data-track="rap"></div>
         </div>
       </div>
 
-      <div class="card span12">
-        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+      <div class="home-carousel-card">
+        <div class="home-section-head">
           <div>
-            <h2 style="margin:0">Afro</h2>
-            <small style="color:var(--muted)">Afro / Amapiano / Afrobeats</small>
+            <h2>Afro</h2>
+            <p>Afrobeats, amapiano et vibes soleil.</p>
           </div>
           <div class="row" style="gap:10px">
-            <button class="btn" type="button" data-car-prev="afro" aria-label="Précédent">◀</button>
-            <button class="btn" type="button" data-car-next="afro" aria-label="Suivant">▶</button>
+            <button class="btn home-soft-btn" type="button" data-car-prev="afro">&#9664;</button>
+            <button class="btn home-soft-btn" type="button" data-car-next="afro">&#9654;</button>
           </div>
         </div>
-
-        <div class="carousel" data-carousel="afro" style="margin-top:14px">
-          <div class="carousel-track" data-track="afro">
-            <!-- injecté par /accueil/accueil.js -->
-          </div>
+        <div class="carousel" data-carousel="afro">
+          <div class="carousel-track" data-track="afro"></div>
         </div>
       </div>
 
-      <div class="card span12">
-        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+      <div class="home-carousel-card">
+        <div class="home-section-head">
           <div>
-            <h2 style="margin:0">Pop</h2>
-            <small style="color:var(--muted)">Pop / Hits</small>
+            <h2>Pop</h2>
+            <p>Hits, pop douce et morceaux globaux.</p>
           </div>
           <div class="row" style="gap:10px">
-            <button class="btn" type="button" data-car-prev="pop" aria-label="Précédent">◀</button>
-            <button class="btn" type="button" data-car-next="pop" aria-label="Suivant">▶</button>
+            <button class="btn home-soft-btn" type="button" data-car-prev="pop">&#9664;</button>
+            <button class="btn home-soft-btn" type="button" data-car-next="pop">&#9654;</button>
           </div>
         </div>
-
-        <div class="carousel" data-carousel="pop" style="margin-top:14px">
-          <div class="carousel-track" data-track="pop">
-            <!-- injecté par /accueil/accueil.js -->
-          </div>
+        <div class="carousel" data-carousel="pop">
+          <div class="carousel-track" data-track="pop"></div>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="grid" style="margin-top:18px">
-      <div class="card span12">
-        <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
-          <div>
-            <h2 style="margin:0">Actualites musique</h2>
-            <small style="color:var(--muted)">Nouvelles sorties + activite de la communaute</small>
+    <section class="home-bottom-showcase">
+      <div class="home-hero-grid">
+        <article class="home-hero-card">
+          <div class="home-kicker">D?couverte</div>
+          <h2>D?couvre les sons qui tournent, les stories de tes abonnements et les actualit?s musique du moment.</h2>
+          <p id="sessionHint">Chargement de la session...</p>
+
+          <div class="home-hero-actions">
+            <a class="btn primary" href="/recherche/recherche.html">Explorer la recherche</a>
+            <a class="btn home-soft-btn" href="/connexion/connexion.html" data-cta="auth">Cr?er un compte / Se connecter</a>
+            <a class="btn home-soft-btn" href="/profil/profil.html" data-cta="profile" style="display:none">Voir mon profil</a>
+            <button id="homeSocketToggle" class="btn home-soft-btn" type="button">Couper la synchro</button>
           </div>
-          <button id="refreshNewsBtn" class="btn" type="button">Rafraichir actus</button>
-        </div>
-        <div class="news-grid" style="margin-top:12px">
-          <div>
-            <h3 style="margin:0 0 10px 0">Nouvelles sorties</h3>
-            <div id="newsReleases"><small>Chargement...</small></div>
+
+          <div class="home-live-strip">
+            <div id="homeRealtimeState" class="home-live-pill is-live">Temps r?el connect?</div>
+            <div id="homeTestsState" class="home-live-pill">Tests de robustesse en cours</div>
           </div>
-          <div>
-            <h3 style="margin:0 0 10px 0">Actu communaute</h3>
-            <div id="newsCommunity"><small>Chargement...</small></div>
+        </article>
+
+        <aside class="home-news-card">
+          <div class="home-section-head">
+            <div>
+              <h2>Actualit?s musique</h2>
+              <p>Nouvelles sorties et activit? communautaire.</p>
+            </div>
+            <button id="refreshNewsBtn" class="btn home-soft-btn" type="button">Actualiser</button>
           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- TECH / STATUS -->
-    <div class="grid" style="margin-top:18px">
-      <div class="card span6">
-        <h2>Ce qui marche déjà</h2>
-        <div class="row" style="flex-wrap:wrap; gap:10px">
-          <span class="badge">✅ /auth/register</span>
-          <span class="badge">✅ /auth/login</span>
-          <span class="badge">✅ /auth/me</span>
-          <span class="badge">✅ /search</span>
-          <span class="badge">✅ /media/:type/:id</span>
-        </div>
-        <hr />
-        <p>
-          <small>
-            Astuce : passe par <span class="kbd">Recherche</span> pour voir les covers + ouvrir la page détail.
-          </small>
-        </p>
+          <div class="home-news-columns">
+            <div class="home-news-block">
+              <div class="home-news-label is-pink">Nouvelles sorties</div>
+              <div id="newsReleases"><small>Chargement...</small></div>
+            </div>
+            <div class="home-news-block">
+              <div class="home-news-label is-blue">Activit? communaut?</div>
+              <div id="newsCommunity"><small>Chargement...</small></div>
+            </div>
+          </div>
+        </aside>
       </div>
-
-      <div class="card span6">
-        <h2>État DB</h2>
-        <p>Tables présentes :</p>
-        <div class="row" style="margin-top:10px; flex-wrap:wrap; gap:10px">
-          <span class="badge">users</span>
-          <span class="badge">reviews</span>
-          <span class="badge">review_likes</span>
-          <span class="badge">review_comments</span>
-          <span class="badge">collections</span>
-          <span class="badge">collection_items</span>
-          <span class="badge">follows</span>
-          <span class="badge">notifications</span>
-          <span class="badge">user_settings</span>
-        </div>
-      </div>
-    </div>
-
+    </section>
   </div>
 
   <div id="toast" class="toast"></div>
-  <div id="notifSheet" class="comments-sheet" hidden>
-    <button id="notifBackdrop" class="comments-backdrop" type="button" aria-label="Fermer notifications"></button>
-    <div class="comments-panel">
-      <div class="comments-handle"></div>
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <h3 style="margin:0">Notifications</h3>
-        <button id="closeNotifBtn" class="btn" type="button">Fermer</button>
-      </div>
-      <div id="notifFollowers" style="margin-top:10px"></div>
-      <div id="notifReplies" style="margin-top:12px"></div>
-      <div id="notifSuggestions" style="margin-top:12px"></div>
-    </div>
-  </div>
-
-  <!-- IMPORTANT : pas de script inline (CSP), tout est dans index.js -->
   <script type="module" src="/accueil/accueil.js"></script>
   <script type="module" src="/noyau/footer.js"></script>
 </body>
 </html>
-
