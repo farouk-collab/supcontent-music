@@ -89,7 +89,7 @@ function syncAuthUI() {
   if (ctaAuth) ctaAuth.style.display = isAuthed ? "none" : "";
   if (ctaProfile) ctaProfile.style.display = isAuthed ? "" : "none";
 
-  if (hint) hint.textContent = isAuthed ? "Connecte" : "Non connecte";
+  if (hint) hint.textContent = isAuthed ? "Connecté" : "Non connecté";
 }
 
 function sanitizeNotification(item, fallbackIndex = 0) {
@@ -291,11 +291,11 @@ function renderNotifications() {
     lastEvent.innerHTML = `<strong>Dernier evenement :</strong> ${escapeHtml(lastRealtimeEvent)}`;
   }
   if (realtimeState) {
-    realtimeState.textContent = realtimeEnabled ? (realtimeConnected ? "Notifications connectees" : "Notifications en attente") : "Notifications en pause";
+    realtimeState.textContent = realtimeEnabled ? (realtimeConnected ? "Notifications connectées" : "Notifications en attente") : "Notifications en pause";
     realtimeState.className = `home-live-pill ${realtimeEnabled && realtimeConnected ? "is-live" : "is-offline"}`;
   }
   if (realtimeStateTop) {
-    realtimeStateTop.textContent = realtimeEnabled ? (realtimeConnected ? "Notifications connectees" : "Notifications en attente") : "Notifications en pause";
+    realtimeStateTop.textContent = realtimeEnabled ? (realtimeConnected ? "Notifications connectées" : "Notifications en attente") : "Notifications en pause";
     realtimeStateTop.className = `home-live-pill ${realtimeEnabled && realtimeConnected ? "is-live" : "is-offline"}`;
   }
   if (testsState) {
@@ -442,7 +442,7 @@ function bindLogout() {
     e.preventDefault();
     await serverLogout();
     syncAuthUI();
-    toast("Deconnecte.", "OK");
+    toast("Déconnecté.", "OK");
   });
 }
 
@@ -653,8 +653,8 @@ function renderCommunityCard(it) {
   const mediaName = it?.media?.name || it.media_id;
   const mediaSub = it?.media?.subtitle || "";
   const img = it?.media?.image || "";
-  const kind = it.kind === "review" ? "Review" : "Commentaire";
-  const rating = typeof it.rating === "number" ? ` â€¢ ${it.rating}/5` : "";
+  const kind = it.kind === "review" ? "Avis" : "Commentaire";
+  const rating = typeof it.rating === "number" ? ` ? ${it.rating}/5` : "";
   const author = it.display_name || "Utilisateur";
   const text = it.text || "";
   return `
@@ -663,7 +663,7 @@ function renderCommunityCard(it) {
       <div>
         <div class="news-title">${mediaName}</div>
         <div class="news-sub">${mediaSub}</div>
-        <div class="news-meta">${kind}${rating} â€¢ par ${author}</div>
+        <div class="news-meta">${kind}${rating} ? par ${author}</div>
         ${text ? `<div class="news-text">${text}</div>` : ""}
       </div>
     </a>
@@ -671,7 +671,7 @@ function renderCommunityCard(it) {
 }
 
 function renderCommunityTextCard(it) {
-  const primary = it?.media?.name || it?.text || it?.media_id || "Activite communaute";
+  const primary = it?.media?.name || it?.text || it?.media_id || "Activit? communaut?";
   return `<div class="home-news-text-item">${escapeHtml(primary)}</div>`;
 }
 
@@ -864,7 +864,7 @@ async function loadMusicCategories() {
       try {
         data = await apiFetch("/music/personalized?limit=12");
         personalizedMode = true;
-        setFeedModeHint("personnalise Spotify");
+        setFeedModeHint("personnalis? Spotify");
       } catch (err) {
         console.warn("Personalized feed failed, fallback to global:", err);
         data = await apiFetch("/music/categories?limit=12");
@@ -873,7 +873,7 @@ async function loadMusicCategories() {
     } else {
       if (hasSupcontentSession) ensureSpotifyConnectButton();
       data = await apiFetch("/music/categories?limit=12");
-      setFeedModeHint(hasSupcontentSession ? "global (Spotify non connecte)" : "global");
+      setFeedModeHint(hasSupcontentSession ? "global (Spotify non connect?)" : "global");
     }
 
     const categories = data?.categories || {};
@@ -938,7 +938,7 @@ function enhanceCarousel(key) {
 
   if (prev) {
     prev.innerHTML = "&#9664;";
-    prev.setAttribute("aria-label", "Precedent");
+    prev.setAttribute("aria-label", "Pr?c?dent");
   }
   if (next) {
     next.innerHTML = "&#9654;";

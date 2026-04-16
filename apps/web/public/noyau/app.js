@@ -22,20 +22,20 @@ const APP_THEME_PRESETS = {
   },
   Clair: {
     theme: "light",
-    bg: "#f5f7fb",
-    card: "#ffffff",
-    muted: "#5b6476",
+    bg: "#FFFFFF",
+    card: "#F5F5F5",
+    muted: "#6B7280",
     text: "#111827",
-    border: "rgba(15,23,42,.12)",
+    border: "rgba(17,24,39,.12)",
   },
 };
 
 const APP_ACCENT_PRESETS = {
-  "Vert emeraude": { accent: "#34d399", accent2: "#10b981", contrast: "#04130d" },
-  Violet: { accent: "#a78bfa", accent2: "#8b5cf6", contrast: "#140a2b" },
-  Bleu: { accent: "#60a5fa", accent2: "#3b82f6", contrast: "#081426" },
-  Rose: { accent: "#f472b6", accent2: "#ec4899", contrast: "#2a0818" },
-  Rouge: { accent: "#f87171", accent2: "#ef4444", contrast: "#260909" },
+  "Vert emeraude": { accent: "#10B981", accent2: "#059669", contrast: "#FFFFFF" },
+  Violet: { accent: "#8B5CF6", accent2: "#7C3AED", contrast: "#FFFFFF" },
+  Bleu: { accent: "#2563EB", accent2: "#1D4ED8", contrast: "#FFFFFF" },
+  Rose: { accent: "#EC4899", accent2: "#DB2777", contrast: "#FFFFFF" },
+  Rouge: { accent: "#EF4444", accent2: "#DC2626", contrast: "#FFFFFF" },
 };
 
 export function readAppPreferences() {

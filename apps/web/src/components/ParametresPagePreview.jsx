@@ -11,7 +11,7 @@ import {
   MapPinned as PositionIcon,
   Languages as LanguageIcon,
   SlidersHorizontal as SettingsIcon,
-  CircleCheck as CheckIcon,
+  BadgeCheck as CheckIcon,
   Moon as DarkModeIcon,
   Sun as LightModeIcon,
   Palette as PaletteIcon,
