@@ -30,11 +30,11 @@ const APP_THEME_PRESETS = {
   },
   Clair: {
     theme: "light",
-    bg: "#FFFFFF",
-    card: "#F5F5F5",
-    muted: "#6B7280",
-    text: "#111827",
-    border: "rgba(17,24,39,.12)",
+    bg: "#F3EEE8",
+    card: "#FCF8F2",
+    muted: "#6D7285",
+    text: "#171C2B",
+    border: "rgba(23,28,43,.10)",
   },
 };
 

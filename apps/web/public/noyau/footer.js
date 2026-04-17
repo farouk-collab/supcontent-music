@@ -82,10 +82,10 @@ function ensureThemeBridgeStyles() {
     :root[data-app-theme="light"] body.home-page,
     :root[data-app-theme="light"] body.swipe-page{
       background:
-        radial-gradient(circle at top, color-mix(in srgb, var(--accent2) 10%, transparent), transparent 24%),
-        radial-gradient(circle at right, color-mix(in srgb, var(--accent) 8%, transparent), transparent 28%),
-        linear-gradient(180deg, #FFFFFF, #F5F5F5) !important;
-      color: #111827 !important;
+        radial-gradient(circle at top, color-mix(in srgb, var(--accent2) 12%, transparent), transparent 24%),
+        radial-gradient(circle at right, color-mix(in srgb, var(--accent) 10%, transparent), transparent 28%),
+        linear-gradient(180deg, #f6f1eb, #ede6de) !important;
+      color: #171c2b !important;
     }
 
     :root[data-app-theme="light"] .profile-card,
@@ -111,9 +111,9 @@ function ensureThemeBridgeStyles() {
     :root[data-app-theme="light"] .swipe-panel,
     :root[data-app-theme="light"] .swipe-stage,
     :root[data-app-theme="light"] .swipe-summary{
-      background: #FFFFFF !important;
-      border-color: rgba(17,24,39,.10) !important;
-      box-shadow: 0 18px 44px rgba(17,24,39,.08) !important;
+      background: rgba(252,248,242,.9) !important;
+      border-color: rgba(23,28,43,.10) !important;
+      box-shadow: 0 18px 44px rgba(23,28,43,.07) !important;
     }
 
     :root[data-app-theme="light"] .stat-card,
@@ -131,9 +131,9 @@ function ensureThemeBridgeStyles() {
     :root[data-app-theme="light"] .home-feed-item,
     :root[data-app-theme="light"] .home-news-item,
     :root[data-app-theme="light"] .home-news-text-item{
-      background: #F5F5F5 !important;
-      border-color: rgba(17,24,39,.10) !important;
-      color: #111827 !important;
+      background: rgba(248,242,234,.92) !important;
+      border-color: rgba(23,28,43,.09) !important;
+      color: #171c2b !important;
       box-shadow: none !important;
     }
 
@@ -215,8 +215,8 @@ function ensureThemeBridgeStyles() {
 
     :root[data-app-theme="light"] .profile-header .pill-btn:not(.pill-btn--primary),
     :root[data-app-theme="light"] .profile-header .icon-circle{
-      background: #F8FAFC !important;
-      border-color: rgba(17,24,39,.10) !important;
+      background: rgba(255,255,255,.5) !important;
+      border-color: rgba(23,28,43,.10) !important;
       color: #6B7280 !important;
     }
 
@@ -239,17 +239,17 @@ function ensureThemeBridgeStyles() {
     :root[data-app-theme="light"] .swipe-pill-btn,
     :root[data-app-theme="light"] .swipe-chip,
     :root[data-app-theme="light"] .mobile-tab{
-      background: #FFFFFF !important;
-      border-color: rgba(17,24,39,.10) !important;
-      color: #111827 !important;
+      background: rgba(255,255,255,.55) !important;
+      border-color: rgba(23,28,43,.08) !important;
+      color: #171c2b !important;
     }
 
     :root[data-app-theme="light"] .notif-panel,
     :root[data-app-theme="light"] .swipe-notif-panel,
     :root[data-app-theme="light"] .home-notif-panel{
-      background: rgba(255,255,255,.98) !important;
-      border-color: rgba(17,24,39,.10) !important;
-      color: #111827 !important;
+      background: rgba(252,248,242,.98) !important;
+      border-color: rgba(23,28,43,.10) !important;
+      color: #171c2b !important;
     }
 
     :root[data-app-theme="light"] .home-shell{
@@ -262,12 +262,12 @@ function ensureThemeBridgeStyles() {
       position: relative !important;
       padding: 28px 28px 26px !important;
       border-radius: 40px !important;
-      border: 1px solid rgba(17,24,39,.08) !important;
+      border: 1px solid rgba(23,28,43,.08) !important;
       background:
         radial-gradient(circle at top left, color-mix(in srgb, var(--accent2) 16%, transparent), transparent 26%),
         radial-gradient(circle at 78% 22%, rgba(var(--accent-rgb),.10), transparent 24%),
-        linear-gradient(135deg, rgba(255,255,255,.98), rgba(248,250,252,.98)) !important;
-      box-shadow: 0 28px 70px rgba(17,24,39,.12) !important;
+        linear-gradient(135deg, rgba(252,248,242,.96), rgba(244,238,230,.96)) !important;
+      box-shadow: 0 28px 70px rgba(23,28,43,.10) !important;
       overflow: hidden !important;
     }
 
@@ -292,7 +292,7 @@ function ensureThemeBridgeStyles() {
     }
 
     :root[data-app-theme="light"] .home-topbar .home-title{
-      color: #111827 !important;
+      color: #171c2b !important;
       font-size: clamp(48px, 6vw, 78px) !important;
       line-height: .95 !important;
       letter-spacing: -.05em !important;
@@ -303,7 +303,7 @@ function ensureThemeBridgeStyles() {
     :root[data-app-theme="light"] .home-topbar .home-subtitle{
       max-width: 760px !important;
       margin-top: 14px !important;
-      color: #6B7280 !important;
+      color: #6d7285 !important;
       font-size: 19px !important;
       line-height: 1.55 !important;
     }
@@ -315,15 +315,15 @@ function ensureThemeBridgeStyles() {
 
     :root[data-app-theme="light"] .home-soft-btn,
     :root[data-app-theme="light"] .home-topbar .btn:not(.primary):not(.home-notif-btn){
-      background: rgba(255,255,255,.82) !important;
-      border: 1px solid rgba(17,24,39,.08) !important;
-      color: #111827 !important;
-      box-shadow: 0 10px 24px rgba(17,24,39,.06) !important;
+      background: rgba(255,255,255,.5) !important;
+      border: 1px solid rgba(23,28,43,.08) !important;
+      color: #171c2b !important;
+      box-shadow: 0 10px 24px rgba(23,28,43,.05) !important;
     }
 
     :root[data-app-theme="light"] .home-soft-btn:hover,
     :root[data-app-theme="light"] .home-topbar .btn:not(.primary):not(.home-notif-btn):hover{
-      background: #FFFFFF !important;
+      background: rgba(255,255,255,.72) !important;
       border-color: color-mix(in srgb, var(--accent2) 24%, transparent) !important;
       transform: translateY(-1px);
     }
@@ -360,9 +360,9 @@ function ensureThemeBridgeStyles() {
     :root[data-app-theme="light"] .home-hero-card,
     :root[data-app-theme="light"] .home-news-card{
       border-radius: 34px !important;
-      background: rgba(255,255,255,.94) !important;
-      border: 1px solid rgba(17,24,39,.08) !important;
-      box-shadow: 0 20px 52px rgba(17,24,39,.08) !important;
+      background: rgba(252,248,242,.9) !important;
+      border: 1px solid rgba(23,28,43,.08) !important;
+      box-shadow: 0 20px 52px rgba(23,28,43,.07) !important;
     }
 
     :root[data-app-theme="light"] .home-section-head h2,
@@ -394,21 +394,21 @@ function ensureThemeBridgeStyles() {
     :root[data-app-theme="light"] .home-feed-item,
     :root[data-app-theme="light"] .home-news-item,
     :root[data-app-theme="light"] .home-news-text-item{
-      background: #FFFFFF !important;
-      border: 1px solid rgba(17,24,39,.08) !important;
-      box-shadow: 0 8px 24px rgba(17,24,39,.04) !important;
+      background: rgba(255,255,255,.54) !important;
+      border: 1px solid rgba(23,28,43,.08) !important;
+      box-shadow: 0 8px 24px rgba(23,28,43,.04) !important;
     }
 
     :root[data-app-theme="light"] .home-hero-card{
       background:
         radial-gradient(circle at top left, color-mix(in srgb, var(--accent2) 12%, transparent), transparent 24%),
-        linear-gradient(135deg, #FFFFFF, #F8FAFC) !important;
+        linear-gradient(135deg, rgba(252,248,242,.96), rgba(246,240,233,.96)) !important;
     }
 
     :root[data-app-theme="light"] .home-news-card{
       background:
         radial-gradient(circle at top right, rgba(var(--accent-rgb),.08), transparent 20%),
-        linear-gradient(135deg, #FFFFFF, #F8FAFC) !important;
+        linear-gradient(135deg, rgba(252,248,242,.96), rgba(246,240,233,.96)) !important;
     }
 
     :root[data-app-theme="light"] .home-hero-actions .btn.primary{
@@ -423,24 +423,24 @@ function ensureThemeBridgeStyles() {
       box-shadow: 0 22px 40px color-mix(in srgb, var(--accent2) 34%, transparent) !important;
     }
 
-    :root[data-app-theme="light"] .home-page .mobile-footer{
+    :root[data-app-theme="light"] .mobile-footer{
       left: 26px !important;
       right: 26px !important;
       bottom: 18px !important;
       border-radius: 34px !important;
-      border: 1px solid rgba(17,24,39,.08) !important;
-      background: rgba(255,255,255,.86) !important;
+      border: 1px solid rgba(23,28,43,.08) !important;
+      background: rgba(250,245,238,.82) !important;
       backdrop-filter: blur(28px) saturate(1.2) !important;
-      box-shadow: 0 24px 64px rgba(17,24,39,.18) !important;
+      box-shadow: 0 24px 64px rgba(23,28,43,.14) !important;
     }
 
-    :root[data-app-theme="light"] .home-page .mobile-footer-inner{
+    :root[data-app-theme="light"] .mobile-footer-inner{
       max-width: 920px !important;
       padding: 14px 18px 16px 18px !important;
       gap: 12px !important;
     }
 
-    :root[data-app-theme="light"] .home-page .mobile-tab{
+    :root[data-app-theme="light"] .mobile-tab{
       min-height: 72px !important;
       border-radius: 22px !important;
       color: #6B7280 !important;
@@ -448,27 +448,27 @@ function ensureThemeBridgeStyles() {
       border: 1px solid transparent !important;
     }
 
-    :root[data-app-theme="light"] .home-page .mobile-tab .ico-wrap{
+    :root[data-app-theme="light"] .mobile-tab .ico-wrap{
       width: 42px !important;
       height: 42px !important;
       border-radius: 16px !important;
       background: rgba(17,24,39,.04) !important;
     }
 
-    :root[data-app-theme="light"] .home-page .mobile-tab:hover{
+    :root[data-app-theme="light"] .mobile-tab:hover{
       color: #111827 !important;
       background: color-mix(in srgb, var(--accent2) 6%, transparent) !important;
       border-color: color-mix(in srgb, var(--accent2) 14%, transparent) !important;
     }
 
-    :root[data-app-theme="light"] .home-page .mobile-tab.is-active{
-      background: #FFFFFF !important;
+    :root[data-app-theme="light"] .mobile-tab.is-active{
+      background: rgba(255,255,255,.7) !important;
       border-color: color-mix(in srgb, var(--accent2) 16%, transparent) !important;
-      color: #111827 !important;
+      color: #171c2b !important;
       box-shadow: 0 12px 24px color-mix(in srgb, var(--accent2) 16%, transparent) !important;
     }
 
-    :root[data-app-theme="light"] .home-page .mobile-tab.is-active .ico-wrap{
+    :root[data-app-theme="light"] .mobile-tab.is-active .ico-wrap{
       background: linear-gradient(135deg, color-mix(in srgb, var(--accent2) 18%, white), color-mix(in srgb, var(--accent) 12%, white)) !important;
       color: var(--accent2) !important;
     }
