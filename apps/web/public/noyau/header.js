@@ -62,7 +62,9 @@ const HEADER_LINKS_BY_PAGE = {
   ],
   profil: [
     { key: "edit-profile", label: "Modifier profil", icon: "Edit", href: "/profil/profil-modifier.html" },
-    { key: "settings", label: "Reglages", icon: "Settings", href: "/parametres/parametres.html" },
+    { key: "edit-site", label: "Modifier site", icon: "Discover", href: "/profil/profil.html#site-settings" },
+    { key: "profile-settings", label: "Reglages profil", icon: "Profile", href: "/parametres/parametres.html#profile-settings" },
+    { key: "site-settings", label: "Reglages site", icon: "Settings", href: "/parametres/parametres.html#app-settings" },
     { key: "music-profile", label: "Profil musical", icon: "Radio", href: "/profil/profil.html#music-profile" },
   ],
   live: [

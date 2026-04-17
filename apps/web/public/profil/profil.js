@@ -89,8 +89,10 @@ const els = {
   openComposerBtn: document.querySelector("#openComposerBtn"),
   openEditProfileBtn: document.querySelector("#openEditProfileBtn"),
   openSiteSettingsBtn: document.querySelector("#openSiteSettingsBtn"),
-  summaryEditBtn: document.querySelector("#summaryEditBtn"),
-  summarySettingsBtn: document.querySelector("#summarySettingsBtn"),
+  summaryEditProfileLink: document.querySelector("#summaryEditProfileLink"),
+  summarySiteEditBtn: document.querySelector("#summarySiteEditBtn"),
+  summaryProfileSettingsLink: document.querySelector("#summaryProfileSettingsLink"),
+  summarySiteSettingsLink: document.querySelector("#summarySiteSettingsLink"),
   composerModal: document.querySelector("#composerModal"),
   closeComposerBtn: document.querySelector("#closeComposerBtn"),
   cancelComposerBtn: document.querySelector("#cancelComposerBtn"),
@@ -357,8 +359,10 @@ function renderHero() {
     els.openComposerBtn.hidden = false;
     els.openEditProfileBtn.hidden = false;
     els.openSiteSettingsBtn.hidden = false;
-    els.summaryEditBtn.hidden = false;
-    els.summarySettingsBtn.hidden = false;
+    els.summaryEditProfileLink.hidden = false;
+    els.summarySiteEditBtn.hidden = false;
+    els.summaryProfileSettingsLink.hidden = false;
+    els.summarySiteSettingsLink.hidden = false;
   } else {
     els.followToggleBtn.hidden = false;
     els.followToggleBtn.textContent = state.isFollowing ? "Ne plus suivre" : "Suivre";
@@ -366,8 +370,10 @@ function renderHero() {
     els.openComposerBtn.hidden = true;
     els.openEditProfileBtn.hidden = true;
     els.openSiteSettingsBtn.hidden = true;
-    els.summaryEditBtn.hidden = true;
-    els.summarySettingsBtn.hidden = true;
+    els.summaryEditProfileLink.hidden = true;
+    els.summarySiteEditBtn.hidden = true;
+    els.summaryProfileSettingsLink.hidden = true;
+    els.summarySiteSettingsLink.hidden = true;
   }
 }
 
@@ -844,11 +850,11 @@ function bindEvents() {
   });
   els.deleteAccountBtn?.addEventListener("click", handleDeleteAccount);
 
-  [els.openEditProfileBtn, els.summaryEditBtn].forEach((button) => button?.addEventListener("click", () => {
+  [els.openEditProfileBtn].forEach((button) => button?.addEventListener("click", () => {
     fillEditProfileModal(state.currentProfile || {});
     openModal(els.editProfileModal);
   }));
-  [els.openSiteSettingsBtn, els.summarySettingsBtn].forEach((button) => button?.addEventListener("click", () => {
+  [els.openSiteSettingsBtn, els.summarySiteEditBtn].forEach((button) => button?.addEventListener("click", () => {
     renderSiteSettingsChoices();
     openModal(els.siteSettingsModal);
   }));
@@ -913,6 +919,11 @@ renderSettingsSummary();
 syncComposerButtons();
 applyI18n(document);
 loadProfile();
+
+if (window.location.hash === "#site-settings") {
+  renderSiteSettingsChoices();
+  openModal(els.siteSettingsModal);
+}
 
 window.addEventListener(APP_PREFERENCES_EVENT, () => {
   syncSiteSettingsFromGlobalPreferences();

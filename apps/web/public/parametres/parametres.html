@@ -99,6 +99,11 @@
     }
     .settings-card{
       padding:20px;
+      scroll-margin-top:120px;
+    }
+    .settings-card:target{
+      border-color:color-mix(in srgb, var(--accent2) 32%, rgba(255,255,255,.12));
+      box-shadow:0 20px 48px color-mix(in srgb, var(--accent2) 18%, transparent);
     }
     .settings-card-head{
       display:flex;
@@ -327,7 +332,7 @@
 
     <div class="settings-grid">
       <div class="settings-column">
-        <section class="settings-card">
+        <section id="profile-settings" class="settings-card">
           <div class="settings-card-head">
             <div class="settings-card-icon">View</div>
             <h2 data-i18n="who_can_see">Qui peut voir ton contenu</h2>
@@ -348,7 +353,7 @@
           </div>
         </section>
 
-        <section class="settings-card">
+        <section id="app-settings" class="settings-card">
           <div class="settings-card-head">
             <div class="settings-card-icon">Chat</div>
             <h2 data-i18n="interact_with_you">Moyens d'interagir avec toi</h2>
