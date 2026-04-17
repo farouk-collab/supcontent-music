@@ -11,6 +11,14 @@ const LS = { access: "supcontent_access", refresh: "supcontent_refresh" };
 export const APP_SETTINGS_STORAGE_KEY = "supcontent-app-settings-v1";
 export const APP_PREFERENCES_EVENT = "supcontent:preferences-changed";
 
+function hexToRgbString(hex) {
+  const value = String(hex || "").replace("#", "").trim();
+  if (value.length !== 6) return "16,185,129";
+  const int = Number.parseInt(value, 16);
+  if (Number.isNaN(int)) return "16,185,129";
+  return `${(int >> 16) & 255},${(int >> 8) & 255},${int & 255}`;
+}
+
 const APP_THEME_PRESETS = {
   Sombre: {
     theme: "dark",
@@ -31,10 +39,10 @@ const APP_THEME_PRESETS = {
 };
 
 const APP_ACCENT_PRESETS = {
-  "Vert emeraude": { accent: "#10B981", accent2: "#059669", contrast: "#FFFFFF" },
-  Violet: { accent: "#8B5CF6", accent2: "#7C3AED", contrast: "#FFFFFF" },
-  Bleu: { accent: "#2563EB", accent2: "#1D4ED8", contrast: "#FFFFFF" },
-  Rose: { accent: "#EC4899", accent2: "#DB2777", contrast: "#FFFFFF" },
+  "Vert emeraude": { accent: "#34D399", accent2: "#10B981", contrast: "#04130D" },
+  Violet: { accent: "#A78BFA", accent2: "#7C3AED", contrast: "#FFFFFF" },
+  Bleu: { accent: "#60A5FA", accent2: "#2563EB", contrast: "#FFFFFF" },
+  Rose: { accent: "#F472B6", accent2: "#DB2777", contrast: "#FFFFFF" },
   Rouge: { accent: "#EF4444", accent2: "#DC2626", contrast: "#FFFFFF" },
 };
 
@@ -97,6 +105,8 @@ export function applyAppPreferences(preferences = {}) {
   root.style.setProperty("--accent", accent.accent);
   root.style.setProperty("--accent2", accent.accent2);
   root.style.setProperty("--accent-contrast", accent.contrast);
+  root.style.setProperty("--accent-rgb", hexToRgbString(accent.accent));
+  root.style.setProperty("--accent2-rgb", hexToRgbString(accent.accent2));
 }
 
 function installPreferenceSync() {

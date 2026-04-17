@@ -11,14 +11,16 @@
     body.settings-preview-page{
       min-height:100vh;
       background:
-        radial-gradient(circle at top, rgba(34,197,94,.15), transparent 18%),
+        radial-gradient(circle at top, rgba(var(--accent2-rgb),.15), transparent 18%),
+        radial-gradient(circle at right, rgba(var(--accent-rgb),.12), transparent 20%),
         linear-gradient(180deg, #050505, #0d0d0d);
       color:#fff;
       transition:background .2s ease,color .2s ease;
     }
     :root[data-app-theme="light"] body.settings-preview-page{
       background:
-        radial-gradient(circle at top, rgba(96,165,250,.14), transparent 18%),
+        radial-gradient(circle at top, rgba(var(--accent-rgb),.14), transparent 18%),
+        radial-gradient(circle at right, rgba(var(--accent2-rgb),.10), transparent 22%),
         linear-gradient(180deg, #eef3fb, #dfe7f3);
       color:#0f172a;
     }
@@ -58,7 +60,7 @@
     .back-link:hover{color:#fff;}
     .eyebrow{
       margin:0;
-      color:#6ee7b7;
+      color:var(--accent);
       font-size:12px;
       letter-spacing:.24em;
       text-transform:uppercase;

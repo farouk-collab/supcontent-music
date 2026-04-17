@@ -487,9 +487,9 @@ async function toggleLikeLive() {
 
   try {
     const data = await apiFetch(`/live/rooms/${encodeURIComponent(room.id)}/like`, { method: "POST" });
-    patchActiveMembership({ liked: Boolean(data?.liked) });
+    patchActiveMembership({ liked: !!data?.liked });
     patchActiveRoom({ likes: Number(data?.likes_count || room.likes || 0) });
-    setFeedback(Boolean(data?.liked) ? "Live like" : "Like retire du live");
+    setFeedback(data?.liked ? "Live like" : "Like retire du live");
     render();
   } catch (error) {
     setFeedback(error?.message || "Impossible de liker le live");
@@ -695,8 +695,8 @@ function bindEvents() {
     if (!requireLogin({ redirect: false, message: "Connecte-toi pour enregistrer un rappel live." })) return;
     try {
       const data = await apiFetch(`/live/rooms/${encodeURIComponent(room.id)}/reminder`, { method: "POST" });
-      patchActiveMembership({ reminder_set: Boolean(data?.reminder_set) });
-      setFeedback(Boolean(data?.reminder_set) ? `Rappel ajoute pour ${room.title}` : `Rappel retire pour ${room.title}`);
+      patchActiveMembership({ reminder_set: !!data?.reminder_set });
+      setFeedback(data?.reminder_set ? `Rappel ajoute pour ${room.title}` : `Rappel retire pour ${room.title}`);
       render();
     } catch (error) {
       setFeedback(error?.message || "Impossible d'enregistrer le rappel");

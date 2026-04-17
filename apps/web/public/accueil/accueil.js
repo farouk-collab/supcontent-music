@@ -37,19 +37,19 @@ const HOME_MOCK_FEED = [
 ];
 const HOME_MOCK_CATEGORIES = {
   trending: [
-    { id: "trend-1", type: "track", name: "HÉ TCHAI (feat. Jojo Le Barbu & Suspect95)", artists: [{ name: "Himra, Jojo le Barbu, Suspect95" }], image: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80" }] } },
+    { id: "trend-1", type: "track", name: "HÃ‰ TCHAI (feat. Jojo Le Barbu & Suspect95)", artists: [{ name: "Himra, Jojo le Barbu, Suspect95" }], image: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "trend-2", type: "track", name: "CIEL", artists: [{ name: "GIMS" }], image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80" }] } },
-    { id: "trend-3", type: "track", name: "J’emmène au vent", artists: [{ name: "Louise Attaque" }], image: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=900&q=80" }] } },
+    { id: "trend-3", type: "track", name: "Jâ€™emmÃ¨ne au vent", artists: [{ name: "Louise Attaque" }], image: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "trend-4", type: "track", name: "Recommence-moi", artists: [{ name: "SANTA" }], image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80" }] } },
   ],
   rap: [
-    { id: "rap-1", type: "track", name: "Bébé à panthère", artists: [{ name: "SDM, Niska" }], image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80" }] } },
+    { id: "rap-1", type: "track", name: "BÃ©bÃ© Ã  panthÃ¨re", artists: [{ name: "SDM, Niska" }], image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "rap-2", type: "track", name: "A7", artists: [{ name: "SCH" }], image: "https://images.unsplash.com/photo-1501612780327-45045538702b?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1501612780327-45045538702b?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "rap-3", type: "track", name: "Air Max", artists: [{ name: "Gazo, Tiakola, Maes" }], image: "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=900&q=80" }] } },
-    { id: "rap-4", type: "track", name: "Paranoïenne", artists: [{ name: "L2B" }], image: "https://images.unsplash.com/photo-1507677428836-81f7639c8f26?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1507677428836-81f7639c8f26?auto=format&fit=crop&w=900&q=80" }] } },
+    { id: "rap-4", type: "track", name: "ParanoÃ¯enne", artists: [{ name: "L2B" }], image: "https://images.unsplash.com/photo-1507677428836-81f7639c8f26?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1507677428836-81f7639c8f26?auto=format&fit=crop&w=900&q=80" }] } },
   ],
   afro: [
-    { id: "afro-1", type: "track", name: "Who’s Dat Girl", artists: [{ name: "Aya Starr, Rema" }], image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80" }] } },
+    { id: "afro-1", type: "track", name: "Whoâ€™s Dat Girl", artists: [{ name: "Aya Starr, Rema" }], image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "afro-2", type: "track", name: "Calm Down", artists: [{ name: "Rema" }], image: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "afro-3", type: "track", name: "Rush", artists: [{ name: "Ayra Starr" }], image: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "afro-4", type: "track", name: "Charm", artists: [{ name: "Rema" }], image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80" }] } },
@@ -89,7 +89,7 @@ function syncAuthUI() {
   if (ctaAuth) ctaAuth.style.display = isAuthed ? "none" : "";
   if (ctaProfile) ctaProfile.style.display = isAuthed ? "" : "none";
 
-  if (hint) hint.textContent = isAuthed ? "Connecté" : "Non connecté";
+  if (hint) hint.textContent = isAuthed ? "ConnectÃ©" : "Non connectÃ©";
 }
 
 function sanitizeNotification(item, fallbackIndex = 0) {
@@ -232,7 +232,7 @@ function notifIcon(type) {
     follow: "+",
     comment: "??",
     playlist: "?",
-    system: "•",
+    system: "â€¢",
   };
   return icons[type] || icons.system;
 }
@@ -291,11 +291,11 @@ function renderNotifications() {
     lastEvent.innerHTML = `<strong>Dernier evenement :</strong> ${escapeHtml(lastRealtimeEvent)}`;
   }
   if (realtimeState) {
-    realtimeState.textContent = realtimeEnabled ? (realtimeConnected ? "Notifications connectées" : "Notifications en attente") : "Notifications en pause";
+    realtimeState.textContent = realtimeEnabled ? (realtimeConnected ? "Notifications connectÃ©es" : "Notifications en attente") : "Notifications en pause";
     realtimeState.className = `home-live-pill ${realtimeEnabled && realtimeConnected ? "is-live" : "is-offline"}`;
   }
   if (realtimeStateTop) {
-    realtimeStateTop.textContent = realtimeEnabled ? (realtimeConnected ? "Notifications connectées" : "Notifications en attente") : "Notifications en pause";
+    realtimeStateTop.textContent = realtimeEnabled ? (realtimeConnected ? "Notifications connectÃ©es" : "Notifications en attente") : "Notifications en pause";
     realtimeStateTop.className = `home-live-pill ${realtimeEnabled && realtimeConnected ? "is-live" : "is-offline"}`;
   }
   if (testsState) {
@@ -363,8 +363,7 @@ async function loadHomeNotifications({ silent = false } = {}) {
 
 function pushMockNotification() {
   loadHomeNotifications({ silent: false }).catch(() => {});
-  return;
-  lastRealtimeEvent = `${next.user} • ${next.text}`;
+  lastRealtimeEvent = "Notifications synchronisees";
   renderNotifications();
 }
 
@@ -376,7 +375,7 @@ function startRealtimeNotifications() {
     loadHomeNotifications({ silent: false }).catch(() => {});
   }, 15000);
   /* legacy mock code removed
-    lastRealtimeEvent = `${next.user} • ${next.text}`;
+    lastRealtimeEvent = `${next.user} â€¢ ${next.text}`;
     renderNotifications();
     index += 1;
   */
@@ -385,7 +384,7 @@ function startRealtimeNotifications() {
 function bindHomeNotifications() {
   notifications = mergeReadState(DEFAULT_NOTIFICATIONS);
   renderNotifications();
-  loadHomeNotifications({ silent: false }).catch(() => {});
+  pushMockNotification();
   startRealtimeNotifications();
 
   const dropdown = document.querySelector("#homeNotifDropdown");
@@ -442,7 +441,7 @@ function bindLogout() {
     e.preventDefault();
     await serverLogout();
     syncAuthUI();
-    toast("Déconnecté.", "OK");
+    toast("DÃ©connectÃ©.", "OK");
   });
 }
 
@@ -648,28 +647,6 @@ function renderReleaseCard(it) {
   return `<div class="home-news-text-item">${escapeHtml(title)}</div>`;
 }
 
-function renderCommunityCard(it) {
-  const href = mediaHref(it.media_type, it.media_id);
-  const mediaName = it?.media?.name || it.media_id;
-  const mediaSub = it?.media?.subtitle || "";
-  const img = it?.media?.image || "";
-  const kind = it.kind === "review" ? "Avis" : "Commentaire";
-  const rating = typeof it.rating === "number" ? ` ? ${it.rating}/5` : "";
-  const author = it.display_name || "Utilisateur";
-  const text = it.text || "";
-  return `
-    <a class="news-item home-news-item" href="${href}">
-      <div class="news-cover">${img ? `<img src="${img}" alt="">` : `<span class="badge">${it.media_type}</span>`}</div>
-      <div>
-        <div class="news-title">${mediaName}</div>
-        <div class="news-sub">${mediaSub}</div>
-        <div class="news-meta">${kind}${rating} ? par ${author}</div>
-        ${text ? `<div class="news-text">${text}</div>` : ""}
-      </div>
-    </a>
-  `;
-}
-
 function renderCommunityTextCard(it) {
   const primary = it?.media?.name || it?.text || it?.media_id || "Activit? communaut?";
   return `<div class="home-news-text-item">${escapeHtml(primary)}</div>`;
@@ -745,9 +722,9 @@ function renderFollowingFeedItem(it) {
         </div>
       </a>
       <div class="home-feed-meta">
-        <span>♡ ${Math.max(12, text.length)}</span>
-        <span>ðŸ’¬ ${Math.max(3, Math.floor((text.length || 10) / 14))}</span>
-        <span>↗ Partager</span>
+        <span>â™¡ ${Math.max(12, text.length)}</span>
+        <span>Ã°Å¸â€™Â¬ ${Math.max(3, Math.floor((text.length || 10) / 14))}</span>
+        <span>â†— Partager</span>
       </div>
     </article>
   `;
@@ -780,7 +757,7 @@ async function loadFollowingFeed() {
   }
 }
 
-async function fillTrack(trackEl, { q, type = "track", limit = 10 }) {
+async function fillTrack(trackEl) {
   trackEl.innerHTML = `<small style="color:var(--muted)">Chargement Spotify...</small>`;
 }
 
@@ -1035,5 +1012,3 @@ async function main() {
 }
 
 main();
-
-

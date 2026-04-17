@@ -66,13 +66,7 @@ function formatAgo(rawDate) {
   return `il y a ${m} min`;
 }
 
-function renderSticker(v) {
-  const s = normalizeMediaUrl(v);
-  if (!s) return "";
-  return `<img class="cmt-sticker-img" src="${escapeHtml(s)}" alt="sticker" />`;
-}
-
-function stickerPickerHtml({ savedStickers = [], savedGifs = [] } = {}) {
+function stickerPickerHtml() {
   return STICKERS.map(
     (s) =>
       `<button class="reaction-chip sticker-chip" data-pick-sticker="${escapeHtml(s.url)}" data-pick-kind="sticker" type="button"><img src="${escapeHtml(
@@ -280,7 +274,7 @@ export function createSocialController({ socialBox, commentsSheet, commentsBackd
       DELETE_REVIEW_BUTTON: canManage
         ? `<button class="cmt-action" data-del-review="1" data-rid="${reviewId}" type="button">Supprimer</button>`
         : "",
-      STICKER_PICKER: stickerPickerHtml({ savedStickers, savedGifs }),
+      STICKER_PICKER: stickerPickerHtml(),
       REPLIES_COUNT: String(Number(review.comments_count || 0)),
       REPLIES_HTML: replies.map((r) => renderReply(r, review.id)).join(""),
     };
@@ -776,7 +770,7 @@ export function createSocialController({ socialBox, commentsSheet, commentsBackd
             <div class="sticker-strip" data-stickers="1" hidden>{{STICKER_PICKER}}</div>
           </form>
         `,
-            { STICKER_PICKER: stickerPickerHtml({ savedStickers, savedGifs }) }
+            { STICKER_PICKER: stickerPickerHtml() }
           )
         : fillTemplate(
             templates.get("tpl-top-composer-guest") ||

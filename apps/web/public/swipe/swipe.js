@@ -752,7 +752,7 @@ function renderCardStage() {
     refs.cardStage.innerHTML = `
       <div class="swipe-empty">
         <p style="font-size:20px;font-weight:800;">Choisis un onglet de consultation</p>
-        <p>Les onglets \"Ils t'ont like\" et \"Matchs\" utilisent des listes, pas une carte swipe centrale.</p>
+        <p>Les onglets "Ils t'ont like" et "Matchs" utilisent des listes, pas une carte swipe centrale.</p>
       </div>
     `;
     return;

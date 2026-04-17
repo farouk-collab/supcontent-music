@@ -240,7 +240,7 @@ function renderSummary() {
   els.summaryList.innerHTML = rows
     .map(
       ([label, value]) =>
-        `<div class="summary-row"><span>${label}</span><span style="color:#86efac">${String(value)}</span></div>`
+        `<div class="summary-row"><span>${label}</span><span style="color:var(--accent)">${String(value)}</span></div>`
     )
     .join("");
 }

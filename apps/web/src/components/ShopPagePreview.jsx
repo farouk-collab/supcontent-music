@@ -7,7 +7,6 @@ import {
   ShoppingBag as ShopIcon,
   Library as LibraryIcon,
   User as UserIcon,
-  Star as StarIcon,
   ShoppingCart as CartIcon,
   Heart as HeartIcon,
   X as CloseIcon,
@@ -183,7 +182,7 @@ export default function ShopPagePreview({ onNavigate = () => {} }) {
                     <span className="text-2xl font-bold text-emerald-400">{cartTotal}€</span>
                   </div>
                   <button className="w-full rounded-full bg-emerald-400 py-3 text-sm font-semibold text-black hover:bg-emerald-300">
-                    Valider l'achat
+                    Valider l&apos;achat
                   </button>
                 </div>
               </>

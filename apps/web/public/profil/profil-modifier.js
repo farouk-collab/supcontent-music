@@ -67,15 +67,6 @@ function normalizeGender(value) {
   return "";
 }
 
-function formatGender(value) {
-  const normalized = normalizeGender(value);
-  if (normalized === "male") return "Homme";
-  if (normalized === "female") return "Femme";
-  if (normalized === "other") return "Autre";
-  if (normalized === "prefer_not_to_say") return "Prefere ne pas dire";
-  return "-";
-}
-
 function readFormState() {
   return {
     displayName: String(els.displayName?.value || "").trim(),

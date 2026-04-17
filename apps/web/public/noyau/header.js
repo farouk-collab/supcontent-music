@@ -1,14 +1,5 @@
 import { getLanguage, t } from "/noyau/i18n.js";
 
-const FOOTER_ITEMS = [
-  { key: "accueil", label: "Accueil", href: "/accueil/accueil.html" },
-  { key: "recherche", label: "Recherche", href: "/recherche/recherche.html" },
-  { key: "swipe", label: "Swipe", href: "/swipe/swipe.html" },
-  { key: "chat", label: "Chat", href: "/discussion/discussion.html" },
-  { key: "biblio", label: "Biblio", href: "/bibliotheque/bibliotheque.html" },
-  { key: "profil", label: "Profil", href: "/profil/profil.html" },
-];
-
 const PAGE_TITLES = {
   accueil: "home",
   recherche: "search",
@@ -151,8 +142,8 @@ function ensureHeaderStyles() {
       margin:18px auto 18px;
       border:1px solid rgba(255,255,255,.1);
       background:
-        radial-gradient(circle at top left, rgba(34,197,94,.14), transparent 34%),
-        radial-gradient(circle at top right, rgba(59,130,246,.10), transparent 24%),
+        radial-gradient(circle at top left, rgba(var(--accent2-rgb),.14), transparent 34%),
+        radial-gradient(circle at top right, rgba(var(--accent-rgb),.10), transparent 24%),
         rgba(255,255,255,.05);
       backdrop-filter:blur(20px);
       border-radius:32px;
@@ -177,8 +168,8 @@ function ensureHeaderStyles() {
       border-radius:18px;
       display:grid;
       place-items:center;
-      background:rgba(52,211,153,.15);
-      color:#86efac;
+      background:rgba(var(--accent2-rgb),.15);
+      color:var(--accent);
     }
     .app-shell-header .app-header-logo svg,
     .app-shell-header .app-header-pill svg,
@@ -189,7 +180,7 @@ function ensureHeaderStyles() {
     }
     .app-shell-header .app-header-kicker{
       margin:0;
-      color:#86efac;
+      color:var(--accent);
       font-size:12px;
       letter-spacing:.24em;
       text-transform:uppercase;
@@ -234,8 +225,8 @@ function ensureHeaderStyles() {
       height:22px;
       padding:0 6px;
       border-radius:999px;
-      background:#34d399;
-      color:#000;
+      background:var(--accent2);
+      color:var(--accent-contrast, #04130d);
       font-size:11px;
       font-weight:900;
       display:grid;
@@ -262,9 +253,9 @@ function ensureHeaderStyles() {
       text-decoration:none;
     }
     .app-shell-header .app-header-pill.is-active{
-      background:#34d399;
-      border-color:#34d399;
-      color:#04130d;
+      background:var(--accent2);
+      border-color:var(--accent2);
+      color:var(--accent-contrast, #04130d);
     }
     body.has-app-header .container:first-child,
     body.has-app-header .profile-shell:first-child,

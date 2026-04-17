@@ -471,6 +471,7 @@ function startRealtimeNotifications() {
 
 async function fetchSearchResults() {
   const requestId = ++searchRequestId;
+  let isCurrentRequest = true;
   if (state.activeSource !== "spotify") {
     state.loadingResults = false;
     state.spotifyResultsLive = [];
@@ -496,14 +497,17 @@ async function fetchSearchResults() {
     state.spotifyResultsLive = [];
     toast(error?.message || "Erreur recherche", "Erreur");
   } finally {
-    if (requestId !== searchRequestId) return;
-    state.loadingResults = false;
-    renderResults();
+    isCurrentRequest = requestId === searchRequestId;
+    if (isCurrentRequest) {
+      state.loadingResults = false;
+      renderResults();
+    }
   }
 }
 
 async function fetchSuggestions() {
   const requestId = ++suggestionRequestId;
+  let isCurrentRequest = true;
   if (state.searchValue.trim()) {
     state.spotifySuggestionsLive = [];
     renderSuggestions();
@@ -525,8 +529,10 @@ async function fetchSuggestions() {
   } catch {
     state.spotifySuggestionsLive = [];
   } finally {
-    if (requestId !== suggestionRequestId) return;
-    renderSuggestions();
+    isCurrentRequest = requestId === suggestionRequestId;
+    if (isCurrentRequest) {
+      renderSuggestions();
+    }
   }
 }
 

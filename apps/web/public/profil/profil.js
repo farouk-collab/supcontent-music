@@ -343,7 +343,7 @@ function renderHero() {
   els.profileLocationChip.textContent = `Lieu: ${profile?.location || "Non renseigne"}`;
   els.profileBirthdayChip.textContent = `Anniv: ${String(profile?.birth_date || "Non renseignee").slice(0, 10)}`;
   els.verifiedBadge.textContent = "Verifie";
-  els.verifiedBadge.toggleAttribute("hidden", !Boolean(profile?.verified || profile?.email_verified));
+  els.verifiedBadge.toggleAttribute("hidden", !(profile?.verified || profile?.email_verified));
   els.followersCount.textContent = String(Number(socialData?.followers_count || 0));
   els.followingCount.textContent = String(Number(socialData?.following_count || 0));
   els.followersList.innerHTML = personPills(socialData?.followers || []);

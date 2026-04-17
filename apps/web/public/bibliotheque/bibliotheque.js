@@ -179,7 +179,9 @@ function parseSpotifyInput(input) {
     const url = new URL(raw);
     const match = String(url.pathname || "").match(/\/(track|album|artist)\/([A-Za-z0-9]+)/i);
     if (match) return { media_type: match[1].toLowerCase(), media_id: match[2] };
-  } catch {}
+  } catch {
+    return null;
+  }
   return null;
 }
 

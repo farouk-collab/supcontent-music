@@ -57,6 +57,22 @@ function ensureThemeBridgeStyles() {
   const style = document.createElement("style");
   style.id = "supcontent-theme-bridge-style";
   style.textContent = `
+    :root:not([data-app-theme="light"]) body.profile-preview-page,
+    :root:not([data-app-theme="light"]) body.settings-preview-page,
+    :root:not([data-app-theme="light"]) body.shop-page,
+    :root:not([data-app-theme="light"]) body.live-page,
+    :root:not([data-app-theme="light"]) body.chat-redesign-page,
+    :root:not([data-app-theme="light"]) body.library-page,
+    :root:not([data-app-theme="light"]) body.search-page,
+    :root:not([data-app-theme="light"]) body.home-page,
+    :root:not([data-app-theme="light"]) body.swipe-page{
+      background:
+        radial-gradient(circle at top, rgba(var(--accent2-rgb),.16), transparent 20%),
+        radial-gradient(circle at right, rgba(var(--accent-rgb),.14), transparent 22%),
+        linear-gradient(180deg, #050505, #0d0d0d) !important;
+      color: var(--text) !important;
+    }
+
     :root[data-app-theme="light"] body.profile-preview-page,
     :root[data-app-theme="light"] body.shop-page,
     :root[data-app-theme="light"] body.live-page,
@@ -158,7 +174,7 @@ function ensureThemeBridgeStyles() {
     :root[data-app-theme="light"] .profile-cover,
     :root[data-app-theme="light"] .swipe-card-hero{
       background:
-        linear-gradient(135deg, rgba(37,99,235,.10), rgba(139,92,246,.10), rgba(239,68,68,.08)) !important;
+        linear-gradient(135deg, rgba(var(--accent-rgb),.10), rgba(var(--accent2-rgb),.10), rgba(var(--accent-rgb),.08)) !important;
       border-color: rgba(17,24,39,.10) !important;
     }
 
@@ -249,7 +265,7 @@ function ensureThemeBridgeStyles() {
       border: 1px solid rgba(17,24,39,.08) !important;
       background:
         radial-gradient(circle at top left, color-mix(in srgb, var(--accent2) 16%, transparent), transparent 26%),
-        radial-gradient(circle at 78% 22%, rgba(139,92,246,.10), transparent 24%),
+        radial-gradient(circle at 78% 22%, rgba(var(--accent-rgb),.10), transparent 24%),
         linear-gradient(135deg, rgba(255,255,255,.98), rgba(248,250,252,.98)) !important;
       box-shadow: 0 28px 70px rgba(17,24,39,.12) !important;
       overflow: hidden !important;
@@ -321,7 +337,7 @@ function ensureThemeBridgeStyles() {
 
     :root[data-app-theme="light"] .home-notif-badge{
       background: color-mix(in srgb, var(--accent) 86%, white 14%) !important;
-      box-shadow: 0 12px 26px rgba(139,92,246,.30) !important;
+      box-shadow: 0 12px 26px rgba(var(--accent-rgb),.30) !important;
     }
 
     :root[data-app-theme="light"] .home-live-pill{
@@ -333,9 +349,9 @@ function ensureThemeBridgeStyles() {
 
     :root[data-app-theme="light"] .home-live-pill.is-live,
     :root[data-app-theme="light"] .home-live-pill.is-test-ok{
-      background: rgba(16,185,129,.10) !important;
-      border-color: rgba(16,185,129,.18) !important;
-      color: #059669 !important;
+      background: rgba(var(--accent2-rgb),.10) !important;
+      border-color: rgba(var(--accent2-rgb),.18) !important;
+      color: color-mix(in srgb, var(--accent2) 76%, black 24%) !important;
     }
 
     :root[data-app-theme="light"] .home-stories-card,
@@ -391,7 +407,7 @@ function ensureThemeBridgeStyles() {
 
     :root[data-app-theme="light"] .home-news-card{
       background:
-        radial-gradient(circle at top right, rgba(139,92,246,.08), transparent 20%),
+        radial-gradient(circle at top right, rgba(var(--accent-rgb),.08), transparent 20%),
         linear-gradient(135deg, #FFFFFF, #F8FAFC) !important;
     }
 
@@ -480,6 +496,66 @@ function ensureThemeBridgeStyles() {
       background: var(--accent2) !important;
       border-color: var(--accent2) !important;
       color: var(--accent-contrast, #04130d) !important;
+    }
+
+    .shop-stat-pill.is-green,
+    .shop-tag.is-green,
+    .live-tag.is-green,
+    .live-validation,
+    .swipe-notif-note.is-green,
+    .swipe-overlay-tag.is-like,
+    .swipe-badge.is-green,
+    .swipe-status,
+    .search-playlist-tag.is-green,
+    .chat-tag.is-green,
+    .chat-attachment-btn.is-green{
+      border-color: rgba(var(--accent2-rgb), .22) !important;
+      background: rgba(var(--accent2-rgb), .12) !important;
+      color: color-mix(in srgb, var(--accent2) 70%, white) !important;
+    }
+
+    .library-notif-btn,
+    .search-chip.is-active-source,
+    .search-chip.is-active-type,
+    .search-pill-btn.is-primary,
+    .chat-bubble-row.is-me .chat-bubble-card,
+    .live-btn.is-emerald{
+      background: var(--accent2) !important;
+      border-color: var(--accent2) !important;
+      color: var(--accent-contrast, #04130d) !important;
+    }
+
+    .library-icon-btn.is-favorite,
+    .chat-context-score,
+    #swipeScoreStatus{
+      color: var(--accent) !important;
+    }
+
+    .search-live-pill::before,
+    .search-notif-dot{
+      background: var(--accent2) !important;
+      box-shadow: 0 0 0 4px rgba(var(--accent2-rgb), .12) !important;
+    }
+
+    .shop-brand-icon,
+    .library-brand-icon,
+    .chat-brand-icon,
+    .search-brand-icon{
+      background: rgba(var(--accent2-rgb), .15) !important;
+      color: var(--accent) !important;
+    }
+
+    .shop-kicker,
+    .library-kicker,
+    .chat-redesign-kicker,
+    .search-kicker,
+    .eyebrow{
+      color: var(--accent) !important;
+    }
+
+    .shop-progress > div,
+    .library-progress > div{
+      background: var(--accent2) !important;
     }
 
     .shop-progress > div,

@@ -10,8 +10,8 @@
   <style>
     body.swipe-page{
       background:
-        radial-gradient(circle at top, rgba(244,63,94,.14), transparent 20%),
-        radial-gradient(circle at right, rgba(34,197,94,.14), transparent 20%),
+        radial-gradient(circle at top, rgba(var(--accent-rgb),.14), transparent 20%),
+        radial-gradient(circle at right, rgba(var(--accent2-rgb),.14), transparent 20%),
         linear-gradient(180deg, #050505, #0d0d0d);
       color:#fff;
     }
@@ -42,7 +42,7 @@
       overflow:visible;
     }
     .swipe-kicker{
-      color:#6ee7b7;
+      color:var(--accent);
       font-size:13px;
       text-transform:uppercase;
       letter-spacing:.25em;
@@ -84,15 +84,15 @@
     }
     .swipe-pill-btn.is-primary,
     .swipe-chip.is-active{
-      background:#34d399;
-      border-color:#34d399;
-      color:#000;
+      background:var(--accent2);
+      border-color:var(--accent2);
+      color:var(--accent-contrast, #04130d);
     }
     .swipe-notif-btn{
       position:relative;
-      border:1px solid #10e7a7;
-      background:#10e7a7;
-      color:#04120d;
+      border:1px solid var(--accent2);
+      background:var(--accent2);
+      color:var(--accent-contrast, #04120d);
       border-radius:999px;
       padding:11px 18px;
       min-height:42px;
@@ -115,7 +115,7 @@
       border-radius:999px;
       display:grid;
       place-items:center;
-      background:#d946ef;
+      background:var(--accent);
       color:#fff;
       font-size:12px;
       font-weight:900;
@@ -157,9 +157,9 @@
       line-height:1.45;
     }
     .swipe-notif-note.is-green{
-      border-color:rgba(52,211,153,.22);
-      background:rgba(16,185,129,.12);
-      color:#a7f3d0;
+      border-color:rgba(var(--accent2-rgb),.22);
+      background:rgba(var(--accent2-rgb),.12);
+      color:color-mix(in srgb, var(--accent2) 68%, white);
     }
     .swipe-notif-note.is-red{
       border-color:rgba(248,113,113,.22);
@@ -267,9 +267,9 @@
     }
     .swipe-overlay-tag.is-like{
       right:24px;
-      border:1px solid rgba(52,211,153,.4);
-      background:rgba(16,185,129,.2);
-      color:#d1fae5;
+      border:1px solid rgba(var(--accent2-rgb),.4);
+      background:rgba(var(--accent2-rgb),.2);
+      color:color-mix(in srgb, var(--accent2) 72%, white);
     }
     .swipe-overlay-tag.is-pass{
       left:24px;
@@ -287,7 +287,7 @@
       position:relative;
       min-height:420px;
       padding:24px;
-      background:linear-gradient(135deg, rgba(217,70,239,.3), rgba(24,24,27,.96) 52%, rgba(16,185,129,.22));
+      background:linear-gradient(135deg, rgba(var(--accent-rgb),.3), rgba(24,24,27,.96) 52%, rgba(var(--accent2-rgb),.22));
     }
     .swipe-card-hero::before{
       content:"";
@@ -320,8 +320,8 @@
       color:#f4f4f5;
     }
     .swipe-badge.is-green{
-      background:rgba(16,185,129,.18);
-      color:#d1fae5;
+      background:rgba(var(--accent2-rgb),.18);
+      color:color-mix(in srgb, var(--accent2) 72%, white);
     }
     .swipe-card-title{
       margin:0;
@@ -363,11 +363,11 @@
     }
     .swipe-status{
       border-radius:20px;
-      border:1px solid rgba(52,211,153,.22);
-      background:rgba(16,185,129,.12);
+      border:1px solid rgba(var(--accent2-rgb),.22);
+      background:rgba(var(--accent2-rgb),.12);
       padding:14px;
       font-size:14px;
-      color:#d1fae5;
+      color:color-mix(in srgb, var(--accent2) 72%, white);
     }
     .swipe-actions{
       display:grid;
@@ -482,8 +482,8 @@
     .swipe-toast-card{
       width:min(720px, 100%);
       border-radius:40px;
-      border:1px solid rgba(52,211,153,.2);
-      background:radial-gradient(circle at top, rgba(52,211,153,.18), transparent 22%), linear-gradient(180deg, rgba(10,10,10,.96), rgba(20,20,20,.96));
+      border:1px solid rgba(var(--accent2-rgb),.2);
+      background:radial-gradient(circle at top, rgba(var(--accent2-rgb),.18), transparent 22%), linear-gradient(180deg, rgba(10,10,10,.96), rgba(20,20,20,.96));
       padding:32px;
       text-align:center;
       box-shadow:0 30px 80px rgba(0,0,0,.45);
@@ -714,7 +714,7 @@
         <div class="swipe-box">
           <p class="label" style="color:#a1a1aa;font-size:13px;">Priorisation actuelle</p>
           <p id="swipeSortDescription" style="margin-top:8px;color:#e5e7eb;">Tri par score API le plus eleve.</p>
-          <p id="swipeScoreStatus" style="margin-top:10px;color:#6ee7b7;font-size:12px;">Scoring dynamique pret.</p>
+          <p id="swipeScoreStatus" style="margin-top:10px;color:var(--accent);font-size:12px;">Scoring dynamique pret.</p>
         </div>
 
         <div class="swipe-box">

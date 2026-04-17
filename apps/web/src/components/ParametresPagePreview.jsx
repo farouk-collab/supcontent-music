@@ -346,7 +346,7 @@ export default function ParametresPagePreview({ onNavigate = () => {} }) {
               </div>
 
               <div className="rounded-2xl border border-white/10 bg-black/20 p-4">
-                <p className="text-sm text-zinc-300">Couleur d'accent</p>
+                <p className="text-sm text-zinc-300">Couleur d&apos;accent</p>
                 <div className="mt-3 flex flex-wrap gap-2">
                   {["Vert émeraude", "Violet", "Bleu", "Rose"].map((color) => (
                     <ChoicePill
