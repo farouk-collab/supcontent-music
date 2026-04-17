@@ -850,11 +850,7 @@ function bindEvents() {
   });
   els.deleteAccountBtn?.addEventListener("click", handleDeleteAccount);
 
-  [els.openEditProfileBtn].forEach((button) => button?.addEventListener("click", () => {
-    fillEditProfileModal(state.currentProfile || {});
-    openModal(els.editProfileModal);
-  }));
-  [els.openSiteSettingsBtn, els.summarySiteEditBtn].forEach((button) => button?.addEventListener("click", () => {
+  [els.summarySiteEditBtn].forEach((button) => button?.addEventListener("click", () => {
     renderSiteSettingsChoices();
     openModal(els.siteSettingsModal);
   }));
