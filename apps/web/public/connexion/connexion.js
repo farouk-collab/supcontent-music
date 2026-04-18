@@ -323,6 +323,7 @@ function bindEvents() {
   dom.tabs.forEach((button) => button.addEventListener("click", () => {
     state.mode = button.getAttribute("data-mode") || "login";
     renderForm();
+    normalizeBrokenText();
   }));
 
   dom.nameInput?.addEventListener("input", syncLocalInputs);
@@ -332,6 +333,7 @@ function bindEvents() {
   dom.passwordToggle?.addEventListener("click", () => {
     state.showPassword = !state.showPassword;
     renderForm();
+    normalizeBrokenText();
   });
 
   dom.form?.addEventListener("submit", async (event) => {
@@ -350,11 +352,39 @@ function bindEvents() {
   });
 }
 
+function normalizeBrokenText() {
+  const brandIcon = document.querySelector(".auth-brand-icon");
+  if (brandIcon) brandIcon.innerHTML = "&#9835;";
+
+  const subtitle = document.querySelector(".auth-subtitle");
+  if (subtitle) subtitle.innerHTML = "Page d&eacute;di&eacute;e strictement &agrave; la connexion : login, inscription, mot de passe oubli&eacute; et OAuth Google.";
+
+  const rowIcons = Array.from(document.querySelectorAll(".auth-row-icon"));
+  if (rowIcons[0]) rowIcons[0].innerHTML = "&#128100;";
+  if (rowIcons[1]) rowIcons[1].textContent = "@";
+  if (rowIcons[2]) rowIcons[2].innerHTML = "&#128274;";
+
+  if (dom.passwordToggle) dom.passwordToggle.innerHTML = state.showPassword ? "&#128584;" : "&#128065;";
+  if (dom.submitButton) {
+    if (state.mode === "login") dom.submitButton.innerHTML = "Se connecter &rarr;";
+    if (state.mode === "register") dom.submitButton.innerHTML = "Creer un compte &rarr;";
+    if (state.mode === "forgot") dom.submitButton.innerHTML = "Envoyer le lien &rarr;";
+  }
+  if (dom.statusHead) {
+    dom.statusHead.innerHTML = `<span>${state.authState.isConnected ? "&#10003;" : "&#9888;"}</span><span>${state.authState.isConnected ? "Connecte" : "Non connecte"}</span>`;
+  }
+
+  const tokenIcons = Array.from(document.querySelectorAll(".auth-token-label span:first-child"));
+  if (tokenIcons[0]) tokenIcons[0].innerHTML = "&#128737;";
+  if (tokenIcons[1]) tokenIcons[1].innerHTML = "&#128273;";
+}
+
 async function init() {
   state.mode = getInitialModeFromUrl();
   updateAuthStateFromTokens();
   bindEvents();
   renderAll();
+  normalizeBrokenText();
   consumeOauthParams();
   await consumeResetTokenFromUrl();
 }

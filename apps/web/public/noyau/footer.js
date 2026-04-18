@@ -58,12 +58,15 @@ function ensureThemeBridgeStyles() {
   style.id = "supcontent-theme-bridge-style";
   style.textContent = `
     :root:not([data-app-theme="light"]) body.profile-preview-page,
+    :root:not([data-app-theme="light"]) body.edit-profile-page,
+    :root:not([data-app-theme="light"]) body.connexion-page,
     :root:not([data-app-theme="light"]) body.settings-preview-page,
     :root:not([data-app-theme="light"]) body.shop-page,
     :root:not([data-app-theme="light"]) body.live-page,
     :root:not([data-app-theme="light"]) body.chat-redesign-page,
     :root:not([data-app-theme="light"]) body.library-page,
     :root:not([data-app-theme="light"]) body.search-page,
+    :root:not([data-app-theme="light"]) body.user-search-page,
     :root:not([data-app-theme="light"]) body.home-page,
     :root:not([data-app-theme="light"]) body.swipe-page{
       background:
@@ -74,11 +77,14 @@ function ensureThemeBridgeStyles() {
     }
 
     :root[data-app-theme="light"] body.profile-preview-page,
+    :root[data-app-theme="light"] body.edit-profile-page,
+    :root[data-app-theme="light"] body.connexion-page,
     :root[data-app-theme="light"] body.shop-page,
     :root[data-app-theme="light"] body.live-page,
     :root[data-app-theme="light"] body.chat-redesign-page,
     :root[data-app-theme="light"] body.library-page,
     :root[data-app-theme="light"] body.search-page,
+    :root[data-app-theme="light"] body.user-search-page,
     :root[data-app-theme="light"] body.home-page,
     :root[data-app-theme="light"] body.swipe-page{
       background:
@@ -89,15 +95,42 @@ function ensureThemeBridgeStyles() {
     }
 
     :root[data-app-theme="light"] .profile-card,
+    :root[data-app-theme="light"] .edit-header,
+    :root[data-app-theme="light"] .edit-panel,
+    :root[data-app-theme="light"] .edit-side-panel,
+    :root[data-app-theme="light"] .auth-panel,
+    :root[data-app-theme="light"] .auth-side,
+    :root[data-app-theme="light"] .auth-feature,
+    :root[data-app-theme="light"] .auth-card,
+    :root[data-app-theme="light"] .auth-status,
+    :root[data-app-theme="light"] .auth-test,
     :root[data-app-theme="light"] .shop-panel,
     :root[data-app-theme="light"] .live-panel,
     :root[data-app-theme="light"] .chat-panel,
     :root[data-app-theme="light"] .library-panel,
     :root[data-app-theme="light"] .search-panel,
+    :root[data-app-theme="light"] .search-section,
+    :root[data-app-theme="light"] .search-results-card,
+    :root[data-app-theme="light"] .search-import-card,
+    :root[data-app-theme="light"] .search-playlists-card,
+    :root[data-app-theme="light"] .user-search-card,
+    :root[data-app-theme="light"] .user-search-hero,
+    :root[data-app-theme="light"] .user-search-feed,
+    :root[data-app-theme="light"] .user-search-results,
     :root[data-app-theme="light"] .shop-header,
+    :root[data-app-theme="light"] .shop-card,
+    :root[data-app-theme="light"] .shop-side-card,
     :root[data-app-theme="light"] .live-header,
+    :root[data-app-theme="light"] .live-side-card,
+    :root[data-app-theme="light"] .live-center-card,
+    :root[data-app-theme="light"] .live-hero-card,
     :root[data-app-theme="light"] .chat-redesign-header,
     :root[data-app-theme="light"] .library-header,
+    :root[data-app-theme="light"] .library-col,
+    :root[data-app-theme="light"] .library-main,
+    :root[data-app-theme="light"] .library-side,
+    :root[data-app-theme="light"] .library-lower,
+    :root[data-app-theme="light"] .library-hero-card,
     :root[data-app-theme="light"] .search-header,
     :root[data-app-theme="light"] .profile-header,
     :root[data-app-theme="light"] .home-topbar,
@@ -119,6 +152,43 @@ function ensureThemeBridgeStyles() {
     :root[data-app-theme="light"] .stat-card,
     :root[data-app-theme="light"] .soft-card,
     :root[data-app-theme="light"] .content-card,
+    :root[data-app-theme="light"] .auth-row,
+    :root[data-app-theme="light"] .search-search-bar,
+    :root[data-app-theme="light"] .search-mini-card,
+    :root[data-app-theme="light"] .search-suggestion,
+    :root[data-app-theme="light"] .search-result-item,
+    :root[data-app-theme="light"] .search-empty-state,
+    :root[data-app-theme="light"] .search-playlist-card,
+    :root[data-app-theme="light"] .user-search-feedback,
+    :root[data-app-theme="light"] .search-panel,
+    :root[data-app-theme="light"] .result-card,
+    :root[data-app-theme="light"] .feed-card,
+    :root[data-app-theme="light"] .empty-box,
+    :root[data-app-theme="light"] .counter-pill,
+    :root[data-app-theme="light"] .library-notif-card,
+    :root[data-app-theme="light"] .library-list-card,
+    :root[data-app-theme="light"] .library-media-card,
+    :root[data-app-theme="light"] .library-stat-card,
+    :root[data-app-theme="light"] .library-box,
+    :root[data-app-theme="light"] .library-player-card,
+    :root[data-app-theme="light"] .library-footer-player,
+    :root[data-app-theme="light"] .shop-preview-visual,
+    :root[data-app-theme="light"] .shop-preview-panel,
+    :root[data-app-theme="light"] .shop-product-card,
+    :root[data-app-theme="light"] .shop-creator-card,
+    :root[data-app-theme="light"] .shop-cart-item,
+    :root[data-app-theme="light"] .shop-empty,
+    :root[data-app-theme="light"] .shop-field-inline,
+    :root[data-app-theme="light"] .live-room-btn,
+    :root[data-app-theme="light"] .live-schedule-item,
+    :root[data-app-theme="light"] .live-note,
+    :root[data-app-theme="light"] .live-mini-card,
+    :root[data-app-theme="light"] .live-action-link,
+    :root[data-app-theme="light"] .live-overlay-item,
+    :root[data-app-theme="light"] .live-chat-item,
+    :root[data-app-theme="light"] .mini-profile,
+    :root[data-app-theme="light"] .validation-box,
+    :root[data-app-theme="light"] .hint-box,
     :root[data-app-theme="light"] .empty-block,
     :root[data-app-theme="light"] .person-pill,
     :root[data-app-theme="light"] .highlight-pill,
@@ -138,6 +208,18 @@ function ensureThemeBridgeStyles() {
     }
 
     :root[data-app-theme="light"] .profile-muted,
+    :root[data-app-theme="light"] .auth-subtitle,
+    :root[data-app-theme="light"] .auth-feature p,
+    :root[data-app-theme="light"] .auth-helper,
+    :root[data-app-theme="light"] .auth-status p,
+    :root[data-app-theme="light"] .auth-side small,
+    :root[data-app-theme="light"] .auth-token-value,
+    :root[data-app-theme="light"] .search-subtitle,
+    :root[data-app-theme="light"] .library-subtitle,
+    :root[data-app-theme="light"] .shop-subtitle,
+    :root[data-app-theme="light"] .live-subtitle,
+    :root[data-app-theme="light"] .user-search-subtitle,
+    :root[data-app-theme="light"] .edit-subtitle,
     :root[data-app-theme="light"] .home-subtitle,
     :root[data-app-theme="light"] .home-section-head p,
     :root[data-app-theme="light"] .swipe-subtitle,
@@ -158,6 +240,14 @@ function ensureThemeBridgeStyles() {
     }
 
     :root[data-app-theme="light"] .section-title,
+    :root[data-app-theme="light"] .auth-title,
+    :root[data-app-theme="light"] .auth-side h2,
+    :root[data-app-theme="light"] .search-title,
+    :root[data-app-theme="light"] .library-title,
+    :root[data-app-theme="light"] .shop-title,
+    :root[data-app-theme="light"] .live-title,
+    :root[data-app-theme="light"] .user-search-title,
+    :root[data-app-theme="light"] .edit-title,
     :root[data-app-theme="light"] .profile-title,
     :root[data-app-theme="light"] .profile-name-row h2,
     :root[data-app-theme="light"] .stat-card strong,
@@ -235,12 +325,50 @@ function ensureThemeBridgeStyles() {
 
     :root[data-app-theme="light"] .pill-btn,
     :root[data-app-theme="light"] .icon-circle,
+    :root[data-app-theme="light"] .auth-tab,
+    :root[data-app-theme="light"] .auth-ghost,
+    :root[data-app-theme="light"] .auth-btn,
     :root[data-app-theme="light"] .home-soft-btn,
     :root[data-app-theme="light"] .swipe-pill-btn,
     :root[data-app-theme="light"] .swipe-chip,
     :root[data-app-theme="light"] .mobile-tab{
       background: rgba(255,255,255,.55) !important;
       border-color: rgba(23,28,43,.08) !important;
+      color: #171c2b !important;
+    }
+
+    :root[data-app-theme="light"] .auth-input,
+    :root[data-app-theme="light"] .auth-textarea,
+    :root[data-app-theme="light"] .search-search-bar input,
+    :root[data-app-theme="light"] .shop-search input,
+    :root[data-app-theme="light"] .shop-upload-grid input,
+    :root[data-app-theme="light"] .shop-upload-grid textarea,
+    :root[data-app-theme="light"] .shop-upload-grid select,
+    :root[data-app-theme="light"] .shop-field-inline input,
+    :root[data-app-theme="light"] .live-chat-form input,
+    :root[data-app-theme="light"] .search-input-row input{
+      color: #171c2b !important;
+    }
+
+    :root[data-app-theme="light"] .auth-input::placeholder,
+    :root[data-app-theme="light"] .auth-textarea::placeholder,
+    :root[data-app-theme="light"] .search-search-bar input::placeholder,
+    :root[data-app-theme="light"] .shop-search input::placeholder,
+    :root[data-app-theme="light"] .shop-upload-grid input::placeholder,
+    :root[data-app-theme="light"] .shop-upload-grid textarea::placeholder,
+    :root[data-app-theme="light"] .live-chat-form input::placeholder,
+    :root[data-app-theme="light"] .search-input-row input::placeholder{
+      color: #8b93a7 !important;
+    }
+
+    :root[data-app-theme="light"] .shop-search,
+    :root[data-app-theme="light"] .shop-upload-grid input,
+    :root[data-app-theme="light"] .shop-upload-grid textarea,
+    :root[data-app-theme="light"] .shop-upload-grid select,
+    :root[data-app-theme="light"] .live-chat-form,
+    :root[data-app-theme="light"] .search-input-row{
+      background: rgba(255,255,255,.62) !important;
+      border-color: rgba(23,28,43,.10) !important;
       color: #171c2b !important;
     }
 

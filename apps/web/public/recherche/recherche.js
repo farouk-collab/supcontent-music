@@ -423,6 +423,35 @@ function renderAll() {
   renderSuggestions();
   renderResults();
   renderPlaylists();
+  normalizeSearchText();
+}
+
+function cleanBrokenString(value) {
+  return String(value || "")
+    .replaceAll("ï¿½", "-")
+    .replaceAll("�", "-")
+    .replaceAll("Â·", "·")
+    .replaceAll("Ã", "A");
+}
+
+function normalizeSearchText() {
+  const selectors = [
+    ".search-suggestion h3",
+    ".search-suggestion p",
+    ".search-result-title",
+    ".search-result-sub",
+    ".search-playlist-title",
+    ".search-playlist-sub",
+    ".search-inline-player",
+    "#searchNotifLast",
+    "#searchRealtimePill",
+  ];
+
+  selectors.forEach((selector) => {
+    document.querySelectorAll(selector).forEach((node) => {
+      node.textContent = cleanBrokenString(node.textContent);
+    });
+  });
 }
 
 function markNotificationAsRead(id) {

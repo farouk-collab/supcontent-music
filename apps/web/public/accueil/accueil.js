@@ -981,7 +981,25 @@ function deferAfterPaint(task) {
   run();
 }
 
+function normalizeHomeText() {
+  const replacements = [
+    [".home-subtitle", "Decouverte musicale, activite des abonnements et actualites en un seul endroit."],
+    ["#homeRealtimeStateTop", "Temps reel connecte"],
+    [".home-notif-head h3", "Centre d'activite"],
+  ];
+
+  replacements.forEach(([selector, value]) => {
+    const node = document.querySelector(selector);
+    if (node) node.textContent = value;
+  });
+
+  const sectionHeads = document.querySelectorAll(".home-section-head p");
+  if (sectionHeads[0]) sectionHeads[0].textContent = "Stories et activite rapide des profils que tu suis.";
+  if (sectionHeads[1]) sectionHeads[1].innerHTML = "Charge le flux si l'utilisateur est connecte via <code>/feed/me</code>.";
+}
+
 async function main() {
+  normalizeHomeText();
   syncAuthUI();
   bindLogout();
   bindHomeHeaderActions();

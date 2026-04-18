@@ -89,10 +89,6 @@ const els = {
   openComposerBtn: document.querySelector("#openComposerBtn"),
   openEditProfileBtn: document.querySelector("#openEditProfileBtn"),
   openSiteSettingsBtn: document.querySelector("#openSiteSettingsBtn"),
-  summaryEditProfileLink: document.querySelector("#summaryEditProfileLink"),
-  summarySiteEditBtn: document.querySelector("#summarySiteEditBtn"),
-  summaryProfileSettingsLink: document.querySelector("#summaryProfileSettingsLink"),
-  summarySiteSettingsLink: document.querySelector("#summarySiteSettingsLink"),
   composerModal: document.querySelector("#composerModal"),
   closeComposerBtn: document.querySelector("#closeComposerBtn"),
   cancelComposerBtn: document.querySelector("#cancelComposerBtn"),
@@ -359,10 +355,6 @@ function renderHero() {
     els.openComposerBtn.hidden = false;
     els.openEditProfileBtn.hidden = false;
     els.openSiteSettingsBtn.hidden = false;
-    els.summaryEditProfileLink.hidden = false;
-    els.summarySiteEditBtn.hidden = false;
-    els.summaryProfileSettingsLink.hidden = false;
-    els.summarySiteSettingsLink.hidden = false;
   } else {
     els.followToggleBtn.hidden = false;
     els.followToggleBtn.textContent = state.isFollowing ? "Ne plus suivre" : "Suivre";
@@ -370,10 +362,6 @@ function renderHero() {
     els.openComposerBtn.hidden = true;
     els.openEditProfileBtn.hidden = true;
     els.openSiteSettingsBtn.hidden = true;
-    els.summaryEditProfileLink.hidden = true;
-    els.summarySiteEditBtn.hidden = true;
-    els.summaryProfileSettingsLink.hidden = true;
-    els.summarySiteSettingsLink.hidden = true;
   }
 }
 
@@ -850,11 +838,6 @@ function bindEvents() {
   });
   els.deleteAccountBtn?.addEventListener("click", handleDeleteAccount);
 
-  [els.summarySiteEditBtn].forEach((button) => button?.addEventListener("click", () => {
-    renderSiteSettingsChoices();
-    openModal(els.siteSettingsModal);
-  }));
-
   els.closeComposerBtn?.addEventListener("click", closeComposer);
   els.cancelComposerBtn?.addEventListener("click", closeComposer);
   els.composerPhotoBtn?.addEventListener("click", () => {
@@ -907,6 +890,43 @@ function bindEvents() {
   });
 }
 
+function normalizeProfileText() {
+  const siteSettingsLink = document.querySelector("#openSiteSettingsBtn");
+  if (siteSettingsLink) {
+    siteSettingsLink.setAttribute("title", "Reglages du site");
+    siteSettingsLink.setAttribute("aria-label", "Reglages du site");
+  }
+
+  const replacements = [
+    [".notif-head strong", "Centre d'activite"],
+    [".side-panel .section-title", "Reseau social"],
+    ["#openComposerBtn", "Creer"],
+    [".summary-panel .section-title", "Resume du profil"],
+    ["#refreshBtn", "Rafraichir"],
+    ["#logoutBtn", "Deconnexion (local)"],
+    ["#feedbackText", "Profil pret · donnees mises en cache"],
+  ];
+
+  replacements.forEach(([selector, value]) => {
+    const node = document.querySelector(selector);
+    if (node) node.textContent = value;
+  });
+
+  const stats = document.querySelectorAll(".side-panel .stat-card p");
+  if (stats[0]) stats[0].textContent = "Abonnes";
+  if (stats[1]) stats[1].textContent = "Abonnements";
+
+  const kickers = document.querySelectorAll(".side-panel .soft-card .profile-kicker");
+  if (kickers[0]) kickers[0].textContent = "Abonnes";
+  if (kickers[1]) kickers[1].textContent = "Abonnements";
+
+  const bottomTitles = document.querySelectorAll(".bottom-panel .section-title");
+  if (bottomTitles[1]) bottomTitles[1].textContent = "Reglages actifs";
+
+  const techKicker = document.querySelector(".summary-panel .soft-card:last-child .profile-kicker");
+  if (techKicker) techKicker.textContent = "Etat visuel / technique";
+}
+
 bindEvents();
 renderNotifications();
 syncSiteSettingsFromGlobalPreferences();
@@ -914,6 +934,7 @@ renderSiteSettingsChoices();
 renderSettingsSummary();
 syncComposerButtons();
 applyI18n(document);
+normalizeProfileText();
 loadProfile();
 
 if (window.location.hash === "#site-settings") {

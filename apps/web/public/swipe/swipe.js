@@ -289,7 +289,7 @@ function classifyGenre(text) {
 }
 
 function mapProfile(item, index) {
-  const vibe = String(item?.bio || item?.location || "Compatibilit? musicale");
+  const vibe = String(item?.bio || item?.location || "Compatibilite musicale");
   const artists = Array.isArray(item?.top_artists) ? item.top_artists : [];
   const compatibility = Math.min(99, Math.max(72, 82 + ((index * 5) % 14)));
   const traits = generateProfileTraits(item, index);
@@ -339,7 +339,7 @@ function mapInvitation(item, index) {
 function mapLikeItem(item, index) {
   const user = item?.user || {};
   const name = String(user?.display_name || user?.username || "Utilisateur");
-  const vibe = String(user?.bio || user?.location || item?.message || "Compatibilit? musicale");
+  const vibe = String(user?.bio || user?.location || item?.message || "Compatibilite musicale");
   const isSuperlike = Boolean(item?.is_superlike);
   const profileId = String(item?.profile_id || user?.id || `like-${index}`);
   const compatibility = Math.min(99, Math.max(78, isSuperlike ? 95 - index * 2 : 88 - index * 2));
@@ -653,7 +653,7 @@ function renderTabs() {
 }
 
 function renderSidePanel() {
-  refs.modeText.textContent = state.viewMode === "music" ? "D?couverte musicale" : "Compatibilit? musicale";
+  refs.modeText.textContent = state.viewMode === "music" ? "Decouverte musicale" : "Compatibilite musicale";
   refs.scoreSource.textContent = !isAuthedSwipeUser()
     ? "Mode invite avec cartes locales"
     : state.compatibilityLoading
@@ -736,7 +736,7 @@ function emptyCardHtml() {
       <p>Recharge la pile, elargis les criteres ou reviens plus tard.</p>
       <div class="swipe-empty-actions">
         <button id="swipeReloadBtn" class="swipe-pill-btn is-primary" type="button">Recharger</button>
-        <button id="swipeResetFiltersBtn" class="swipe-pill-btn" type="button">?largir les crit?res</button>
+        <button id="swipeResetFiltersBtn" class="swipe-pill-btn" type="button">Elargir les criteres</button>
       </div>
     </div>
   `;
@@ -797,7 +797,7 @@ function renderSummary() {
 
   refs.lastAction.textContent = state.history[0]
     ? `Carte #${state.history[0].profileId} · ${state.history[0].direction} · ${state.history[0].mode}`
-    : "Aucune action r?cente";
+    : "Aucune action recente";
 
   refs.sortDescription.textContent =
     state.sortMode === "compatibility"
@@ -831,7 +831,7 @@ function renderSummaryEnhanced() {
   if (refs.lastAction) {
     refs.lastAction.textContent = state.history[0]
       ? `${state.history[0].label || findCardLabelById(state.history[0].profileId, state.history[0].mode)} · ${state.history[0].direction} · ${state.history[0].mode}`
-      : "Aucune action r?cente";
+      : "Aucune action recente";
   }
 
   if (refs.superLikesMini) {
@@ -857,7 +857,7 @@ function renderSummaryEnhanced() {
               : ""
           )
         ).join("")
-      : `<p style="color:#a1a1aa;font-size:14px;">Aucune invitation re?ue.</p>`;
+      : `<p style="color:#a1a1aa;font-size:14px;">Aucune invitation recue.</p>`;
 
     refs.invitationsMini.querySelectorAll("[data-open-invitation-chat]").forEach((button) => {
       button.addEventListener("click", () => openChat(button.getAttribute("data-open-invitation-chat")));
@@ -873,7 +873,7 @@ function renderSummaryEnhanced() {
             item.mode === "music" ? "Passe dans les medias" : "Passe dans les profils"
           )
         ).join("")
-      : `<p style="color:#a1a1aa;font-size:14px;">Aucun pass r?cent.</p>`;
+      : `<p style="color:#a1a1aa;font-size:14px;">Aucun pass recent.</p>`;
   }
 }
 
@@ -881,7 +881,7 @@ function renderMatchModal() {
   const match = state.activeMatch;
   refs.matchModal.hidden = !match;
   if (!match) return;
-  refs.matchTitle.textContent = `Toi et ${match.name} avez match?`;
+  refs.matchTitle.textContent = `Toi et ${match.name} avez matche`;
   refs.matchText.textContent = `La compatibilite musicale est forte. Votre vibe commune : ${match.vibe}.`;
 }
 
@@ -925,7 +925,7 @@ async function performSwipe(direction) {
     } else {
       const res = await apiFetch(`/follows/swipe/profiles/${encodeURIComponent(currentCard.raw?.id || currentCard.id)}`, {
         method: "POST",
-        body: JSON.stringify({ direction, message: direction === "superlike" ? "Super like envoy?" : "" }),
+        body: JSON.stringify({ direction, message: direction === "superlike" ? "Super like envoye" : "" }),
       });
       if ((direction === "like" || direction === "superlike") && (res?.can_chat_direct || currentCard.mockReciprocalLike)) {
         const match = {
@@ -1232,6 +1232,38 @@ function renderAll() {
   renderCardStage();
   renderSummaryEnhanced();
   renderMatchModal();
+  normalizeSwipeText();
+}
+
+function normalizeSwipeText() {
+  const replacements = [
+    ["#swipeModeText", "Decouverte musicale"],
+    ["#swipeScoreStatus", "Scoring dynamique pret."],
+    ["#swipeMatchTitle", refs.matchTitle?.textContent.replaceAll("match?", "matche")],
+  ];
+
+  replacements.forEach(([selector, value]) => {
+    const node = document.querySelector(selector);
+    if (node && value) node.textContent = String(value)
+      .replaceAll("D?couverte", "Decouverte")
+      .replaceAll("Compatibilit?", "Compatibilite")
+      .replaceAll("crit?res", "criteres")
+      .replaceAll("r?cente", "recente")
+      .replaceAll("re?ue", "recue")
+      .replaceAll("envoy?", "envoye");
+  });
+
+  document.querySelectorAll(".swipe-card-sub, .swipe-kicker, .swipe-box, .swipe-notif-note, .swipe-pill-btn, .swipe-tag").forEach((node) => {
+    node.textContent = node.textContent
+      .replaceAll("Compatibilit?", "Compatibilite")
+      .replaceAll("D?couverte", "Decouverte")
+      .replaceAll("?largir les crit?res", "Elargir les criteres")
+      .replaceAll("Aucune action r?cente", "Aucune action recente")
+      .replaceAll("Aucune invitation re?ue.", "Aucune invitation recue.")
+      .replaceAll("Aucun pass r?cent.", "Aucun pass recent.")
+      .replaceAll("match?", "matche")
+      .replaceAll("envoy?", "envoye");
+  });
 }
 
 async function bootstrap() {
