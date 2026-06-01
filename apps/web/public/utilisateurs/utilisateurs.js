@@ -342,6 +342,7 @@ function renderResults() {
               <button type="button" class="${isFollowing ? "primary-btn" : "ghost-btn"}" data-follow-id="${escapeHtml(user.id)}">
                 ${isFollowing ? "Suivi" : "Suivre"}
               </button>
+              <button type="button" class="ghost-btn" data-message-id="${escapeHtml(user.id)}">Message</button>
             </div>
           </div>
 
@@ -371,6 +372,14 @@ function renderResults() {
       const userId = button.getAttribute("data-favorite-id");
       if (!userId) return;
       handleFavorite(userId);
+    });
+  });
+
+  refs.results.querySelectorAll("[data-message-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const userId = button.getAttribute("data-message-id");
+      if (!userId) return;
+      handleOpenChat(userId);
     });
   });
 
@@ -532,6 +541,15 @@ function handleFavorite(userId) {
   renderResults();
 }
 
+function handleOpenChat(userId) {
+  if (!isLoggedIn()) {
+    const next = `/discussion/discussion.html?profile=${encodeURIComponent(userId)}`;
+    window.location.href = `/connexion/connexion.html?next=${encodeURIComponent(next)}`;
+    return;
+  }
+  window.location.href = `/discussion/discussion.html?profile=${encodeURIComponent(userId)}`;
+}
+
 function handleLikePost(postId) {
   const post = CONTENT_POSTS.find((item) => item.id === postId);
   const wasLiked = state.likedPostIds.has(postId);
@@ -592,6 +610,14 @@ async function searchAndRender(term) {
   }
   const apiResults = await searchUsers(clean);
   state.results = apiResults.length ? apiResults : [];
+  // Update following state from API results
+  state.results.forEach((user) => {
+    if (user.isFollowing) {
+      state.followingIds.add(user.id);
+    } else {
+      state.followingIds.delete(user.id);
+    }
+  });
   renderControls();
   renderResults();
   renderFeed();

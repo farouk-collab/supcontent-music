@@ -1,16 +1,7 @@
 import { apiFetch, toast, getTokens, serverLogout, escapeHtml, resolveMediaUrl } from "/noyau/app.js";
 
-console.log("INDEX JS LOADED");
 const STORY_TTL_MS = 24 * 60 * 60 * 1000;
-const DEFAULT_NOTIFICATIONS = [
-  { id: 1, type: "release", user: "Nina.beats", text: "a partage une nouvelle sortie : Timeless - The Weeknd", time: "Il y a 2 min", read: false },
-  { id: 2, type: "community", user: "Ayo.wav", text: "a aime ta playlist Afro Sunset", time: "Il y a 8 min", read: false },
-  { id: 3, type: "follow", user: "Luna.mix", text: "a commence a te suivre", time: "Il y a 21 min", read: false },
-  { id: 4, type: "comment", user: "Melo", text: 'a commente ton post : "grosse ambiance ce son"', time: "Il y a 1 h", read: true },
-  { id: 5, type: "playlist", user: "DJ Nova", text: "a ajoute ton morceau a la playlist Midnight Drive", time: "Il y a 2 h", read: true },
-  { id: 6, type: "release", user: "Kez.fm", text: "a publie un extrait exclusif dans ses stories", time: "Il y a 3 h", read: true },
-  { id: 7, type: "community", user: "SoundWave", text: 'a reposte ta review "Night Drive Energy"', time: "Hier", read: true },
-];
+const DEFAULT_NOTIFICATIONS = [];
 const HOME_FORCE_MOCK = false;
 const HOME_NOTIF_READ_KEY = "supcontent_home_notifications_read_v1";
 const HOME_MOCK_STORIES = [
@@ -186,44 +177,6 @@ function mapApiNotifications(data) {
   ]);
 }
 
-function runNotificationTests() {
-  const cases = [
-    {
-      name: "preserve une notification valide",
-      input: [{ id: 1, type: "comment", user: "Test", text: "ok", time: "now", read: false }],
-      check: (result) => result.length === 1 && result[0].read === false && result[0].user === "Test",
-    },
-    {
-      name: "ajoute read=false si absent",
-      input: [{ id: 2, type: "follow", user: "Test", text: "ok", time: "now" }],
-      check: (result) => result.length === 1 && result[0].read === false,
-    },
-    {
-      name: "gere undefined sans crash",
-      input: [undefined],
-      check: (result) => result.length === 1 && result[0].user === "Systeme" && result[0].read === true,
-    },
-    {
-      name: "gere une valeur non tableau",
-      input: null,
-      check: (result) => Array.isArray(result) && result.length === 0,
-    },
-    {
-      name: "gere un objet incomplet",
-      input: [{ id: 3 }],
-      check: (result) => result.length === 1 && result[0].text === "Nouvelle activite" && result[0].user === "Systeme",
-    },
-    {
-      name: "normalise plusieurs entrees mixtes",
-      input: [{ id: 4, read: 1 }, undefined, { user: "A" }],
-      check: (result) => result.length === 3 && result[0].read === true && result[1].user === "Systeme",
-    },
-  ];
-  return cases.map((test) => ({
-    name: test.name,
-    passed: test.check(sanitizeNotifications(test.input)),
-  }));
-}
 
 function notifIcon(type) {
   const icons = {
@@ -253,54 +206,23 @@ function renderNotifications() {
   const testsState = document.querySelector("#homeTestsState");
   const safeNotifications = sanitizeNotifications(notifications);
   const unread = unreadCount();
-  const notificationTests = runNotificationTests();
-  const testsPassed = notificationTests.every((test) => test.passed);
 
   if (badge) {
     badge.hidden = unread <= 0;
     badge.textContent = unread > 99 ? "99+" : String(unread);
   }
   if (panel) panel.hidden = !notificationsOpen;
-  if (status) {
-    status.textContent = realtimeEnabled
-      ? realtimeConnected
-        ? "Notifications synchronisees automatiquement depuis l'API."
-        : "Connexion en cours ou aucune notification disponible."
-      : "Synchronisation automatique coupee : le centre d'activite reste en mode manuel.";
-  }
-  if (stats) {
-    stats.innerHTML = `
-      <div class="home-stat-card">
-        <span class="home-stat-label">Total</span>
-        <strong>${safeNotifications.length}</strong>
-        <span>${safeNotifications.length} notifications</span>
-      </div>
-      <div class="home-stat-card is-pink">
-        <span class="home-stat-label">Non lues</span>
-        <strong>${unread}</strong>
-        <span>${unread} elements</span>
-      </div>
-      <div class="home-stat-card is-blue">
-        <span class="home-stat-label">Mode</span>
-        <strong>${realtimeEnabled ? (realtimeConnected ? "API live" : "Attente") : "Pause"}</strong>
-        <span>${realtimeEnabled ? "Polling notifications actif" : "Mode manuel"}</span>
-      </div>
-    `;
-  }
-  if (lastEvent) {
-    lastEvent.innerHTML = `<strong>Dernier evenement :</strong> ${escapeHtml(lastRealtimeEvent)}`;
-  }
+  if (status) status.hidden = true;
+  if (stats) stats.hidden = true;
+  if (lastEvent) lastEvent.hidden = true;
+  if (testsState) testsState.hidden = true;
   if (realtimeState) {
-    realtimeState.textContent = realtimeEnabled ? (realtimeConnected ? "Notifications connectÃ©es" : "Notifications en attente") : "Notifications en pause";
+    realtimeState.textContent = realtimeEnabled && realtimeConnected ? "Notifications connectees" : "Notifications en attente";
     realtimeState.className = `home-live-pill ${realtimeEnabled && realtimeConnected ? "is-live" : "is-offline"}`;
   }
   if (realtimeStateTop) {
-    realtimeStateTop.textContent = realtimeEnabled ? (realtimeConnected ? "Notifications connectÃ©es" : "Notifications en attente") : "Notifications en pause";
+    realtimeStateTop.textContent = realtimeEnabled && realtimeConnected ? "Notifications connectees" : "Notifications en attente";
     realtimeStateTop.className = `home-live-pill ${realtimeEnabled && realtimeConnected ? "is-live" : "is-offline"}`;
-  }
-  if (testsState) {
-    testsState.textContent = testsPassed ? "Tests de robustesse passes" : "Un test de robustesse a echoue";
-    testsState.className = `home-live-pill ${testsPassed ? "is-test-ok" : "is-test-ko"}`;
   }
   if (list) {
     list.innerHTML = safeNotifications.map((item) => `
@@ -339,8 +261,7 @@ function markNotificationAsRead(id) {
 async function loadHomeNotifications({ silent = false } = {}) {
   if (!getTokens().accessToken) {
     realtimeConnected = false;
-    notifications = mergeReadState(DEFAULT_NOTIFICATIONS);
-    lastRealtimeEvent = "Connecte-toi pour synchroniser les notifications API";
+    notifications = [];
     if (!silent) renderNotifications();
     return;
   }
@@ -348,14 +269,10 @@ async function loadHomeNotifications({ silent = false } = {}) {
   try {
     const data = await apiFetch("/notifications/me?limit=20");
     const nextItems = mapApiNotifications(data);
-    notifications = nextItems.length ? nextItems : mergeReadState(DEFAULT_NOTIFICATIONS);
+    notifications = nextItems;
     realtimeConnected = true;
-    const first = notifications[0];
-    lastRealtimeEvent = first ? `${first.user} - ${first.text}` : "Aucune nouvelle notification";
-  } catch (error) {
+  } catch {
     realtimeConnected = false;
-    notifications = mergeReadState(DEFAULT_NOTIFICATIONS);
-    lastRealtimeEvent = error?.message || "Synchronisation notifications indisponible";
   }
 
   if (!silent) renderNotifications();
@@ -382,7 +299,7 @@ function startRealtimeNotifications() {
 }
 
 function bindHomeNotifications() {
-  notifications = mergeReadState(DEFAULT_NOTIFICATIONS);
+  notifications = [];
   renderNotifications();
   pushMockNotification();
   startRealtimeNotifications();
@@ -584,9 +501,10 @@ async function loadStoriesFromFollowing() {
     fillStories(homeTrackEl, HOME_MOCK_STORIES);
     return;
   }
+  const SELF_STORY = [{ id: "me", name: "Votre story", handle: "@moi", avatar: "", href: "/profil/profil.html?compose=1", isSelf: true, hasStory: false }];
   if (!getTokens().accessToken) {
     if (trackEl) trackEl.innerHTML = `<small style="color:var(--muted)">Connecte-toi pour voir tes abonnements.</small>`;
-    fillStories(homeTrackEl, HOME_MOCK_STORIES);
+    fillStories(homeTrackEl, SELF_STORY);
     return;
   }
   try {
@@ -621,12 +539,12 @@ async function loadStoriesFromFollowing() {
       })
       .filter((p) => p.id === String(me?.id || "") || p.hasStory);
 
-    const rowsToRender = withStories.length ? withStories : HOME_MOCK_STORIES;
+    const rowsToRender = withStories.length ? withStories : SELF_STORY;
     fillStories(trackEl, rowsToRender);
     fillStories(homeTrackEl, rowsToRender);
   } catch {
     if (trackEl) trackEl.innerHTML = `<small style="color:#ffb0b0">Impossible de charger les abonnements.</small>`;
-    fillStories(homeTrackEl, HOME_MOCK_STORIES);
+    fillStories(homeTrackEl, SELF_STORY);
   }
 }
 
@@ -655,8 +573,8 @@ function renderCommunityTextCard(it) {
 function renderMockNews() {
   const releasesBox = document.querySelector("#newsReleases");
   const communityBox = document.querySelector("#newsCommunity");
-  if (releasesBox) releasesBox.innerHTML = HOME_MOCK_RELEASES.map(renderReleaseCard).join("");
-  if (communityBox) communityBox.innerHTML = HOME_MOCK_COMMUNITY.map(renderCommunityTextCard).join("");
+  if (releasesBox) releasesBox.innerHTML = `<small style="color:var(--muted)">Aucune actualite disponible pour le moment.</small>`;
+  if (communityBox) communityBox.innerHTML = `<small style="color:var(--muted)">Aucune activite communautaire pour le moment.</small>`;
 }
 
 async function loadMusicNews() {
@@ -666,7 +584,7 @@ async function loadMusicNews() {
 
   if (HOME_FORCE_MOCK) {
     releasesBox.innerHTML = HOME_MOCK_RELEASES.map(renderReleaseCard).join("");
-    communityBox.innerHTML = HOME_MOCK_COMMUNITY.map(renderCommunityTextCard).join("");
+    communityBox.innerHTML = `<small style="color:var(--muted)">Aucune activite communautaire pour le moment.</small>`;
     return;
   }
 
@@ -688,7 +606,7 @@ async function loadMusicNews() {
       : HOME_MOCK_RELEASES.map(renderReleaseCard).join("");
     communityBox.innerHTML = community.length
       ? community.slice(0, 8).map(renderCommunityTextCard).join("")
-      : HOME_MOCK_COMMUNITY.map(renderCommunityTextCard).join("");
+      : `<small style="color:var(--muted)">Aucune activite communautaire pour le moment.</small>`;
   } catch (err) {
     renderMockNews();
     console.warn("Actualites musique en fallback mock:", err?.message || err);
@@ -740,7 +658,7 @@ async function loadFollowingFeed() {
   }
 
   if (!getTokens().accessToken) {
-    box.innerHTML = HOME_MOCK_FEED.map(renderFollowingFeedItem).join("");
+    box.innerHTML = `<small style="color:var(--muted)">Connecte-toi pour voir l'activite de tes abonnements.</small>`;
     return;
   }
 
@@ -750,9 +668,9 @@ async function loadFollowingFeed() {
     const items = Array.isArray(data?.items) ? data.items : [];
     box.innerHTML = items.length
       ? items.map(renderFollowingFeedItem).join("")
-      : HOME_MOCK_FEED.map(renderFollowingFeedItem).join("");
+      : `<small style="color:var(--muted)">Suis des utilisateurs pour voir leur activite ici.</small>`;
   } catch (err) {
-    box.innerHTML = HOME_MOCK_FEED.map(renderFollowingFeedItem).join("");
+    box.innerHTML = `<small style="color:var(--muted)">Feed indisponible pour le moment.</small>`;
     toast(err?.message || "Erreur feed", "Erreur");
   }
 }
@@ -783,13 +701,7 @@ async function loadMusicCategories() {
       if (String(it?.type || "track") !== "track") return false;
       return Boolean(getOriginalTrackImage(it));
     });
-  const setFeedModeHint = (text) => {
-    const hintEl = document.querySelector("#sessionHint");
-    if (!hintEl) return;
-    const base = hintEl.textContent || "";
-    const cleanBase = String(base).replace(/\s*\|\s*Mode:.*$/i, "").trim();
-    hintEl.textContent = cleanBase ? `${cleanBase} | Mode: ${text}` : `Mode: ${text}`;
-  };
+  const setFeedModeHint = () => {};
   const ensureSpotifyConnectButton = () => {
     if (document.querySelector("#connectSpotifyBtn")) return;
     const heroRow = document.querySelector(".home-hero-actions");

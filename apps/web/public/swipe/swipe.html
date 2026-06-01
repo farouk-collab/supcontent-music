@@ -606,11 +606,6 @@
         </div>
 
         <div class="swipe-box">
-          <p class="label" style="color:#a1a1aa;font-size:13px;">Source score</p>
-          <p id="swipeScoreSource" style="margin-top:8px;font-weight:700;">Chargement /follows/swipe/music...</p>
-        </div>
-
-        <div class="swipe-box">
           <p class="label" style="color:#a1a1aa;font-size:13px;">Filtre de gouts</p>
           <div id="swipeGenreFilters" class="swipe-filter-row" style="margin-top:12px;">
             <button class="swipe-chip is-active" type="button" data-genre="all">Tous</button>
@@ -629,66 +624,6 @@
           </div>
         </div>
 
-        <div class="swipe-box">
-          <p class="label" style="color:#a1a1aa;font-size:13px;">Filtres avances</p>
-          <div class="swipe-field-grid">
-            <div class="swipe-field">
-              <label for="swipeAgeMinInput">Age min</label>
-              <input id="swipeAgeMinInput" class="swipe-input" type="number" min="18" max="99" placeholder="18" />
-            </div>
-            <div class="swipe-field">
-              <label for="swipeAgeMaxInput">Age max</label>
-              <input id="swipeAgeMaxInput" class="swipe-input" type="number" min="18" max="99" placeholder="99" />
-            </div>
-            <div class="swipe-field">
-              <label for="swipeHeightMinInput">Taille min (cm)</label>
-              <input id="swipeHeightMinInput" class="swipe-input" type="number" min="120" max="230" placeholder="150" />
-            </div>
-            <div class="swipe-field">
-              <label for="swipeHeightMaxInput">Taille max (cm)</label>
-              <input id="swipeHeightMaxInput" class="swipe-input" type="number" min="120" max="230" placeholder="210" />
-            </div>
-            <div class="swipe-field">
-              <label for="swipeLocationInput">Localisation</label>
-              <input id="swipeLocationInput" class="swipe-input" type="text" placeholder="Paris, Lyon, Lome..." />
-            </div>
-            <div class="swipe-field">
-              <label for="swipeDistanceInput">Distance max (km)</label>
-              <input id="swipeDistanceInput" class="swipe-input" type="number" min="1" max="500" placeholder="50" />
-            </div>
-            <div class="swipe-field">
-              <label for="swipeGenderSelect">Genre</label>
-              <select id="swipeGenderSelect" class="swipe-select">
-                <option value="all">Tous</option>
-                <option value="male">Homme</option>
-                <option value="female">Femme</option>
-                <option value="other">Autre</option>
-                <option value="prefer_not_to_say">Non renseigne</option>
-              </select>
-            </div>
-            <div class="swipe-field">
-              <label for="swipeRaceSelect">Origine / race</label>
-              <select id="swipeRaceSelect" class="swipe-select">
-                <option value="all">Toutes</option>
-                <option value="black">Noire</option>
-                <option value="arab">Arabe</option>
-                <option value="white">Blanche</option>
-                <option value="asian">Asiatique</option>
-                <option value="mixed">Metisse</option>
-                <option value="other">Autre</option>
-              </select>
-            </div>
-          </div>
-          <label class="swipe-checkbox">
-            <input id="swipeDistanceToggle" type="checkbox" />
-            <span>Activer le filtre de distance</span>
-          </label>
-          <div class="swipe-filter-actions">
-            <button id="swipeApplyAdvancedFiltersBtn" class="swipe-pill-btn is-primary" type="button">Appliquer</button>
-            <button id="swipeResetAdvancedFiltersBtn" class="swipe-pill-btn" type="button">Reinitialiser</button>
-          </div>
-          <div id="swipeAdvancedFilterSummary" class="swipe-filter-summary">Filtres larges actifs.</div>
-        </div>
 
         <button id="swipeUndoBtn" class="swipe-pill-btn" type="button" style="width:100%;margin-top:16px;">Undo dernier swipe</button>
       </aside>
@@ -709,12 +644,6 @@
         <div class="swipe-box">
           <p class="label" style="color:#a1a1aa;font-size:13px;">Dernier swipe</p>
           <p id="swipeLastAction" style="margin-top:8px;color:#e5e7eb;">Aucune action recente</p>
-        </div>
-
-        <div class="swipe-box">
-          <p class="label" style="color:#a1a1aa;font-size:13px;">Priorisation actuelle</p>
-          <p id="swipeSortDescription" style="margin-top:8px;color:#e5e7eb;">Tri par score API le plus eleve.</p>
-          <p id="swipeScoreStatus" style="margin-top:10px;color:var(--accent);font-size:12px;">Scoring dynamique pret.</p>
         </div>
 
         <div class="swipe-box">

@@ -93,17 +93,15 @@ function runEditProfileTests(formState) {
 }
 
 function renderValidation() {
-  const tests = runEditProfileTests(readFormState());
-  const allTestsPassed = tests.every((test) => test.passed);
   if (!els.validationBox) return;
-  els.validationBox.classList.toggle("is-ok", allTestsPassed);
-  els.validationBox.classList.toggle("is-bad", !allTestsPassed);
-  if (allTestsPassed) {
-    els.validationBox.textContent = "✓ Tests page profil-modifier passes";
-    return;
-  }
-  const failed = tests.filter((test) => !test.passed).map((test) => test.name).join(" · ");
-  els.validationBox.textContent = `Un test page profil-modifier a echoue: ${failed}`;
+  const formState = readFormState();
+  const usernameOk = !formState.username || /^[a-zA-Z0-9_]{3,30}$/.test(formState.username);
+  const ok = formState.displayName.length > 0 && usernameOk;
+  els.validationBox.classList.toggle("is-ok", ok);
+  els.validationBox.classList.toggle("is-bad", !ok);
+  els.validationBox.textContent = ok
+    ? "Formulaire pret a enregistrer."
+    : !formState.displayName ? "Nom d'affichage requis." : "Username invalide (3-30 car., lettres/chiffres/_).";
 }
 
 function renderMiniProfile() {
@@ -244,11 +242,12 @@ async function handleSave(event) {
   updateTokenStats();
 
   const formState = readFormState();
-  const tests = runEditProfileTests(formState);
-  const failed = tests.find((test) => !test.passed);
-  if (failed) {
-    setFeedback(`Validation incomplete: ${failed.name}`);
-    renderValidation();
+  if (!formState.displayName) {
+    setFeedback("Le nom d'affichage est requis.");
+    return;
+  }
+  if (formState.username && !/^[a-zA-Z0-9_]{3,30}$/.test(formState.username)) {
+    setFeedback("Username invalide : 3-30 caracteres, lettres/chiffres/_ uniquement.");
     return;
   }
 
@@ -273,7 +272,7 @@ async function handleSave(event) {
       cover_url: coverUrl || null,
     };
 
-    const data = await apiFetch("/auth/me", {
+    const data = await apiFetch("/users/me", {
       method: "PATCH",
       body: JSON.stringify(payload),
     });

@@ -8,242 +8,227 @@
   <link rel="apple-touch-icon" href="/assets/logo-supconnect.svg" />
   <link rel="stylesheet" href="/noyau/styles.css" />
   <style>
-    body.connexion-page{
-      min-height:100vh;
+    body.connexion-page {
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
       background:
-        radial-gradient(circle at top,rgba(34,197,94,.18),transparent 18%),
-        radial-gradient(circle at right,rgba(168,85,247,.16),transparent 22%),
-        linear-gradient(180deg,#050505,#0d0d0d);
-      color:#fff;
+        radial-gradient(circle at top, rgba(34,197,94,.18), transparent 18%),
+        radial-gradient(circle at right, rgba(168,85,247,.16), transparent 22%),
+        linear-gradient(180deg, #050505, #0d0d0d);
+      color: #fff;
     }
-    :root[data-app-theme="light"] body.connexion-page{
+
+    :root[data-app-theme="light"] body.connexion-page {
       background:
         radial-gradient(circle at top, color-mix(in srgb, var(--accent2) 12%, transparent), transparent 22%),
         radial-gradient(circle at right, color-mix(in srgb, var(--accent) 10%, transparent), transparent 24%),
-        linear-gradient(180deg,#f6f1eb,#ede6de);
-      color:#171c2b;
+        linear-gradient(180deg, #f6f1eb, #ede6de);
+      color: #171c2b;
     }
-    .auth-shell{
-      width:min(1320px,calc(100vw - 24px));
-      margin:0 auto;
-      padding:28px 0 120px;
-      display:grid;
-      gap:24px;
-      grid-template-columns:minmax(0,1fr) minmax(340px,.95fr);
+
+    .auth-shell {
+      width: min(480px, calc(100vw - 32px));
+      padding: 40px 0 120px;
     }
-    .auth-panel,
-    .auth-side{
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:32px;
-      background:rgba(255,255,255,.05);
-      backdrop-filter:blur(20px);
-      box-shadow:0 24px 60px rgba(0,0,0,.24);
+
+    .auth-panel {
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 32px;
+      background: rgba(255,255,255,.05);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 24px 60px rgba(0,0,0,.24);
+      padding: 32px;
     }
-    .auth-panel{padding:28px;}
-    .auth-side{padding:24px;}
-    .auth-brand{
-      display:flex;
-      align-items:center;
-      gap:14px;
+
+    .auth-brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
     }
-    .auth-brand-icon{
-      width:48px;
-      height:48px;
-      border-radius:18px;
-      display:grid;
-      place-items:center;
-      background:rgba(52,211,153,.15);
-      color:#86efac;
-      font-size:22px;
+
+    .auth-brand-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 18px;
+      display: grid;
+      place-items: center;
+      background: rgba(52,211,153,.15);
+      color: #86efac;
+      font-size: 22px;
+      flex: 0 0 auto;
     }
-    .auth-kicker{
-      margin:0;
-      font-size:12px;
-      font-weight:800;
-      letter-spacing:.24em;
-      text-transform:uppercase;
-      color:#86efac;
+
+    .auth-kicker {
+      margin: 0;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .24em;
+      text-transform: uppercase;
+      color: #86efac;
     }
-    .auth-title{
-      margin:8px 0 0;
-      font-size:clamp(30px,4vw,46px);
-      line-height:1.04;
-      letter-spacing:-.04em;
+
+    .auth-title {
+      margin: 4px 0 0;
+      font-size: 22px;
+      line-height: 1.15;
+      letter-spacing: -.02em;
     }
-    .auth-subtitle{
-      margin:16px 0 0;
-      max-width:760px;
-      color:#9ca3af;
-      font-size:14px;
-      line-height:1.6;
+
+    .auth-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
     }
-    .auth-features{
-      margin-top:24px;
-      display:grid;
-      gap:16px;
-      grid-template-columns:repeat(3,minmax(0,1fr));
+
+    .auth-tab {
+      min-height: 40px;
+      border-radius: 999px;
+      padding: 9px 16px;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,.1);
+      background: rgba(255,255,255,.08);
+      color: #d4d4d8;
+      transition: .15s ease;
     }
-    .auth-feature,
-    .auth-card,
-    .auth-status,
-    .auth-test{
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:24px;
-      background:rgba(0,0,0,.22);
+
+    .auth-tab.is-active {
+      border-color: #34d399;
+      background: #34d399;
+      color: #04130d;
     }
-    .auth-feature{padding:18px;}
-    .auth-feature-icon{
-      width:44px;
-      height:44px;
-      border-radius:18px;
-      display:grid;
-      place-items:center;
-      background:rgba(52,211,153,.15);
-      color:#86efac;
-      font-size:18px;
+
+    .auth-form {
+      display: grid;
+      gap: 12px;
     }
-    .auth-feature h3{
-      margin:14px 0 0;
-      font-size:16px;
+
+    .auth-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: 18px;
+      background: rgba(0,0,0,.25);
+      padding: 14px 16px;
+      transition: border-color .15s ease;
     }
-    .auth-feature p{
-      margin:8px 0 0;
-      color:#9ca3af;
-      font-size:14px;
-      line-height:1.55;
+
+    .auth-row:focus-within {
+      border-color: rgba(52,211,153,.4);
     }
-    .auth-card{
-      margin-top:24px;
-      padding:18px;
+
+    .auth-row-icon {
+      color: #9ca3af;
+      font-size: 18px;
+      flex: 0 0 auto;
     }
-    .auth-tabs,
-    .auth-actions,
-    .auth-side-actions{
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
+
+    .auth-input {
+      width: 100%;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: #fff;
+      font: inherit;
+      font-size: 14px;
     }
-    .auth-tab,
-    .auth-btn,
-    .auth-ghost{
-      min-height:44px;
-      border-radius:999px;
-      padding:11px 16px;
-      font:inherit;
-      font-weight:700;
-      cursor:pointer;
+
+    .auth-input::placeholder { color: #71717a; }
+
+    .auth-toggle {
+      border: 0;
+      background: transparent;
+      color: #9ca3af;
+      cursor: pointer;
+      padding: 0;
+      font-size: 17px;
+      flex: 0 0 auto;
     }
-    .auth-tab,
-    .auth-ghost{
-      border:1px solid rgba(255,255,255,.1);
-      background:rgba(255,255,255,.08);
-      color:#d4d4d8;
+
+    .auth-helper {
+      margin: 0;
+      color: #71717a;
+      font-size: 12px;
+      line-height: 1.45;
     }
-    .auth-tab.is-active,
-    .auth-btn{
-      border:1px solid #34d399;
-      background:#34d399;
-      color:#04130d;
+
+    .auth-actions {
+      display: grid;
+      gap: 10px;
+      margin-top: 4px;
     }
-    .auth-form{
-      margin-top:20px;
-      display:grid;
-      gap:14px;
+
+    .auth-btn {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 999px;
+      padding: 12px 20px;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid #34d399;
+      background: #34d399;
+      color: #04130d;
+      transition: opacity .15s ease;
     }
-    .auth-row{
-      display:flex;
-      align-items:center;
-      gap:12px;
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:18px;
-      background:rgba(0,0,0,.25);
-      padding:14px 16px;
+
+    .auth-btn:hover { opacity: .88; }
+
+    .auth-ghost {
+      width: 100%;
+      min-height: 48px;
+      border-radius: 999px;
+      padding: 12px 20px;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color: #d4d4d8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: background .15s ease, border-color .15s ease;
     }
-    .auth-row-icon{
-      color:#9ca3af;
-      font-size:18px;
-      flex:0 0 auto;
+
+    .auth-ghost:hover {
+      background: rgba(255,255,255,.1);
+      border-color: rgba(255,255,255,.2);
     }
-    .auth-input,
-    .auth-textarea{
-      width:100%;
-      border:0;
-      outline:0;
-      background:transparent;
-      color:#fff;
-      font:inherit;
-      font-size:14px;
+
+    .auth-ghost-icon {
+      width: 22px;
+      height: 22px;
+      flex: 0 0 auto;
     }
-    .auth-input::placeholder,
-    .auth-textarea::placeholder{color:#71717a;}
-    .auth-toggle{
-      border:0;
-      background:transparent;
-      color:#9ca3af;
-      cursor:pointer;
-      padding:0;
-      font-size:17px;
-      flex:0 0 auto;
+
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #52525b;
+      font-size: 13px;
     }
-    .auth-helper{
-      margin:2px 0 0;
-      color:#71717a;
-      font-size:12px;
-      line-height:1.45;
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,.08);
     }
-    .auth-side h2{
-      margin:0;
-      font-size:28px;
-      line-height:1.12;
-    }
-    .auth-status,
-    .auth-test{
-      padding:16px;
-      margin-top:18px;
-    }
-    .auth-status-head{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      font-size:14px;
-      font-weight:700;
-    }
-    .auth-status-head.is-ok{color:#a7f3d0;}
-    .auth-status-head.is-warn{color:#fde68a;}
-    .auth-status p,
-    .auth-side small{
-      color:#9ca3af;
-      line-height:1.6;
-    }
-    .auth-token-block + .auth-token-block{margin-top:16px;}
-    .auth-token-label{
-      display:flex;
-      align-items:center;
-      gap:8px;
-      color:#fff;
-      font-size:14px;
-      font-weight:700;
-    }
-    .auth-token-value{
-      margin-top:8px;
-      color:#9ca3af;
-      word-break:break-all;
-      font-size:13px;
-      line-height:1.5;
-    }
-    .auth-test.is-ok{
-      border-color:rgba(16,185,129,.24);
-      background:rgba(16,185,129,.12);
-      color:#b7f7d7;
-    }
-    .auth-test.is-bad{
-      border-color:rgba(239,68,68,.24);
-      background:rgba(239,68,68,.12);
-      color:#fecaca;
-    }
-    @media (max-width: 980px){
-      .auth-shell{grid-template-columns:1fr;}
-      .auth-features{grid-template-columns:1fr;}
+
+    @media (max-width: 520px) {
+      .auth-panel { padding: 24px 20px; border-radius: 24px; }
     }
   </style>
 </head>
@@ -251,87 +236,56 @@
   <div class="auth-shell">
     <section class="auth-panel">
       <div class="auth-brand">
-        <div class="auth-brand-icon">♪</div>
+        <div class="auth-brand-icon">&#9835;</div>
         <div>
           <p class="auth-kicker">Connexion</p>
           <h1 class="auth-title">Entre dans ton univers musical</h1>
         </div>
       </div>
 
-      <p class="auth-subtitle">
-        Page dediee strictement a la connexion : login, inscription, mot de passe oublie et OAuth Google.
-      </p>
+      <div id="authTabs" class="auth-tabs">
+        <button class="auth-tab is-active" type="button" data-mode="login">Connexion</button>
+        <button class="auth-tab" type="button" data-mode="register">Inscription</button>
+        <button class="auth-tab" type="button" data-mode="forgot">Mot de passe oubli&eacute;</button>
+      </div>
 
-      <div id="authFeatures" class="auth-features"></div>
-
-      <div class="auth-card">
-        <div id="authTabs" class="auth-tabs">
-          <button class="auth-tab is-active" type="button" data-mode="login">Connexion</button>
-          <button class="auth-tab" type="button" data-mode="register">Inscription</button>
-          <button class="auth-tab" type="button" data-mode="forgot">Mot de passe oublie</button>
+      <form id="authForm" class="auth-form" novalidate>
+        <div id="authRegisterNameRow" class="auth-row" hidden>
+          <span class="auth-row-icon">&#128100;</span>
+          <input id="authNameInput" class="auth-input" name="displayName" placeholder="Nom d'affichage" autocomplete="nickname" />
         </div>
 
-        <form id="authForm" class="auth-form" novalidate>
-          <div id="authRegisterNameRow" class="auth-row" hidden>
-            <span class="auth-row-icon">👤</span>
-            <input id="authNameInput" class="auth-input" name="displayName" placeholder="Nom d'affichage" autocomplete="nickname" />
-          </div>
+        <div class="auth-row">
+          <span class="auth-row-icon">@</span>
+          <input id="authEmailInput" class="auth-input" name="email" type="email" placeholder="Adresse email" autocomplete="email" />
+        </div>
 
-          <div class="auth-row">
-            <span class="auth-row-icon">@</span>
-            <input id="authEmailInput" class="auth-input" name="email" type="email" placeholder="Adresse email" autocomplete="email" />
-          </div>
+        <div id="authPasswordRow" class="auth-row">
+          <span class="auth-row-icon">&#128274;</span>
+          <input id="authPasswordInput" class="auth-input" name="password" type="password" placeholder="Mot de passe" autocomplete="current-password" />
+          <button id="authPasswordToggle" class="auth-toggle" type="button" aria-label="Afficher le mot de passe">&#128065;</button>
+        </div>
 
-          <div id="authPasswordRow" class="auth-row">
-            <span class="auth-row-icon">🔒</span>
-            <input id="authPasswordInput" class="auth-input" name="password" type="password" placeholder="Mot de passe" autocomplete="current-password" />
-            <button id="authPasswordToggle" class="auth-toggle" type="button" aria-label="Afficher le mot de passe">👁</button>
-          </div>
+        <p id="authHelperText" class="auth-helper">Connexion classique avec email et mot de passe.</p>
 
-          <p id="authHelperText" class="auth-helper">Connexion classique avec email et mot de passe.</p>
+        <div class="auth-actions">
+          <button id="authSubmitButton" class="auth-btn" type="submit">Se connecter &rarr;</button>
 
-          <div class="auth-actions">
-            <button id="authSubmitButton" class="auth-btn" type="submit">Se connecter →</button>
-            <button id="authGoogleButton" class="auth-ghost" type="button">Continuer avec Google</button>
+          <div id="authGoogleWrapper">
+            <div class="auth-divider">ou</div>
+            <button id="authGoogleButton" class="auth-ghost" type="button">
+              <svg class="auth-ghost-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continuer avec Google
+            </button>
           </div>
-        </form>
-      </div>
+        </div>
+      </form>
     </section>
-
-    <aside class="auth-side">
-      <h2>Etat de session</h2>
-
-      <div class="auth-status">
-        <div id="authStatusHead" class="auth-status-head is-warn">
-          <span>⚠</span>
-          <span>Non connecte</span>
-        </div>
-        <p id="authDiagnosticText">Aucune session active</p>
-      </div>
-
-      <div class="auth-status">
-        <p class="auth-kicker" style="color:#9ca3af;">Tokens</p>
-        <div class="auth-token-block">
-          <div class="auth-token-label"><span>🛡</span><span>Access Token</span></div>
-          <div id="authAccessToken" class="auth-token-value">Aucun</div>
-        </div>
-        <div class="auth-token-block">
-          <div class="auth-token-label"><span>🔑</span><span>Refresh Token</span></div>
-          <div id="authRefreshToken" class="auth-token-value">Aucun</div>
-        </div>
-        <div class="auth-side-actions" style="margin-top:16px;">
-          <button id="authDiagnosticButton" class="auth-ghost" type="button">Diagnostic</button>
-          <button id="authLogoutButton" class="auth-ghost" type="button">Deconnexion</button>
-        </div>
-      </div>
-
-      <div class="auth-status">
-        <p class="auth-kicker" style="color:#9ca3af;">Retour interface</p>
-        <p id="authFeedbackText">Connexion prete</p>
-      </div>
-
-      <div id="authTestsBox" class="auth-test is-ok">Tests connexion passes</div>
-    </aside>
   </div>
 
   <div id="toast" class="toast"></div>

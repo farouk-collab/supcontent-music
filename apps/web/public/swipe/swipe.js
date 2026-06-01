@@ -14,57 +14,10 @@ const DEFAULT_ADVANCED_FILTERS = {
   race: "all",
 };
 
-const DEFAULT_NOTIFICATIONS = [
-  { id: 1, type: "release", user: "Nina.beats", text: "a partage une nouvelle sortie : Timeless - The Weeknd", time: "Il y a 2 min", read: false },
-  { id: 2, type: "community", user: "Ayo.wav", text: "a aime ta playlist Afro Sunset", time: "Il y a 8 min", read: false },
-  { id: 3, type: "follow", user: "Luna.mix", text: "a commence a te suivre", time: "Il y a 21 min", read: false },
-  { id: 4, type: "comment", user: "Melo", text: 'a commente ton post : "grosse ambiance ce son"', time: "Il y a 1 h", read: true },
-];
+const DEFAULT_NOTIFICATIONS = [];
+const fallbackLikesYouProfiles = [];
 
-const fallbackLikesYouProfiles = [
-  { id: "mock-201", name: "Mira.sound", vibe: "R&B / Afro / Night feelings", compatibility: 92, sourceLabel: "Mock" },
-  { id: "mock-202", name: "Yann.loop", vibe: "Rap FR / Trap / Drive", compatibility: 88, sourceLabel: "Mock" },
-  { id: "mock-203", name: "Zia.fm", vibe: "Pop / Electro / Soft mood", compatibility: 85, sourceLabel: "Mock" },
-];
-
-const fallbackMusicCards = [
-  {
-    id: 101,
-    name: "Midnight Drive",
-    artistLabel: "The Weeknd · Album",
-    city: "Spotify",
-    vibe: "Pop nocturne / Synthwave / Moody",
-    genreGroup: "pop",
-    compatibility: 96,
-    createdRank: 3,
-    recentTasteBoost: 98,
-    topArtists: ["Blinding Lights", "Take My Breath", "After Hours"],
-    playlists: ["Parfait pour la nuit", "Tres proche de tes likes recents"],
-    bio: "Un projet a swiper si tu veux une ambiance de route nocturne, neons et grosses prods melancoliques.",
-    status: "Recommande selon tes ecoutes recentes",
-    cardType: "music",
-    media_type: "album",
-    media_id: "fallback-midnight-drive",
-  },
-  {
-    id: 102,
-    name: "Afro Sunset",
-    artistLabel: "Tems · Playlist mood",
-    city: "Spotify",
-    vibe: "Afro chill / Sunset / Summer",
-    genreGroup: "afro",
-    compatibility: 93,
-    createdRank: 1,
-    recentTasteBoost: 95,
-    topArtists: ["Tems", "Rema", "Asake"],
-    playlists: ["Tres coherent avec tes favoris afro", "Enorme potentiel de replay"],
-    bio: "Une selection douce et solaire pour decouvrir ou relancer des sons afro tres fluides.",
-    status: "Hot dans les recommandations perso",
-    cardType: "music",
-    media_type: "playlist",
-    media_id: "fallback-afro-sunset",
-  },
-];
+const fallbackMusicCards = [];
 
 const state = {
   viewMode: "discover",
@@ -103,8 +56,6 @@ const refs = {
   notifBtn: document.querySelector("#swipeNotifBtn"),
   notifBadge: document.querySelector("#swipeNotifBadge"),
   notifPanel: document.querySelector("#swipeNotifPanel"),
-  notifTests: document.querySelector("#swipeNotifTests"),
-  logicTests: document.querySelector("#swipeLogicTests"),
   notifList: document.querySelector("#swipeNotifList"),
   markAllReadBtn: document.querySelector("#swipeMarkAllReadBtn"),
   headerStats: document.querySelector("#swipeHeaderStats"),
@@ -163,28 +114,6 @@ function sanitizeNotifications(list) {
   return list.map((item, index) => sanitizeNotification(item, index));
 }
 
-function runNotificationTests() {
-  const cases = [
-    { input: [{ id: 1, type: "comment", user: "Test", text: "ok", time: "now", read: false }], check: (result) => result.length === 1 && result[0].read === false },
-    { input: [{ id: 2, type: "follow", user: "Test", text: "ok", time: "now" }], check: (result) => result.length === 1 && result[0].read === false },
-    { input: [undefined], check: (result) => result.length === 1 && result[0].user === "Systeme" },
-    { input: null, check: (result) => Array.isArray(result) && result.length === 0 },
-    { input: [{ id: 9, user: "A" }], check: (result) => result[0].text === "Nouvelle activite" && result[0].read === false },
-  ];
-  return cases.map((test) => ({ passed: test.check(sanitizeNotifications(test.input)) }));
-}
-
-function runSwipeLogicTests() {
-  const discoverCards = state.profiles.length ? state.profiles : [];
-  const cases = [
-    { check: () => discoverCards.filter((profile) => !state.likedIds.includes(profile.id) && !state.passedIds.includes(profile.id) && !state.superLikedIds.includes(profile.id)).length >= 0 },
-    { check: () => Array.isArray(state.matches) },
-    { check: () => ["compatibility", "new", "recentTaste"].includes(state.sortMode) },
-    { check: () => Array.isArray(state.history) },
-    { check: () => Array.isArray(getCardsForCurrentMode()) },
-  ];
-  return cases.map((test) => ({ passed: test.check() }));
-}
 
 function getDefaultState() {
   return {
@@ -245,18 +174,8 @@ function stableSeed(input) {
     .reduce((acc, char, index) => acc + char.charCodeAt(0) * (index + 1), 0);
 }
 
-function generateProfileTraits(item, index) {
-  const seed = stableSeed(item?.id || index);
-  const heights = [158, 162, 166, 170, 174, 178, 182, 186, 190];
-  const races = ["black", "arab", "white", "asian", "mixed", "other"];
-  const genderMap = ["male", "female", "other", "prefer_not_to_say"];
-  const genderRaw = String(item?.gender || "").trim().toLowerCase();
-  const gender = genderMap.includes(genderRaw) ? genderRaw : genderMap[seed % genderMap.length];
-  return {
-    heightCm: heights[seed % heights.length],
-    race: races[seed % races.length],
-    gender,
-  };
+function generateProfileTraits() {
+  return {};
 }
 
 function getUnreadCount() {
@@ -292,26 +211,19 @@ function mapProfile(item, index) {
   const vibe = String(item?.bio || item?.location || "Compatibilite musicale");
   const artists = Array.isArray(item?.top_artists) ? item.top_artists : [];
   const compatibility = Math.min(99, Math.max(72, 82 + ((index * 5) % 14)));
-  const traits = generateProfileTraits(item, index);
   return {
     id: String(item?.id || `profile-${index + 1}`),
     name: String(item?.display_name || item?.username || "Utilisateur"),
-    age: item?.age ?? null,
-    city: String(item?.location || "SUPCONTENT"),
+    city: String(item?.location || ""),
     vibe,
     genreGroup: classifyGenre(vibe),
     compatibility,
     createdRank: index + 1,
     recentTasteBoost: compatibility + 2,
-    topArtists: artists.length ? artists : ["The Weeknd", "Tems", "Tiakola"],
+    topArtists: artists,
     playlists: ["Gouts similaires", "Bon potentiel de match"],
-    bio: String(item?.bio || "Profil musical suggere a partir de tes preferences."),
+    bio: String(item?.bio || "Profil musical."),
     status: item?.is_followed_by ? "Te suit deja" : item?.is_following ? "Tu le suis deja" : "Nouveau profil musical",
-    mockReciprocalLike: Boolean(item?.is_followed_by),
-    gender: traits.gender,
-    heightCm: traits.heightCm,
-    race: traits.race,
-    distanceKm: item?.distance_km == null ? null : Number(item.distance_km),
     cardType: "profile",
     raw: item,
   };
@@ -441,7 +353,10 @@ function writeAdvancedFiltersToUi() {
   if (refs.raceSelect) refs.raceSelect.value = filters.race;
 }
 
-function applyAdvancedProfileFilters(card) {
+function applyAdvancedProfileFilters() {
+  return true;
+}
+function _unusedAdvancedProfileFilters(card) {
   const filters = normalizeAdvancedFilters(state.advancedFilters);
   const age = Number(card.age);
   const height = Number(card.heightCm);
@@ -475,7 +390,7 @@ function renderAdvancedFilterSummary() {
   if (filters.gender !== "all") labels.push(`Genre: ${filters.gender}`);
   if (filters.race !== "all") labels.push(`Origine: ${filters.race}`);
   if (filters.useDistanceFilter && filters.maxDistanceKm) labels.push(`Distance: ${filters.maxDistanceKm} km max`);
-  refs.advancedFilterSummary.textContent = labels.length ? labels.join(" · ") : "Filtres larges actifs.";
+  if (refs.advancedFilterSummary) refs.advancedFilterSummary.textContent = labels.length ? labels.join(" · ") : "Filtres larges actifs.";
 }
 
 async function syncBackendSwipePreferences() {
@@ -571,8 +486,6 @@ function pushLocalMatch(card, direction, backendMatchId = "") {
 
 function renderNotifications() {
   const unreadCount = getUnreadCount();
-  const notifTestsPassed = runNotificationTests().every((item) => item.passed);
-  const swipeTestsPassed = runSwipeLogicTests().every((item) => item.passed);
   const safeNotifications = sanitizeNotifications(state.notifications);
 
   refs.notifBtn.classList.toggle("is-open", state.notificationsOpen);
@@ -580,10 +493,6 @@ function renderNotifications() {
   refs.notifBadge.hidden = unreadCount === 0;
   refs.notifBadge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
 
-  refs.notifTests.className = `swipe-notif-note ${notifTestsPassed ? "is-green" : "is-red"}`;
-  refs.logicTests.className = `swipe-notif-note ${swipeTestsPassed ? "is-green" : "is-red"}`;
-  refs.notifTests.textContent = notifTestsPassed ? "Tests notifications passes" : "Un test notifications a echoue";
-  refs.logicTests.textContent = swipeTestsPassed ? "Tests swipe passes" : "Un test swipe a echoue";
 
   refs.notifList.innerHTML = safeNotifications.map((item) => `
     <button class="swipe-notif-item ${item.read ? "" : "is-unread"}" type="button" data-notif-id="${String(item.id)}">
@@ -653,20 +562,13 @@ function renderTabs() {
 }
 
 function renderSidePanel() {
-  refs.modeText.textContent = state.viewMode === "music" ? "Decouverte musicale" : "Compatibilite musicale";
-  refs.scoreSource.textContent = !isAuthedSwipeUser()
-    ? "Mode invite avec cartes locales"
-    : state.compatibilityLoading
-      ? "Chargement /follows/swipe/music..."
-      : "API /follows/swipe/music reliee";
+  if (refs.modeText) refs.modeText.textContent = state.viewMode === "music" ? "Decouverte musicale" : "Compatibilite musicale";
   refs.genreButtons.forEach((button) => {
     button.classList.toggle("is-active", button.getAttribute("data-genre") === state.genreFilter);
   });
   refs.sortButtons.forEach((button) => {
     button.classList.toggle("is-active", button.getAttribute("data-sort") === state.sortMode);
   });
-  writeAdvancedFiltersToUi();
-  renderAdvancedFilterSummary();
   refs.undoBtn.disabled = state.history.length === 0 || state.actionLock;
 }
 
@@ -798,15 +700,6 @@ function renderSummary() {
   refs.lastAction.textContent = state.history[0]
     ? `Carte #${state.history[0].profileId} · ${state.history[0].direction} · ${state.history[0].mode}`
     : "Aucune action recente";
-
-  refs.sortDescription.textContent =
-    state.sortMode === "compatibility"
-      ? "Tri par score API le plus eleve."
-      : state.sortMode === "new"
-        ? "Tri par nouveaux profils en tete."
-        : "Tri par proximite avec tes gouts recents.";
-
-  refs.scoreStatus.textContent = state.compatibilityLoading ? "Mise a jour du scoring en cours..." : "Scoring dynamique pret.";
 
   refs.matchesMini.innerHTML = state.matches.length
     ? state.matches.map((match) => `

@@ -7,25 +7,18 @@ const INITIAL_AUTH_STATE = {
   diagnostic: "Aucune session active",
 };
 
-const FEATURE_CARDS = [
-  { id: "f1", title: "Connexion email", text: "Connexion classique avec email et mot de passe.", icon: "@" },
-  { id: "f2", title: "OAuth Google", text: "Connexion rapide avec ton compte Google.", icon: "G" },
-  { id: "f3", title: "Reset password", text: "Mot de passe oublie avec lien de reinitialisation.", icon: "K" },
-];
-
 const state = {
   mode: "login",
   showPassword: false,
-  email: "farouk@email.com",
-  password: "password123",
-  name: "Farouk Salami",
-  forgotEmail: "farouk@email.com",
+  email: "",
+  password: "",
+  name: "",
+  forgotEmail: "",
   feedback: "Connexion prete",
   authState: { ...INITIAL_AUTH_STATE },
 };
 
 const dom = {
-  features: document.querySelector("#authFeatures"),
   tabs: Array.from(document.querySelectorAll("[data-mode]")),
   form: document.querySelector("#authForm"),
   registerNameRow: document.querySelector("#authRegisterNameRow"),
@@ -37,25 +30,8 @@ const dom = {
   helperText: document.querySelector("#authHelperText"),
   submitButton: document.querySelector("#authSubmitButton"),
   googleButton: document.querySelector("#authGoogleButton"),
-  diagnosticButton: document.querySelector("#authDiagnosticButton"),
-  logoutButton: document.querySelector("#authLogoutButton"),
-  statusHead: document.querySelector("#authStatusHead"),
-  diagnosticText: document.querySelector("#authDiagnosticText"),
-  accessToken: document.querySelector("#authAccessToken"),
-  refreshToken: document.querySelector("#authRefreshToken"),
-  feedbackText: document.querySelector("#authFeedbackText"),
-  testsBox: document.querySelector("#authTestsBox"),
+  googleWrapper: document.querySelector("#authGoogleWrapper"),
 };
-
-function runLoginTests() {
-  const cases = [
-    { check: () => FEATURE_CARDS.length === 3 },
-    { check: () => INITIAL_AUTH_STATE.isConnected === false },
-    { check: () => FEATURE_CARDS.some((item) => item.title.includes("Google")) },
-    { check: () => FEATURE_CARDS[1].icon === "G" },
-  ];
-  return cases.map((test) => ({ passed: test.check() }));
-}
 
 function getInitialModeFromUrl() {
   const params = new URLSearchParams(window.location.search);
@@ -82,45 +58,32 @@ function updateAuthStateFromTokens() {
   };
 }
 
-function setFeedback(message) {
-  state.feedback = String(message || "");
-  renderSide();
-}
-
-function renderFeatures() {
-  if (!dom.features) return;
-  dom.features.innerHTML = FEATURE_CARDS.map((item) => `
-    <article class="auth-feature">
-      <div class="auth-feature-icon">${item.icon}</div>
-      <h3>${item.title}</h3>
-      <p>${item.text}</p>
-    </article>
-  `).join("");
-}
-
 function renderForm() {
   const isLogin = state.mode === "login";
   const isRegister = state.mode === "register";
   const isForgot = state.mode === "forgot";
 
-  dom.tabs.forEach((button) => button.classList.toggle("is-active", button.getAttribute("data-mode") === state.mode));
+  dom.tabs.forEach((button) =>
+    button.classList.toggle("is-active", button.getAttribute("data-mode") === state.mode)
+  );
 
   if (dom.registerNameRow) dom.registerNameRow.hidden = !isRegister;
   if (dom.passwordRow) dom.passwordRow.hidden = isForgot;
-  if (dom.googleButton) dom.googleButton.hidden = !isLogin;
+  if (dom.googleWrapper) dom.googleWrapper.hidden = !isLogin;
 
-  if (dom.nameInput) dom.nameInput.value = state.name;
   if (dom.emailInput) {
-    dom.emailInput.value = isForgot ? state.forgotEmail : state.email;
     dom.emailInput.placeholder = isForgot ? "Email de recuperation" : "Adresse email";
   }
+
   if (dom.passwordInput) {
-    dom.passwordInput.value = state.password;
     dom.passwordInput.type = state.showPassword ? "text" : "password";
     dom.passwordInput.placeholder = isRegister ? "Creer un mot de passe" : "Mot de passe";
     dom.passwordInput.autocomplete = isRegister ? "new-password" : "current-password";
   }
-  if (dom.passwordToggle) dom.passwordToggle.textContent = state.showPassword ? "🙈" : "👁";
+
+  if (dom.passwordToggle) {
+    dom.passwordToggle.innerHTML = state.showPassword ? "&#128584;" : "&#128065;";
+  }
 
   if (dom.helperText) {
     if (isLogin) dom.helperText.textContent = "Connexion classique avec email et mot de passe.";
@@ -129,33 +92,10 @@ function renderForm() {
   }
 
   if (dom.submitButton) {
-    if (isLogin) dom.submitButton.textContent = "Se connecter →";
-    if (isRegister) dom.submitButton.textContent = "Creer un compte →";
-    if (isForgot) dom.submitButton.textContent = "Envoyer le lien →";
+    if (isLogin) dom.submitButton.innerHTML = "Se connecter &rarr;";
+    if (isRegister) dom.submitButton.innerHTML = "Creer un compte &rarr;";
+    if (isForgot) dom.submitButton.innerHTML = "Envoyer le lien &rarr;";
   }
-}
-
-function renderSide() {
-  if (dom.statusHead) {
-    dom.statusHead.className = `auth-status-head ${state.authState.isConnected ? "is-ok" : "is-warn"}`;
-    dom.statusHead.innerHTML = `<span>${state.authState.isConnected ? "✓" : "⚠"}</span><span>${state.authState.isConnected ? "Connecte" : "Non connecte"}</span>`;
-  }
-  if (dom.diagnosticText) dom.diagnosticText.textContent = state.authState.diagnostic;
-  if (dom.accessToken) dom.accessToken.textContent = state.authState.accessToken || "Aucun";
-  if (dom.refreshToken) dom.refreshToken.textContent = state.authState.refreshToken || "Aucun";
-  if (dom.feedbackText) dom.feedbackText.textContent = state.feedback;
-
-  const allTestsPassed = runLoginTests().every((test) => test.passed);
-  if (dom.testsBox) {
-    dom.testsBox.className = `auth-test ${allTestsPassed ? "is-ok" : "is-bad"}`;
-    dom.testsBox.textContent = allTestsPassed ? "Tests connexion passes" : "Un test connexion a echoue";
-  }
-}
-
-function renderAll() {
-  renderFeatures();
-  renderForm();
-  renderSide();
 }
 
 function redirectAfterAuth() {
@@ -175,7 +115,6 @@ function afterAuth(payload, diagnostic) {
     refreshToken: payload.refreshToken || "",
     diagnostic,
   };
-  renderSide();
   toast("Connecte. Redirection...", "OK");
   redirectAfterAuth();
 }
@@ -194,14 +133,13 @@ function consumeOauthParams() {
     refreshToken,
     diagnostic: `Connexion ${provider || "OAuth"} reussie`,
   };
-  state.feedback = "Connexion OAuth reussie";
 
   params.delete("accessToken");
   params.delete("refreshToken");
   params.delete("oauth");
   const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
   window.history.replaceState({}, "", next);
-  renderAll();
+
   toast(`Connexion ${provider || "OAuth"} reussie.`, "OK");
   redirectAfterAuth();
 }
@@ -221,82 +159,69 @@ async function consumeResetTokenFromUrl() {
       method: "POST",
       body: JSON.stringify({ token: resetToken, newPassword: nextPassword }),
     });
-    setFeedback("Mot de passe reinitialise. Connecte-toi.");
     toast("Mot de passe reinitialise. Connecte-toi.", "OK");
     params.delete("resetToken");
     const next = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
     window.history.replaceState({}, "", next);
   } catch (err) {
-    setFeedback(err?.message || "Reinitialisation impossible");
     toast(err?.message || "Reinitialisation impossible", "Erreur");
   }
 }
 
 async function handleLogin() {
   if (!state.email.trim() || !state.password.trim()) {
-    setFeedback("Email et mot de passe requis");
+    toast("Email et mot de passe requis", "Erreur");
     return;
   }
-
   try {
     const response = await apiFetch("/auth/login", {
       method: "POST",
       body: JSON.stringify({ email: state.email.trim(), password: state.password }),
     });
-    setFeedback("Connexion reussie");
     afterAuth(response, "Session creee via /auth/login");
   } catch (err) {
     const message = String(err?.message || "");
     if (message.toLowerCase().includes("identifiants invalides") || message.includes("401")) {
-      setFeedback("Email ou mot de passe incorrect");
-      toast("Email ou mot de passe incorrect. Cree un compte ou reconnecte-toi avec les bons identifiants.", "Erreur");
+      toast("Email ou mot de passe incorrect.", "Erreur");
       return;
     }
-    setFeedback(message || "Erreur login");
     toast(message || "Erreur login", "Erreur");
   }
 }
 
 async function handleRegister() {
   if (!state.name.trim() || !state.email.trim() || !state.password.trim()) {
-    setFeedback("Nom, email et mot de passe requis");
+    toast("Nom, email et mot de passe requis", "Erreur");
     return;
   }
-
   try {
     const response = await apiFetch("/auth/register", {
       method: "POST",
       body: JSON.stringify({ email: state.email.trim(), displayName: state.name.trim(), password: state.password }),
     });
-    setFeedback("Inscription reussie");
     afterAuth(response, "Compte cree via /auth/register");
   } catch (err) {
-    setFeedback(err?.message || "Erreur register");
     toast(err?.message || "Erreur register", "Erreur");
   }
 }
 
 async function handleForgotPassword() {
   if (!state.forgotEmail.trim()) {
-    setFeedback("Email requis pour la reinitialisation");
+    toast("Email requis pour la reinitialisation", "Erreur");
     return;
   }
-
   try {
     const response = await apiFetch("/auth/password/forgot", {
       method: "POST",
       body: JSON.stringify({ email: state.forgotEmail.trim() }),
     });
     if (response?.resetUrl) {
-      setFeedback("Lien de reinitialisation genere en mode dev");
-      toast("Lien de reset genere (dev). Ouverture...", "OK");
+      toast("Lien de reinitialisation genere en mode dev. Ouverture...", "OK");
       window.location.href = response.resetUrl;
       return;
     }
-    setFeedback("Lien de reinitialisation envoye");
-    toast("Si l'email existe, un lien de reset a ete genere.", "OK");
+    toast("Si l'email existe, un lien de reset a ete envoye.", "OK");
   } catch (err) {
-    setFeedback(err?.message || "Impossible de lancer la reinitialisation");
     toast(err?.message || "Impossible de lancer la reinitialisation", "Erreur");
   }
 }
@@ -306,25 +231,13 @@ function handleGoogleLogin() {
   window.location.href = `${API_BASE}/auth/oauth/google/start?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
-function refreshDiagnostic() {
-  updateAuthStateFromTokens();
-  setFeedback(state.authState.isConnected ? "Diagnostic session OK" : "Aucune session a diagnostiquer");
-}
-
-async function handleLogout() {
-  await serverLogout();
-  updateAuthStateFromTokens();
-  setFeedback("Deconnecte");
-  renderAll();
-  toast("Deconnecte.", "OK");
-}
-
 function bindEvents() {
-  dom.tabs.forEach((button) => button.addEventListener("click", () => {
-    state.mode = button.getAttribute("data-mode") || "login";
-    renderForm();
-    normalizeBrokenText();
-  }));
+  dom.tabs.forEach((button) =>
+    button.addEventListener("click", () => {
+      state.mode = button.getAttribute("data-mode") || "login";
+      renderForm();
+    })
+  );
 
   dom.nameInput?.addEventListener("input", syncLocalInputs);
   dom.emailInput?.addEventListener("input", syncLocalInputs);
@@ -333,7 +246,6 @@ function bindEvents() {
   dom.passwordToggle?.addEventListener("click", () => {
     state.showPassword = !state.showPassword;
     renderForm();
-    normalizeBrokenText();
   });
 
   dom.form?.addEventListener("submit", async (event) => {
@@ -342,54 +254,20 @@ function bindEvents() {
     if (state.mode === "login") await handleLogin();
     if (state.mode === "register") await handleRegister();
     if (state.mode === "forgot") await handleForgotPassword();
-    renderSide();
   });
 
   dom.googleButton?.addEventListener("click", handleGoogleLogin);
-  dom.diagnosticButton?.addEventListener("click", refreshDiagnostic);
-  dom.logoutButton?.addEventListener("click", () => {
-    handleLogout().catch((err) => toast(err?.message || "Erreur logout", "Erreur"));
-  });
-}
-
-function normalizeBrokenText() {
-  const brandIcon = document.querySelector(".auth-brand-icon");
-  if (brandIcon) brandIcon.innerHTML = "&#9835;";
-
-  const subtitle = document.querySelector(".auth-subtitle");
-  if (subtitle) subtitle.innerHTML = "Page d&eacute;di&eacute;e strictement &agrave; la connexion : login, inscription, mot de passe oubli&eacute; et OAuth Google.";
-
-  const rowIcons = Array.from(document.querySelectorAll(".auth-row-icon"));
-  if (rowIcons[0]) rowIcons[0].innerHTML = "&#128100;";
-  if (rowIcons[1]) rowIcons[1].textContent = "@";
-  if (rowIcons[2]) rowIcons[2].innerHTML = "&#128274;";
-
-  if (dom.passwordToggle) dom.passwordToggle.innerHTML = state.showPassword ? "&#128584;" : "&#128065;";
-  if (dom.submitButton) {
-    if (state.mode === "login") dom.submitButton.innerHTML = "Se connecter &rarr;";
-    if (state.mode === "register") dom.submitButton.innerHTML = "Creer un compte &rarr;";
-    if (state.mode === "forgot") dom.submitButton.innerHTML = "Envoyer le lien &rarr;";
-  }
-  if (dom.statusHead) {
-    dom.statusHead.innerHTML = `<span>${state.authState.isConnected ? "&#10003;" : "&#9888;"}</span><span>${state.authState.isConnected ? "Connecte" : "Non connecte"}</span>`;
-  }
-
-  const tokenIcons = Array.from(document.querySelectorAll(".auth-token-label span:first-child"));
-  if (tokenIcons[0]) tokenIcons[0].innerHTML = "&#128737;";
-  if (tokenIcons[1]) tokenIcons[1].innerHTML = "&#128273;";
 }
 
 async function init() {
   state.mode = getInitialModeFromUrl();
   updateAuthStateFromTokens();
   bindEvents();
-  renderAll();
-  normalizeBrokenText();
+  renderForm();
   consumeOauthParams();
   await consumeResetTokenFromUrl();
 }
 
 init().catch((err) => {
-  setFeedback(err?.message || "Erreur chargement connexion");
   toast(err?.message || "Erreur chargement connexion", "Erreur");
 });

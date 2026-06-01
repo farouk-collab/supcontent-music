@@ -20,17 +20,14 @@ const DEFAULT_SITE_SETTINGS = {
   privacy: "Profil public",
   accentColor: "Vert emeraude",
 };
-const DEFAULT_NOTIFICATIONS = [
-  { id: 1, type: "follow", user: "Ayo.wav", text: "a commence a te suivre", time: "Il y a 2 min", read: false },
-  { id: 2, type: "story", user: "Nina.beats", text: "a ajoute une nouvelle story", time: "Il y a 8 min", read: false },
-  { id: 3, type: "post", user: "Luna.mix", text: "a aime ta derniere publication", time: "Il y a 1 h", read: true },
-];
+const DEFAULT_NOTIFICATIONS = [];
 
 const state = {
   currentProfile: null,
   currentProfileId: "",
   isOwnProfile: false,
   isFollowing: false,
+  canChatDirect: false,
   activeTab: "posts",
   composerType: "photo",
   pendingUploadDataUrl: "",
@@ -66,6 +63,7 @@ const els = {
   birthdayTodayChip: document.querySelector("#birthdayTodayChip"),
   profileBio: document.querySelector("#profileBio"),
   followToggleBtn: document.querySelector("#followToggleBtn"),
+  messageProfileBtn: document.querySelector("#messageProfileBtn"),
   musicalProfileBtn: document.querySelector("#musicalProfileBtn"),
   socialLinksRow: document.querySelector("#socialLinksRow"),
   followersCount: document.querySelector("#followersCount"),
@@ -115,6 +113,7 @@ const els = {
   avatarLabelInput: document.querySelector("#avatarLabelInput"),
   locationInput: document.querySelector("#locationInput"),
   bioInput: document.querySelector("#bioInput"),
+  birthdayInput: document.querySelector("#birthdayInput"),
   siteSettingsModal: document.querySelector("#siteSettingsModal"),
   closeSiteSettingsBtn: document.querySelector("#closeSiteSettingsBtn"),
   cancelSiteSettingsBtn: document.querySelector("#cancelSiteSettingsBtn"),
@@ -305,7 +304,7 @@ function renderNotifications() {
           </button>
         `
       )
-      .join("") + `<div class="content-card" style="margin-top:12px"><div class="small-badge">Tests profil passes</div></div>`;
+      .join("") || `<small style="color:var(--muted)">Aucune notification pour le moment.</small>`;
   els.notificationsList.querySelectorAll("[data-notification-id]").forEach((button) => {
     button.addEventListener("click", () => {
       const id = String(button.getAttribute("data-notification-id") || "");
@@ -313,6 +312,24 @@ function renderNotifications() {
       renderNotifications();
     });
   });
+}
+
+async function loadNotificationsFromApi() {
+  if (!getTokens().accessToken) return;
+  const data = await apiFetch("/notifications/me?limit=12").catch(() => null);
+  if (!data) return;
+  const fmt = (d) => d ? new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(new Date(d)) : "Maintenant";
+  const fromFollowers = Array.isArray(data.followers)
+    ? data.followers.map((u, i) => sanitizeNotification({ id: `follow-${u.id || i}`, type: "follow", user: String(u.display_name || u.username || "Utilisateur"), text: "a commence a te suivre", time: fmt(u.created_at), read: false }))
+    : [];
+  const fromReplies = Array.isArray(data.comment_replies)
+    ? data.comment_replies.map((r, i) => sanitizeNotification({ id: `reply-${r.id || i}`, type: "reply", user: String(r.display_name || r.username || "Utilisateur"), text: `a repondu : ${String(r.body || "").slice(0, 60)}`, time: fmt(r.created_at), read: true }))
+    : [];
+  const fromChat = Array.isArray(data.chat_messages)
+    ? data.chat_messages.map((m, i) => sanitizeNotification({ id: `chat-${m.message_id || i}`, type: "message", user: String(m.display_name || m.username || "Utilisateur"), text: String(m.body || (String(m.message_type || "") === "music" ? "t'a partage un morceau" : "t'a ecrit")), time: fmt(m.created_at), read: false }))
+    : [];
+  state.notifications = [...fromChat, ...fromFollowers, ...fromReplies].slice(0, 20);
+  renderNotifications();
 }
 
 function renderSocialLinks(profile) {
@@ -352,13 +369,26 @@ function renderHero() {
 
   if (state.isOwnProfile) {
     els.followToggleBtn.hidden = true;
+    els.messageProfileBtn.hidden = true;
     els.openComposerBtn.hidden = false;
     els.openEditProfileBtn.hidden = false;
     els.openSiteSettingsBtn.hidden = false;
   } else {
     els.followToggleBtn.hidden = false;
+    els.messageProfileBtn.hidden = false;
     els.followToggleBtn.textContent = state.isFollowing ? "Ne plus suivre" : "Suivre";
     els.followToggleBtn.className = `pill-btn ${state.isFollowing ? "" : "pill-btn--primary"}`;
+    if (state.canChatDirect) {
+      els.messageProfileBtn.textContent = "Message";
+      els.messageProfileBtn.className = "pill-btn pill-btn--primary";
+      els.messageProfileBtn.disabled = false;
+      els.messageProfileBtn.title = "";
+    } else {
+      els.messageProfileBtn.textContent = "Suivi mutuel requis";
+      els.messageProfileBtn.className = "pill-btn";
+      els.messageProfileBtn.disabled = true;
+      els.messageProfileBtn.title = "Suivez-vous mutuellement pour ouvrir une discussion";
+    }
     els.openComposerBtn.hidden = true;
     els.openEditProfileBtn.hidden = true;
     els.openSiteSettingsBtn.hidden = true;
@@ -503,6 +533,7 @@ function fillEditProfileModal(profile) {
   els.avatarLabelInput.value = String(state.cache.draftAvatarLabel || "FS").slice(0, 2).toUpperCase();
   els.locationInput.value = String(profile?.location || "");
   els.bioInput.value = String(profile?.bio || "");
+  els.birthdayInput.value = String(profile?.birth_date || "").slice(0, 10);
 }
 
 function renderSiteSettingsChoices() {
@@ -629,6 +660,12 @@ async function loadPublicProfile(viewUserId) {
   state.isOwnProfile = false;
   state.isFollowing = Boolean(data?.is_following);
   state.posts = await fetchPosts(state.currentProfileId, false);
+  if (getTokens().accessToken && state.currentProfileId) {
+    const chatRes = await apiFetch(`/follows/can-chat/${encodeURIComponent(state.currentProfileId)}`).catch(() => null);
+    state.canChatDirect = Boolean(chatRes?.can_chat_direct);
+  } else {
+    state.canChatDirect = false;
+  }
 }
 
 async function loadProfile() {
@@ -673,6 +710,20 @@ async function handleFollowToggle() {
   } catch (err) {
     toast(err?.message || "Action follow impossible", "Erreur");
   }
+}
+
+function handleOpenChat() {
+  if (!state.currentProfileId) return;
+  if (!getTokens().accessToken) {
+    const profileUrl = `/discussion/discussion.html?profile=${encodeURIComponent(state.currentProfileId)}`;
+    window.location.href = `/connexion/connexion.html?next=${encodeURIComponent(profileUrl)}`;
+    return;
+  }
+  if (!state.canChatDirect) {
+    toast("Suivez-vous mutuellement pour pouvoir discuter.", "Info");
+    return;
+  }
+  window.location.href = `/discussion/discussion.html?profile=${encodeURIComponent(state.currentProfileId)}`;
 }
 
 async function handleComposerSubmit(event) {
@@ -741,13 +792,16 @@ async function handleSaveProfile() {
   }
   state.cache.draftAvatarLabel = String(els.avatarLabelInput.value || "").trim().slice(0, 2).toUpperCase() || state.cache.draftAvatarLabel;
   persistCache();
+  const birthRaw = String(els.birthdayInput?.value || "").trim();
+  const birth_date = /^\d{4}-\d{2}-\d{2}$/.test(birthRaw) ? birthRaw : undefined;
   try {
-    await apiFetch("/auth/me", {
+    await apiFetch("/users/me", {
       method: "PATCH",
       body: JSON.stringify({
         display_name: displayName,
         location,
         bio,
+        ...(birth_date ? { birth_date } : {}),
       }),
     });
     await loadSelfProfile();
@@ -802,9 +856,13 @@ async function handleDeleteAccount() {
 }
 
 function bindEvents() {
-  els.notificationsBtn?.addEventListener("click", () => {
-    if (els.notificationsPanel.hasAttribute("hidden")) openModal(els.notificationsPanel);
-    else closeModal(els.notificationsPanel);
+  els.notificationsBtn?.addEventListener("click", async () => {
+    if (els.notificationsPanel.hasAttribute("hidden")) {
+      openModal(els.notificationsPanel);
+      await loadNotificationsFromApi();
+    } else {
+      closeModal(els.notificationsPanel);
+    }
   });
   els.markAllReadBtn?.addEventListener("click", () => {
     state.notifications = state.notifications.map((item) => ({ ...item, read: true }));
@@ -829,6 +887,7 @@ function bindEvents() {
   });
 
   els.followToggleBtn?.addEventListener("click", handleFollowToggle);
+  els.messageProfileBtn?.addEventListener("click", handleOpenChat);
   els.openComposerBtn?.addEventListener("click", openComposer);
   els.refreshBtn?.addEventListener("click", loadProfile);
   els.logoutBtn?.addEventListener("click", async () => {

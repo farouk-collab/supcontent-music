@@ -1,59 +1,10 @@
 import { apiFetch, escapeHtml, isLoggedIn, toast } from "/noyau/app.js";
 
-const STORAGE_KEY = "supcontent-chat-redesign-v1";
+const STORAGE_KEY = "supcontent-chat-redesign-v2";
 
-const DEFAULT_NOTIFICATIONS = [
-  { id: 1, type: "message", user: "Nina.beats", text: "t'a envoye un nouveau morceau", time: "Il y a 2 min", read: false },
-  { id: 2, type: "match", user: "Ayo.wav", text: "a ouvert la discussion apres votre match", time: "Il y a 14 min", read: false },
-  { id: 3, type: "message", user: "Luna.mix", text: "a repondu a ta recommandation", time: "Il y a 1 h", read: true },
-];
+const DEFAULT_NOTIFICATIONS = [];
 
-const BASE_THREADS = [
-  {
-    id: "t-1",
-    profileId: "mock-1",
-    name: "Nina.beats",
-    status: "En ligne · ecoute Timeless",
-    compatibility: 94,
-    unread: 2,
-    lastMessage: "Ecoute ce son, il colle trop a ta vibe",
-    sharedTrack: { title: "Timeless", artist: "The Weeknd", source: "Spotify", duration: "3:24" },
-    contextCopy: "Vos gouts se croisent sur les sons nocturnes, rap melodique et playlists d'ambiance.",
-    messages: [
-      { id: "m-1", sender: "other", type: "text", text: "J'ai trouve un son qui te ressemble de fou", time: "21:02", seen: true },
-      { id: "m-2", sender: "other", type: "music", text: "Regarde celui-la", track: { title: "Timeless", artist: "The Weeknd", source: "Spotify", duration: "3:24" }, time: "21:03", seen: true },
-      { id: "m-3", sender: "me", type: "text", text: "Wahh l'ambiance est trop propre, t'as vise juste", time: "21:04", seen: true },
-      { id: "m-4", sender: "other", type: "playlist", text: "Je t'envoie aussi ma playlist de nuit", playlist: { title: "Purple Lights", count: 18, mood: "Night drive / Pop / R&B" }, time: "21:06", seen: false },
-    ],
-  },
-  {
-    id: "t-2",
-    profileId: "mock-2",
-    name: "Ayo.wav",
-    status: "Vu il y a 8 min",
-    compatibility: 91,
-    unread: 0,
-    lastMessage: "Le mix afro sunset etait incroyable",
-    sharedTrack: { title: "DND", artist: "Rema", source: "Spotify", duration: "2:58" },
-    contextCopy: "Vos matchs se font souvent autour d'afro chill, amapiano et playlists soleil.",
-    messages: [
-      { id: "m-5", sender: "me", type: "text", text: "Ton univers musical est trop doux franchement", time: "18:10", seen: true },
-      { id: "m-6", sender: "other", type: "text", text: "Merciii, le mix afro sunset te va aussi super bien", time: "18:12", seen: true },
-    ],
-  },
-  {
-    id: "t-3",
-    profileId: "mock-3",
-    name: "Luna.mix",
-    status: "Hors ligne",
-    compatibility: 87,
-    unread: 1,
-    lastMessage: "Tu preferes parler musique ou albums complets ?",
-    sharedTrack: { title: "Neon Pop", artist: "Playlist partagee", source: "YouTube", duration: "41 min" },
-    contextCopy: "Vous vous retrouvez sur les playlists soft, les loops nocturnes et la pop aerienne.",
-    messages: [{ id: "m-7", sender: "other", type: "text", text: "Tu preferes parler musique ou albums complets ?", time: "Hier", seen: false }],
-  },
-];
+const BASE_THREADS = [];
 
 function sanitizeNotification(item, fallbackIndex = 0) {
   if (!item || typeof item !== "object") {
@@ -74,24 +25,6 @@ function sanitizeNotifications(list) {
   return list.map((item, index) => sanitizeNotification(item, index));
 }
 
-function runNotificationTests() {
-  const cases = [
-    { input: [{ id: 1, user: "A", text: "ok", time: "now", read: false }], check: (result) => result.length === 1 && result[0].read === false },
-    { input: [undefined], check: (result) => result.length === 1 && result[0].user === "Systeme" },
-    { input: null, check: (result) => Array.isArray(result) && result.length === 0 },
-  ];
-  return cases.map((test) => ({ passed: test.check(sanitizeNotifications(test.input)) }));
-}
-
-function runChatTests(threads) {
-  const cases = [
-    { check: () => threads.length >= 1 },
-    { check: () => threads.every((thread) => Array.isArray(thread.messages) && thread.messages.length > 0) },
-    { check: () => threads.some((thread) => thread.messages.some((message) => message.type === "music")) },
-    { check: () => threads.some((thread) => thread.messages.some((message) => message.type === "playlist")) || threads.length >= 1 },
-  ];
-  return cases.map((test) => ({ passed: test.check() }));
-}
 
 function formatNow() {
   return new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" }).format(new Date());
@@ -162,7 +95,7 @@ const state = {
   notifications: persisted.notifications,
   threads: persisted.threads,
   selectedThreadId: persisted.selectedThreadId || persisted.threads[0]?.id || "",
-  feedback: "Discussions pretes · matchs et invitations connectes si disponibles",
+  feedback: "Chargement des discussions...",
   invites: [],
   remoteMode: false,
 };
@@ -174,8 +107,6 @@ const refs = {
   notifBtn: document.querySelector("#chatNotifBtn"),
   notifBadge: document.querySelector("#chatNotifBadge"),
   notifPanel: document.querySelector("#chatNotifPanel"),
-  notifTests: document.querySelector("#chatNotifTests"),
-  logicTests: document.querySelector("#chatLogicTests"),
   notifList: document.querySelector("#chatNotifList"),
   markAllReadBtn: document.querySelector("#chatMarkAllReadBtn"),
   headerStats: document.querySelector("#chatHeaderStats"),
@@ -327,8 +258,6 @@ function mapRemoteThread(item, existingMessages = []) {
 
 function renderNotifications() {
   const unread = notificationUnreadCount();
-  const notifTestsPassed = runNotificationTests().every((item) => item.passed);
-  const chatTestsPassed = runChatTests(state.threads).every((item) => item.passed);
   const notifications = sanitizeNotifications(state.notifications);
 
   if (refs.notifBtn) refs.notifBtn.classList.toggle("is-open", state.notificationsOpen);
@@ -336,14 +265,6 @@ function renderNotifications() {
   if (refs.notifBadge) {
     refs.notifBadge.hidden = unread === 0;
     refs.notifBadge.textContent = unread > 99 ? "99+" : String(unread);
-  }
-  if (refs.notifTests) {
-    refs.notifTests.className = `chat-test-pill ${notifTestsPassed ? "" : "is-error"}`;
-    refs.notifTests.textContent = notifTestsPassed ? "Tests notifications passes" : "Un test notifications a echoue";
-  }
-  if (refs.logicTests) {
-    refs.logicTests.className = `chat-test-pill ${chatTestsPassed ? "" : "is-error"}`;
-    refs.logicTests.textContent = chatTestsPassed ? "Tests chat passes" : "Un test chat a echoue";
   }
   if (!refs.notifList) return;
 
@@ -799,12 +720,21 @@ async function sendMessage() {
 async function shareTrack() {
   const thread = selectedThread();
   if (!thread) return;
-  const track = { title: "Blinding Lights", artist: "The Weeknd", source: "Spotify", duration: "3:20" };
-
+  const playerState = window.supcontentPlayer?.state?.();
+  if (!playerState?.title) {
+    toast("Lance un morceau dans le lecteur pour le partager.", "Info");
+    return;
+  }
+  const track = {
+    title: String(playerState.title || "Titre partage"),
+    artist: String(playerState.subtitle || "Artiste"),
+    source: playerState.provider === "youtube" ? "YouTube" : "Spotify",
+    duration: "Direct",
+  };
   if (state.remoteMode && isLoggedIn()) {
     await sendRemoteMessage({
       message_type: "music",
-      body: "Je te partage aussi celui-la",
+      body: `Je te partage : ${track.title}`,
       meta: track,
     });
     state.feedback = "Morceau partage via l'API";
@@ -812,13 +742,11 @@ async function shareTrack() {
     render();
     return;
   }
-
   state.threads = state.threads.map((item) => {
     if (item.id !== thread.id) return item;
-    const nextMessage = { id: `m-${Date.now()}`, sender: "me", type: "music", text: "Je te partage aussi celui-la", track, time: "Maintenant", seen: true };
+    const nextMessage = { id: `m-${Date.now()}`, sender: "me", type: "music", text: `Je te partage : ${track.title}`, track, time: formatNow(), seen: true };
     return { ...item, lastMessage: nextMessage.text, sharedTrack: track, messages: [...item.messages, nextMessage] };
   });
-
   state.feedback = "Morceau partage dans le chat";
   pushNotification({ type: "message", user: thread.name, text: "a recu un nouveau morceau dans la discussion", time: "Maintenant" });
   persistState();
@@ -1024,25 +952,26 @@ function bindEvents() {
     updateFeedback("Emoji ajoute au brouillon");
     renderMain();
   });
-  refs.fileBtn?.addEventListener("click", async () => {
-    await sendStructuredMessage(
-      {
-        message_type: "file",
-        body: "Je t'ai partage un document audio de travail.",
-        meta: { name: "demo-session-notes.txt", size: "24 KB", format: "TXT" },
-      },
-      "Fichier partage dans la conversation"
-    );
+  refs.fileBtn?.addEventListener("click", () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "audio/*,video/*,.pdf,.txt,.doc,.docx";
+    input.onchange = async () => {
+      const file = input.files?.[0];
+      if (!file) return;
+      const sizeKB = Math.round(file.size / 1024);
+      const sizeMB = file.size / (1024 * 1024);
+      const sizeLabel = sizeMB >= 1 ? `${sizeMB.toFixed(1)} MB` : `${sizeKB} KB`;
+      const ext = file.name.split(".").pop()?.toUpperCase() || "FILE";
+      await sendStructuredMessage(
+        { message_type: "file", body: `Je te partage : ${file.name}`, meta: { name: file.name, size: sizeLabel, format: ext } },
+        "Fichier partage dans la conversation"
+      );
+    };
+    input.click();
   });
-  refs.micBtn?.addEventListener("click", async () => {
-    await sendStructuredMessage(
-      {
-        message_type: "voice",
-        body: "Je t'ai laisse une note vocale.",
-        meta: { duration: "0:18", waveform: "~~~~~ ~~~ ~~" },
-      },
-      "Note vocale envoyee"
-    );
+  refs.micBtn?.addEventListener("click", () => {
+    toast("Enregistrement vocal bientot disponible.", "Info");
   });
   refs.callBtn?.addEventListener("click", async () => {
     await sendStructuredMessage(
@@ -1066,33 +995,51 @@ function bindEvents() {
     );
     toast("Signal d'appel video envoye dans le chat", "Chat");
   });
-  refs.playSharedBtn?.addEventListener("click", () => {
+  refs.playSharedBtn?.addEventListener("click", async () => {
     const thread = selectedThread();
     if (!thread) return;
-    const title = String(thread.sharedTrack?.title || "Titre partage");
-    const artist = String(thread.sharedTrack?.artist || "Artiste");
-    const source = String(thread.sharedTrack?.source || "").toLowerCase();
-    if (window.supcontentPlayer) {
-      if (source.includes("youtube")) {
-        window.supcontentPlayer.playYouTube({
-          url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-          title,
-          subtitle: artist,
-          cover: "",
-          mode: "audio",
-        });
-      } else {
-        window.supcontentPlayer.playMedia({
-          url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
-          title,
-          subtitle: artist,
-          cover: "",
-          mode: "audio",
-        });
-      }
+    const title = String(thread.sharedTrack?.title || "");
+    const artist = String(thread.sharedTrack?.artist || "");
+    if (!title || title === "Match musical" || title === "Titre partage") {
+      toast("Aucun son disponible dans cette conversation.", "Info");
+      return;
     }
-    toast(`Lecture de ${title}`, "OK");
-    updateFeedback(`Lecture lancee pour ${title}`);
+    if (!window.supcontentPlayer) {
+      toast("Lecteur non disponible.", "Info");
+      return;
+    }
+    updateFeedback("Recherche du morceau...");
+    renderMain();
+    const q = encodeURIComponent(`${title} ${artist}`.trim());
+    const res = await apiFetch(`/search?q=${q}&type=track&limit=1`).catch(() => null);
+    const tracks = res?.tracks?.items;
+    if (!Array.isArray(tracks) || !tracks.length) {
+      toast("Morceau introuvable.", "Info");
+      updateFeedback("Morceau non trouve");
+      return;
+    }
+    const found = tracks[0];
+    const source = String(thread.sharedTrack?.source || "").toLowerCase();
+    const url = String(found?.preview_url || found?.external_urls?.spotify || "");
+    if (source.includes("youtube")) {
+      window.supcontentPlayer.playYouTube({
+        url: String(found?.external_urls?.spotify || url),
+        title: String(found?.name || title),
+        subtitle: String(found?.artists?.[0]?.name || artist),
+        cover: String(found?.album?.images?.[0]?.url || ""),
+        mode: "audio",
+      });
+    } else {
+      window.supcontentPlayer.playMedia({
+        url,
+        title: String(found?.name || title),
+        subtitle: String(found?.artists?.[0]?.name || artist),
+        cover: String(found?.album?.images?.[0]?.url || ""),
+        mode: "audio",
+      });
+    }
+    toast(`Lecture de ${found?.name || title}`, "OK");
+    updateFeedback(`Lecture lancee pour ${found?.name || title}`);
     renderMain();
   });
 }
