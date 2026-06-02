@@ -1,7 +1,7 @@
 import { getLanguage, t, LANGUAGE_EVENT } from "/noyau/i18n.js";
 import { initGlobalPlayer } from "/noyau/globalPlayer.js";
 import { initHeader } from "/noyau/header.js";
-import { APP_PREFERENCES_EVENT } from "/noyau/app.js";
+import { APP_PREFERENCES_EVENT, apiFetch, isLoggedIn, toast } from "/noyau/app.js";
 const PLAYER_DISMISS_KEY = "supcontent_global_player_dismissed_v1";
 
 const tabs = [
@@ -796,6 +796,7 @@ function injectFooter() {
         <a class="mobile-tab ${active === tab.key ? "is-active" : ""}" href="${tab.href}" aria-label="${t(tab.labelKey)}" data-icon="${tab.icon}">
           <span class="ico-wrap" aria-hidden="true">
             <span class="ico">${iconSvg(tab.icon)}</span>
+            ${tab.key === "chat" ? '<span class="chat-nav-badge" id="chatNavBadge" hidden>0</span>' : ""}
           </span>
           <span class="txt">${t(tab.labelKey)}</span>
         </a>
@@ -807,6 +808,49 @@ function injectFooter() {
 
   document.body.appendChild(el);
   document.body.classList.add("has-mobile-footer");
+}
+
+const CHAT_UNREAD_KEY = "supcontent-chat-unread-v1";
+
+function ensureChatBadgeStyle() {
+  if (document.querySelector("#supcontent-chat-badge-style")) return;
+  const style = document.createElement("style");
+  style.id = "supcontent-chat-badge-style";
+  style.textContent = `
+    .mobile-tab .ico-wrap { position: relative; display: inline-flex; }
+    .chat-nav-badge {
+      position: absolute; top: -4px; right: -6px;
+      min-width: 18px; height: 18px; border-radius: 999px;
+      background: #d946ef; color: #fff;
+      font-size: 10px; font-weight: 800;
+      display: grid; place-items: center; padding: 0 4px;
+      pointer-events: none; box-shadow: 0 2px 8px rgba(217,70,239,.5);
+    }
+    .chat-nav-badge[hidden] { display: none; }
+  `;
+  document.head.appendChild(style);
+}
+
+async function updateChatBadge() {
+  if (!isLoggedIn()) return;
+  const badge = document.querySelector("#chatNavBadge");
+  if (!badge) return;
+  const data = await apiFetch("/chat/threads").catch(() => null);
+  const threads = Array.isArray(data?.items) ? data.items : [];
+  const total = threads.reduce((sum, item) => sum + Number(item.unread_count || 0), 0);
+  const prev = Number(localStorage.getItem(CHAT_UNREAD_KEY) || "0");
+  badge.hidden = total === 0;
+  if (total > 0) badge.textContent = total > 99 ? "99+" : String(total);
+  if (total > prev && !window.location.pathname.includes("/discussion/")) {
+    const n = total - prev;
+    toast(`${n} nouveau${n > 1 ? "x" : ""} message${n > 1 ? "s" : ""}`, "Chat");
+  }
+  localStorage.setItem(CHAT_UNREAD_KEY, String(total));
+}
+
+function startChatUnreadPoll() {
+  updateChatBadge();
+  setInterval(() => updateChatBadge(), 30_000);
 }
 
 function isPlayerDismissed() {
@@ -839,10 +883,12 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     ensureExtraStyles();
     ensureThemeBridgeStyles();
+    ensureChatBadgeStyle();
     ensureBrandFavicon();
     initHeader();
     injectFooter();
     syncHeaderAuthLinks();
+    startChatUnreadPoll();
     if (isPlayerDismissed()) forceHideGlobalPlayer();
     initGlobalPlayer();
     if (isPlayerDismissed()) {
@@ -861,10 +907,12 @@ if (document.readyState === "loading") {
 } else {
   ensureExtraStyles();
   ensureThemeBridgeStyles();
+  ensureChatBadgeStyle();
   ensureBrandFavicon();
   initHeader();
   injectFooter();
   syncHeaderAuthLinks();
+  startChatUnreadPoll();
   if (isPlayerDismissed()) forceHideGlobalPlayer();
   initGlobalPlayer();
   if (isPlayerDismissed()) {
