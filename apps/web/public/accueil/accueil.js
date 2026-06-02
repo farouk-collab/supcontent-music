@@ -224,10 +224,6 @@ function renderNotifications() {
     realtimeStateTop.textContent = realtimeEnabled && realtimeConnected ? "Notifications connectees" : "Notifications en attente";
     realtimeStateTop.className = `home-live-pill ${realtimeEnabled && realtimeConnected ? "is-live" : "is-offline"}`;
   }
-  if (testsState) {
-    testsState.textContent = testsPassed ? "Tests de robustesse passes" : "Un test de robustesse a echoue";
-    testsState.className = `home-live-pill ${testsPassed ? "is-test-ok" : "is-test-ko"}`;
-  }
   if (list) {
     list.innerHTML = safeNotifications.map((item) => `
       <button class="home-notif-item ${item.read ? "" : "is-unread"}" type="button" data-notif-id="${escapeHtml(String(item.id))}">
