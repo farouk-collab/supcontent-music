@@ -80,7 +80,7 @@ function syncAuthUI() {
   if (ctaAuth) ctaAuth.style.display = isAuthed ? "none" : "";
   if (ctaProfile) ctaProfile.style.display = isAuthed ? "" : "none";
 
-  if (hint) hint.textContent = isAuthed ? "ConnectÃ©" : "Non connectÃ©";
+  if (hint) hint.textContent = "";
 }
 
 function sanitizeNotification(item, fallbackIndex = 0) {
@@ -573,8 +573,8 @@ function renderCommunityTextCard(it) {
 function renderMockNews() {
   const releasesBox = document.querySelector("#newsReleases");
   const communityBox = document.querySelector("#newsCommunity");
-  if (releasesBox) releasesBox.innerHTML = `<small style="color:var(--muted)">Aucune actualite disponible pour le moment.</small>`;
-  if (communityBox) communityBox.innerHTML = `<small style="color:var(--muted)">Aucune activite communautaire pour le moment.</small>`;
+  if (releasesBox) releasesBox.innerHTML = `<small style="color:var(--muted)">Connecte Spotify pour voir les dernières sorties musicales.</small>`;
+  if (communityBox) communityBox.innerHTML = `<small style="color:var(--muted)">Sois le premier à partager une review ou une collection.</small>`;
 }
 
 async function loadMusicNews() {
@@ -583,8 +583,8 @@ async function loadMusicNews() {
   if (!releasesBox || !communityBox) return;
 
   if (HOME_FORCE_MOCK) {
-    releasesBox.innerHTML = `<small style="color:var(--muted)">Aucune sortie recente.</small>`;
-    communityBox.innerHTML = `<small style="color:var(--muted)">Aucune activite communautaire pour le moment.</small>`;
+    releasesBox.innerHTML = `<small style="color:var(--muted)">Connecte Spotify pour voir les dernières sorties musicales.</small>`;
+    communityBox.innerHTML = `<small style="color:var(--muted)">Sois le premier à partager une review ou une collection.</small>`;
     return;
   }
 
@@ -603,10 +603,10 @@ async function loadMusicNews() {
 
     releasesBox.innerHTML = releases.length
       ? releases.slice(0, 8).map(renderReleaseCard).join("")
-      : `<small style="color:var(--muted)">Aucune sortie recente.</small>`;
+      : `<small style="color:var(--muted)">Connecte Spotify pour voir les dernières sorties musicales.</small>`;
     communityBox.innerHTML = community.length
       ? community.slice(0, 8).map(renderCommunityTextCard).join("")
-      : `<small style="color:var(--muted)">Aucune activite communautaire pour le moment.</small>`;
+      : `<small style="color:var(--muted)">Sois le premier à partager une review ou une collection.</small>`;
   } catch (err) {
     renderMockNews();
     console.warn("Actualites musique en fallback mock:", err?.message || err);
