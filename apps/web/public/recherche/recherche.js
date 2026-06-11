@@ -569,22 +569,59 @@ function normalizePlaylistUrl(url) {
   return String(url || "").trim();
 }
 
+function extractYouTubePlaylistId(url) {
+  try {
+    const u = new URL(url);
+    const list = u.searchParams.get("list") || "";
+    return list.startsWith("PL") || list.startsWith("UU") || list.startsWith("FL") || list.startsWith("LL") ? list : "";
+  } catch {
+    return "";
+  }
+}
+
+function extractYouTubeVideoId(url) {
+  try {
+    const u = new URL(url);
+    return u.searchParams.get("v") || u.pathname.split("/").pop() || "";
+  } catch {
+    return "";
+  }
+}
+
 function inferSourceFromUrl(url) {
   const lower = normalizePlaylistUrl(url).toLowerCase();
   if (lower.includes("spotify.com/playlist")) return "spotify";
   if (lower.includes("youtube.com/playlist") || lower.includes("music.youtube.com/playlist")) return "youtube";
+  if ((lower.includes("youtube.com/watch") || lower.includes("youtu.be/")) && extractYouTubePlaylistId(url)) return "youtube";
+  if (lower.includes("youtube.com/watch") || lower.includes("youtu.be/")) return "youtube-video";
   return "";
 }
 
 async function importPlaylist(source) {
   if (!requireLogin({ redirect: false })) return;
   const placeholder = source === "spotify" ? "https://open.spotify.com/playlist/" : "https://music.youtube.com/playlist?list=";
-  const rawUrl = window.prompt(source === "spotify" ? "Colle le lien de la playlist Spotify" : "Colle le lien de la playlist YouTube", placeholder);
+  const rawUrl = window.prompt(source === "spotify" ? "Colle le lien de la playlist Spotify" : "Colle le lien de la playlist YouTube ou une video YouTube", placeholder);
   const url = normalizePlaylistUrl(rawUrl);
   if (!url) return;
   const inferred = inferSourceFromUrl(url);
+
+  const playlistId = extractYouTubePlaylistId(url);
+  const normalizedUrl = (inferred === "youtube" && playlistId && !url.includes("youtube.com/playlist"))
+    ? `https://www.youtube.com/playlist?list=${playlistId}`
+    : url;
+
+  if (inferred === "youtube-video" && source === "youtube") {
+    const videoId = extractYouTubeVideoId(url);
+    if (!videoId) { toast("Impossible d'extraire l'ID de la video.", "Erreur"); return; }
+    const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
+    const played = playYouTubeInline(cleanUrl, "Video YouTube", "");
+    if (played) toast("Lecture lancee dans le lecteur.", "OK");
+    else toast("Lecteur non disponible.", "Erreur");
+    return;
+  }
+
   if (inferred !== source) {
-    toast(`Lien ${inferred || "invalide"} detecte.`, "Erreur");
+    toast(`Lien invalide pour cette source. Attend un lien ${source === "spotify" ? "Spotify" : "YouTube"}.`, "Erreur");
     return;
   }
 
