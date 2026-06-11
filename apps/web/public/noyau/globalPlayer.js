@@ -18,6 +18,8 @@ const DEMO_LYRICS = [
 
 let root = null;
 let expandedShellEl = null;
+let engineDockEl = null;
+let stageMediaEl = null;
 let coverEl = null;
 let titleEl = null;
 let subEl = null;
@@ -39,6 +41,7 @@ let lyricsPanelEl = null;
 let subtitleOverlayEl = null;
 let lyricsToggleBtn = null;
 let subtitleToggleBtn = null;
+let waveformBtn = null;
 
 let ytApiReady = null;
 let ytPlayer = null;
@@ -272,11 +275,13 @@ function updateTimeline() {
   if (!curEl || !durEl || !seekEl) return;
   const cur = getCurrentTimeSeconds();
   const dur = getDurationSeconds();
+  const progress = dur > 0 ? Math.max(0, Math.min(100, (cur / dur) * 100)) : 0;
   current.time = cur;
   current.duration = dur;
   curEl.textContent = formatTime(cur);
   durEl.textContent = formatTime(dur);
-  seekEl.value = String(dur > 0 ? Math.max(0, Math.min(100, (cur / dur) * 100)) : 0);
+  seekEl.value = String(progress);
+  if (waveformBtn) waveformBtn.style.setProperty("--wave-progress", `${progress}%`);
   renderLyrics();
 }
 
@@ -284,6 +289,16 @@ function setUiVisible(visible) {
   if (!root) return;
   root.hidden = !visible;
   document.body.classList.toggle("has-global-player", Boolean(visible));
+}
+
+function syncMediaDock() {
+  if (!hostEl) return;
+  const target = expanded && String(current?.mode || "audio") === "video"
+    ? stageMediaEl
+    : engineDockEl;
+  if (target && hostEl.parentElement !== target) {
+    target.appendChild(hostEl);
+  }
 }
 
 function setExpanded(on) {
@@ -297,6 +312,7 @@ function setExpanded(on) {
     expandBtn.title = expanded ? "Reduire" : "Agrandir";
     expandBtn.setAttribute("aria-label", expandBtn.title);
   }
+  syncMediaDock();
 }
 
 function renderMeta(meta) {
@@ -312,6 +328,7 @@ function renderMeta(meta) {
   modeBtn.textContent = meta?.mode === "audio" ? "A" : "V";
   modeBtn.title = meta?.mode === "audio" ? "Mode audio" : "Mode video";
   modeBtn.setAttribute("aria-label", modeBtn.title);
+  syncMediaDock();
 
   if (stageMetaEl) {
     stageMetaEl.innerHTML = `
@@ -529,6 +546,29 @@ function togglePlayPause() {
   }
 }
 
+function resumePlayback() {
+  if (!current) return;
+
+  if (current.provider === "file" && fileMediaEl) {
+    fileMediaEl.play().catch(() => {});
+    snapshot();
+    return;
+  }
+
+  if (current.provider === "youtube" && ytPlayer) {
+    try {
+      ytPlayer.playVideo();
+    } catch {
+      // ignore
+    }
+    snapshot();
+    return;
+  }
+
+  current.playing = true;
+  writeState(current);
+}
+
 function previousAction() {
   if (!current) return;
 
@@ -614,6 +654,16 @@ function toggleExpanded() {
   setExpanded(!expanded);
 }
 
+function openWaveformStage() {
+  if (!current) return;
+  if (current.mode !== "video") {
+    current.mode = "video";
+    renderMeta(current);
+    writeState(current);
+  }
+  setExpanded(true);
+}
+
 function stop() {
   destroyEngines();
   expanded = false;
@@ -622,6 +672,8 @@ function stop() {
 
   root = null;
   expandedShellEl = null;
+  engineDockEl = null;
+  stageMediaEl = null;
   coverEl = null;
   titleEl = null;
   subEl = null;
@@ -643,6 +695,7 @@ function stop() {
   subtitleOverlayEl = null;
   lyricsToggleBtn = null;
   subtitleToggleBtn = null;
+  waveformBtn = null;
   current = null;
 
   markDismissed();
@@ -654,6 +707,8 @@ function disposeDomOnly() {
   if (root) root.remove();
   root = null;
   expandedShellEl = null;
+  engineDockEl = null;
+  stageMediaEl = null;
   coverEl = null;
   titleEl = null;
   subEl = null;
@@ -675,6 +730,7 @@ function disposeDomOnly() {
   subtitleOverlayEl = null;
   lyricsToggleBtn = null;
   subtitleToggleBtn = null;
+  waveformBtn = null;
 }
 
 function restore() {
@@ -697,6 +753,7 @@ function bindUiEvents() {
   backBtn?.addEventListener("click", () => setExpanded(false));
   lyricsToggleBtn?.addEventListener("click", toggleLyrics);
   subtitleToggleBtn?.addEventListener("click", toggleSubtitleStyle);
+  waveformBtn?.addEventListener("click", openWaveformStage);
 
   const hardClose = (ev) => {
     ev?.preventDefault?.();
@@ -749,6 +806,8 @@ function buildUi() {
   if (existing) {
     root = existing;
     expandedShellEl = existing.querySelector("#gmpExpandedShell");
+    engineDockEl = existing.querySelector("#gmpEngineDock");
+    stageMediaEl = existing.querySelector("#gmpVideoStage") || existing.querySelector(".gmp-stage-media");
     coverEl = existing.querySelector("#gmpCover");
     titleEl = existing.querySelector("#gmpTitle");
     subEl = existing.querySelector("#gmpSub");
@@ -769,7 +828,17 @@ function buildUi() {
     subtitleOverlayEl = existing.querySelector("#gmpSubtitleOverlay");
     lyricsToggleBtn = existing.querySelector("#gmpLyricsToggle");
     subtitleToggleBtn = existing.querySelector("#gmpSubtitleToggle");
+    waveformBtn = existing.querySelector("#gmpWaveform");
     fileMediaEl = existing.querySelector("video");
+
+    if (!engineDockEl) {
+      engineDockEl = document.createElement("div");
+      engineDockEl.id = "gmpEngineDock";
+      engineDockEl.className = "gmp-engine-dock";
+      existing.prepend(engineDockEl);
+    }
+
+    syncMediaDock();
     bindUiEvents();
     return;
   }
@@ -779,13 +848,13 @@ function buildUi() {
   el.className = "spotify-player audio-only";
   el.hidden = true;
   el.innerHTML = `
+    <div class="gmp-engine-dock" id="gmpEngineDock" aria-hidden="true"></div>
     <div class="gmp-expanded-shell" id="gmpExpandedShell" hidden>
       <div class="gmp-expanded-card">
         <div class="gmp-stage">
           <div class="gmp-stage-media">
-            <div class="gmp-video-host" id="gmpHost">
-              <button class="btn icon gmp-video-back" type="button" id="gmpBack" aria-label="Retour" title="Retour" hidden><</button>
-            </div>
+            <div class="gmp-video-stage" id="gmpVideoStage"></div>
+            <button class="btn icon gmp-video-back" type="button" id="gmpBack" aria-label="Retour" title="Retour" hidden><</button>
             <div class="gmp-subtitle-overlay" id="gmpSubtitleOverlay" hidden></div>
           </div>
           <div class="gmp-stage-meta" id="gmpStageMeta"></div>
@@ -824,6 +893,10 @@ function buildUi() {
           <input id="gmpSeek" class="gmp-seek" type="range" min="0" max="100" step="1" value="0" />
           <small id="gmpDur">0:00</small>
         </div>
+        <button class="gmp-waveform" type="button" id="gmpWaveform" aria-label="Ouvrir le lecteur video">
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+          <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+        </button>
       </div>
       <div class="gmp-right">
         <div class="gmp-volume-box">
@@ -839,10 +912,11 @@ function buildUi() {
 
   root = el;
   expandedShellEl = el.querySelector("#gmpExpandedShell");
+  engineDockEl = el.querySelector("#gmpEngineDock");
+  stageMediaEl = el.querySelector("#gmpVideoStage");
   coverEl = el.querySelector("#gmpCover");
   titleEl = el.querySelector("#gmpTitle");
   subEl = el.querySelector("#gmpSub");
-  hostEl = el.querySelector("#gmpHost");
   playPauseBtn = el.querySelector("#gmpPlayPause");
   prevBtn = el.querySelector("#gmpPrev");
   nextBtn = el.querySelector("#gmpNext");
@@ -859,6 +933,12 @@ function buildUi() {
   subtitleOverlayEl = el.querySelector("#gmpSubtitleOverlay");
   lyricsToggleBtn = el.querySelector("#gmpLyricsToggle");
   subtitleToggleBtn = el.querySelector("#gmpSubtitleToggle");
+  waveformBtn = el.querySelector("#gmpWaveform");
+
+  hostEl = document.createElement("div");
+  hostEl.id = "gmpHost";
+  hostEl.className = "gmp-video-host";
+  engineDockEl?.appendChild(hostEl);
 
   fileMediaEl = document.createElement("video");
   fileMediaEl.preload = "metadata";
@@ -872,6 +952,7 @@ function buildUi() {
 
   bindUiEvents();
   setExpanded(false);
+  syncMediaDock();
 }
 
 export function initGlobalPlayer() {
@@ -893,7 +974,9 @@ export function initGlobalPlayer() {
     playMedia({ url, title = "Media", subtitle = "", cover = "", mode = "video", lyrics = [] }) {
       start({ provider: "file", url, title, subtitle, cover, mode, lyrics, playing: true });
     },
+    resume: resumePlayback,
     stop,
+    expand: openWaveformStage,
     state: () => ({ ...(current || {}) }),
   };
 

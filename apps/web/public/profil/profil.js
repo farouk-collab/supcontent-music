@@ -32,7 +32,7 @@ const state = {
   composerType: "photo",
   pendingUploadDataUrl: "",
   pendingUploadType: "",
-  feedback: "Profil pret · donnees mises en cache",
+  feedback: "Profil pret - donnees mises en cache",
   posts: [],
   notifications: sanitizeNotifications(DEFAULT_NOTIFICATIONS),
   cache: loadProfileCache(),
@@ -965,7 +965,7 @@ function normalizeProfileText() {
     [".summary-panel .section-title", "Resume du profil"],
     ["#refreshBtn", "Rafraichir"],
     ["#logoutBtn", "Deconnexion (local)"],
-    ["#feedbackText", "Profil pret · donnees mises en cache"],
+    ["#feedbackText", "Profil pret - donnees mises en cache"],
   ];
 
   replacements.forEach(([selector, value]) => {
@@ -982,6 +982,7 @@ function normalizeProfileText() {
   if (kickers[1]) kickers[1].textContent = "Abonnements";
 
   const bottomTitles = document.querySelectorAll(".bottom-panel .section-title");
+  if (bottomTitles[0]) bottomTitles[0].textContent = "Ecoutes recentes";
   if (bottomTitles[1]) bottomTitles[1].textContent = "Reglages actifs";
 
   const techKicker = document.querySelector(".summary-panel .soft-card:last-child .profile-kicker");
@@ -1010,3 +1011,4 @@ window.addEventListener(APP_PREFERENCES_EVENT, () => {
 window.addEventListener(LANGUAGE_EVENT, () => {
   applyI18n(document);
 });
+

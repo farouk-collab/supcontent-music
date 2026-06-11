@@ -9,6 +9,7 @@ const __dirname = path.dirname(__filename);
 const rootDir = path.resolve(__dirname, "..", "apps", "web", "public");
 const configPath = path.resolve(__dirname, "..", "serve.json");
 const port = 4173;
+const runtimeApiBase = String(process.env.SUPCONTENT_API_BASE || "http://localhost:1234").trim();
 
 const MIME_TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -107,6 +108,16 @@ const config = await loadConfig();
 
 const server = http.createServer((request, response) => {
   const pathname = normalizePathname(request.url || "/");
+
+  if (pathname === "/noyau/runtime-config.json") {
+    response.writeHead(200, {
+      "Content-Type": "application/json; charset=utf-8",
+      ...defaultHeaders,
+    });
+    response.end(JSON.stringify({ apiBase: runtimeApiBase }));
+    return;
+  }
+
   const effectivePath = pathname === "/" ? "/index.html" : pathname;
   const initialTarget = path.resolve(rootDir, `.${effectivePath}`);
 

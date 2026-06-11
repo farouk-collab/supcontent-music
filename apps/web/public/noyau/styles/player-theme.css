@@ -120,6 +120,14 @@ body.has-global-player .toast{
   background: rgba(255,255,255,.18);
 }
 
+.spotify-player .gmp-waveform{
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+.spotify-player .gmp-waveform:hover{
+  border-color: rgba(255,255,255,.24);
+}
+
 .spotify-player .gmp-seek::-webkit-slider-thumb,
 .spotify-player .gmp-vol::-webkit-slider-thumb,
 .spotify-player .gmp-seek::-moz-range-thumb,

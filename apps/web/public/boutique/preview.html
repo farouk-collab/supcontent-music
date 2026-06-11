@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Preview - SUPCONTENT Music</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/logo-supconnect.svg" />
+  <link rel="apple-touch-icon" href="/assets/logo-supconnect.svg" />
+  <link rel="stylesheet" href="/noyau/styles.css" />
+  <link rel="stylesheet" href="/boutique/shop.css" />
+</head>
+<body class="shop-page" data-shop-view="preview">
+  <div class="container shop-shell">
+    <header class="shop-hero">
+      <div class="shop-hero-grid">
+        <div>
+          <div class="shop-kicker">Boutique</div>
+          <h1 class="shop-title">Ecoute, compare et choisis avant d’acheter.</h1>
+          <p class="shop-subtitle">Une page dediee a la preview pour garder l’attention sur le son, ses tags, son rythme et son potentiel avant de passer au panier.</p>
+          <nav class="shop-page-nav" aria-label="Navigation boutique">
+            <a class="shop-page-link" href="/boutique/boutique.html"><span data-shop-nav-icon="catalogue"></span><span>Catalogue</span></a>
+            <a class="shop-page-link is-active" href="/boutique/preview.html"><span data-shop-nav-icon="preview"></span><span>Preview</span></a>
+            <a class="shop-page-link" href="/boutique/publier.html"><span data-shop-nav-icon="publier"></span><span>Publier</span></a>
+          </nav>
+        </div>
+        <div class="shop-hero-side">
+          <div id="shopCartPill" class="shop-cart-pill">0 article(s) - 0 EUR</div>
+          <div class="shop-hero-stats">
+            <article class="shop-stat-card">
+              <div class="shop-stat-label">Catalogue</div>
+              <strong id="shopStatProducts">0</strong>
+              <span>Produits disponibles a preecouter.</span>
+            </article>
+            <article class="shop-stat-card">
+              <div class="shop-stat-label">Prix moyen</div>
+              <strong id="shopStatAverage">0 EUR</strong>
+              <span>Lecture rapide du niveau de prix.</span>
+            </article>
+            <article class="shop-stat-card">
+              <div class="shop-stat-label">Best seller</div>
+              <strong id="shopStatTopSale">-</strong>
+              <span>Le produit le plus vendu du moment.</span>
+            </article>
+            <article class="shop-stat-card">
+              <div class="shop-stat-label">Focus</div>
+              <strong id="shopStatType">Tout</strong>
+              <span>Filtre actif actuellement.</span>
+            </article>
+          </div>
+          <div class="shop-hero-note">Le panier, les creators et les validations restent accessibles pendant l’ecoute.</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="shop-layout">
+      <main class="shop-main">
+        <section class="shop-panel">
+          <div class="shop-section-head">
+            <div>
+              <h2>Selection rapide</h2>
+              <p>Trois acces directs pour basculer vite entre les produits les plus visibles.</p>
+            </div>
+          </div>
+          <div id="shopFeaturedRail" class="shop-spotlight-rail" aria-live="polite"></div>
+        </section>
+
+        <section class="shop-panel">
+          <div class="shop-section-head">
+            <div>
+              <h2>Stage de preview</h2>
+              <p>Ecoute un extrait, lis les infos clefs et garde le focus sur le produit selectionne.</p>
+            </div>
+            <button id="shopPreviewToggleBtn" class="shop-btn" type="button">Lire</button>
+          </div>
+
+          <div class="shop-stage-grid">
+            <div class="shop-stage-card shop-preview-visual">
+              <div class="shop-preview-top">
+                <div class="shop-preview-badge">
+                  <span id="shopEqualizerIcon"></span>
+                  Live preview
+                </div>
+                <span id="shopPreviewTypeTag" class="shop-tag is-green">Beat</span>
+              </div>
+              <div>
+                <div id="shopPreviewTitle" class="shop-preview-title">Afro Sunset Beat</div>
+                <div id="shopPreviewMeta" class="shop-preview-meta">Ayo.wav - Beat</div>
+                <div id="shopPreviewLabel" class="shop-preview-label">Extrait Afro Sunset Beat</div>
+              </div>
+            </div>
+
+            <div class="shop-stage-card">
+              <div style="display:flex;justify-content:space-between;gap:12px;color:#d4d4d8;font-size:14px;">
+                <span id="shopPreviewCurrent">0:18</span>
+                <span id="shopPreviewDuration">0:45</span>
+              </div>
+              <div class="shop-progress"><div id="shopPreviewBar" style="width:40%;"></div></div>
+              <input id="shopPreviewRange" class="shop-range" type="range" min="0" max="45" value="18" />
+              <div id="shopPreviewTags" class="shop-tag-row"></div>
+              <p class="shop-stage-note">L'utilisateur peut preecouter le beat ou le pack avant l'achat, puis deplacer le curseur pour changer le moment de l'extrait.</p>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="shop-side-stack">
+        <section class="shop-side-card">
+          <h2>Createurs a la une</h2>
+          <div id="shopCreatorsList" class="shop-creators"></div>
+        </section>
+
+        <section class="shop-side-card">
+          <h2>Panier</h2>
+          <div id="shopCartList" class="shop-cart-list"></div>
+          <div class="shop-total">
+            <div style="font-size:14px;color:#d4d4d8;">Total</div>
+            <strong id="shopCartTotal">0 EUR</strong>
+            <button id="shopCheckoutBtn" class="shop-btn is-primary" style="width:100%;margin-top:14px;" type="button">Passer au paiement</button>
+          </div>
+        </section>
+
+        <section class="shop-side-card">
+          <h2>Validation</h2>
+          <div id="shopValidation" class="shop-validation">Tests boutique passes</div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script type="module" src="/boutique/boutique.js"></script>
+  <script type="module" src="/noyau/footer.js"></script>
+</body>
+</html>

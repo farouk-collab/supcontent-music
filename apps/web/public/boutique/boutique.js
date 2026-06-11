@@ -54,18 +54,24 @@ const refs = {
   previewTitle: document.querySelector("#shopPreviewTitle"),
   previewMeta: document.querySelector("#shopPreviewMeta"),
   previewLabel: document.querySelector("#shopPreviewLabel"),
+  previewTypeTag: document.querySelector("#shopPreviewTypeTag"),
   previewCurrent: document.querySelector("#shopPreviewCurrent"),
   previewDuration: document.querySelector("#shopPreviewDuration"),
   previewBar: document.querySelector("#shopPreviewBar"),
   previewRange: document.querySelector("#shopPreviewRange"),
   previewTags: document.querySelector("#shopPreviewTags"),
   publishBtn: document.querySelector("#shopPublishBtn"),
+  featuredRail: document.querySelector("#shopFeaturedRail"),
   catalogue: document.querySelector("#catalogue"),
   creatorsList: document.querySelector("#shopCreatorsList"),
   cartList: document.querySelector("#shopCartList"),
   cartTotal: document.querySelector("#shopCartTotal"),
   checkoutBtn: document.querySelector("#shopCheckoutBtn"),
   validation: document.querySelector("#shopValidation"),
+  statProducts: document.querySelector("#shopStatProducts"),
+  statAverage: document.querySelector("#shopStatAverage"),
+  statTopSale: document.querySelector("#shopStatTopSale"),
+  statType: document.querySelector("#shopStatType"),
   formTitle: document.querySelector("#shopFormTitle"),
   formCreator: document.querySelector("#shopFormCreator"),
   formPrice: document.querySelector("#shopFormPrice"),
@@ -79,10 +85,18 @@ const refs = {
   equalizerIcon: document.querySelector("#shopEqualizerIcon"),
   euroIcon: document.querySelector("#shopEuroIcon"),
   fileIcon: document.querySelector("#shopFileIcon"),
+  cartIcon: document.querySelector("#shopCartIcon"),
+  uploadIcon: document.querySelector("#shopUploadIcon"),
 };
 
 const TYPES = ["Tout", "Beat", "Sample Pack", "Loop Kit", "Vocal Pack"];
 let previewTimer = 0;
+const requestedPreviewId = new URLSearchParams(window.location.search).get("item") || "";
+const shouldAutoplayRequestedPreview = new URLSearchParams(window.location.search).get("autoplay") === "1";
+
+function hasRef(key) {
+  return Boolean(refs[key]);
+}
 
 function iconSvg(name) {
   const common = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
@@ -105,6 +119,9 @@ function iconSvg(name) {
     case "file": return `<svg ${common}><path d="M14 2H6a2 2 0 0 0-2 2v16l4-2 4 2 4-2 4 2V8Z"></path><path d="M14 2v6h6"></path></svg>`;
     case "equal": return `<svg ${common}><path d="M5 8h2"></path><path d="M5 16h2"></path><path d="M10 4v16"></path><path d="M14 8v8"></path><path d="M18 6v12"></path></svg>`;
     case "cart": return `<svg ${common}><circle cx="9" cy="20" r="1"></circle><circle cx="18" cy="20" r="1"></circle><path d="M3 4h2l2.4 10.5a1 1 0 0 0 1 .8h9.7a1 1 0 0 0 1-.76L21 7H7"></path></svg>`;
+    case "collection-nav": return `<svg ${common}><path d="M4 5v14"></path><path d="M9 5v14"></path><path d="m14 6 2 13"></path><path d="m19 4 3 12"></path></svg>`;
+    case "preview-nav": return `<svg ${common}><circle cx="12" cy="12" r="2"></circle><path d="M16.24 7.76a6 6 0 0 1 0 8.48"></path><path d="M7.76 16.24a6 6 0 0 1 0-8.48"></path></svg>`;
+    case "publish-nav": return `<svg ${common}><rect x="3" y="3" width="18" height="18" rx="3"></rect><path d="M12 8v8"></path><path d="M8 12h8"></path></svg>`;
     default: return `<svg ${common}><circle cx="12" cy="12" r="8"></circle></svg>`;
   }
 }
@@ -115,11 +132,18 @@ function formatPreviewTime(seconds) {
   return `${mins}:${secs}`;
 }
 
+function typeIcon(type) {
+  if (type === "Beat") return iconSvg("music");
+  if (type === "Sample Pack") return iconSvg("pack");
+  if (type === "Vocal Pack") return iconSvg("star");
+  return iconSvg("beat");
+}
+
 function getCartTotal() {
   return state.cart.reduce((sum, item) => sum + Number(item.price || 0), 0);
 }
 
-function filteredItems() {
+function getFilteredItems() {
   let items = state.products.filter((item) => {
     const term = state.query.trim().toLowerCase();
     if (!term) return true;
@@ -134,6 +158,12 @@ function filteredItems() {
   return items;
 }
 
+function getFeaturedItems() {
+  return [...state.products]
+    .sort((a, b) => Number(b.sales) - Number(a.sales))
+    .slice(0, 3);
+}
+
 function runShopTests(items, cart) {
   return [
     { name: "au moins 5 produits", passed: items.length >= 5 },
@@ -146,49 +176,95 @@ function runShopTests(items, cart) {
 
 function setFeedback(message) {
   state.feedback = message;
-  refs.feedbackPill.innerHTML = `${iconSvg("tag")} ${escapeHtml(message)}`;
+  if (hasRef("feedbackPill")) refs.feedbackPill.innerHTML = `${iconSvg("tag")} ${escapeHtml(message)}`;
 }
 
 function renderTypeChips() {
+  if (!hasRef("typeChips")) return;
   refs.typeChips.innerHTML = TYPES.map((type) => `<button class="shop-chip ${state.activeType === type ? "is-active" : ""}" type="button" data-type="${escapeHtml(type)}">${escapeHtml(type)}</button>`).join("");
 }
 
 function renderIcons() {
-  refs.searchIcon.innerHTML = iconSvg("search");
-  refs.sortIcon.innerHTML = iconSvg("sort");
-  refs.equalizerIcon.innerHTML = iconSvg("equal");
-  refs.euroIcon.innerHTML = iconSvg("euro");
-  refs.fileIcon.innerHTML = iconSvg("file");
+  if (hasRef("searchIcon")) refs.searchIcon.innerHTML = iconSvg("search");
+  if (hasRef("sortIcon")) refs.sortIcon.innerHTML = iconSvg("sort");
+  if (hasRef("equalizerIcon")) refs.equalizerIcon.innerHTML = iconSvg("equal");
+  if (hasRef("euroIcon")) refs.euroIcon.innerHTML = iconSvg("euro");
+  if (hasRef("fileIcon")) refs.fileIcon.innerHTML = iconSvg("file");
+  if (hasRef("cartIcon")) refs.cartIcon.innerHTML = iconSvg("cart");
+  if (hasRef("uploadIcon")) refs.uploadIcon.innerHTML = iconSvg("upload");
+  document.querySelectorAll("[data-shop-nav-icon]").forEach((node) => {
+    const type = node.getAttribute("data-shop-nav-icon");
+    if (type === "catalogue") node.innerHTML = iconSvg("collection-nav");
+    if (type === "preview") node.innerHTML = iconSvg("preview-nav");
+    if (type === "publier") node.innerHTML = iconSvg("publish-nav");
+  });
+}
+
+function renderHeroStats() {
+  const products = state.products;
+  const average = products.length ? Math.round(products.reduce((sum, item) => sum + Number(item.price || 0), 0) / products.length) : 0;
+  const topSale = [...products].sort((a, b) => Number(b.sales) - Number(a.sales))[0];
+  if (hasRef("statProducts")) refs.statProducts.textContent = String(products.length);
+  if (hasRef("statAverage")) refs.statAverage.textContent = `${average} EUR`;
+  if (hasRef("statTopSale")) refs.statTopSale.textContent = topSale ? topSale.title : "-";
+  if (hasRef("statType")) refs.statType.textContent = state.activeType;
+}
+
+function renderFeaturedRail() {
+  if (!hasRef("featuredRail")) return;
+  const items = getFeaturedItems();
+  refs.featuredRail.innerHTML = items.map((item) => `
+    <button class="shop-spotlight-btn ${state.previewItem?.id === item.id ? "is-active" : ""}" type="button" data-featured-id="${escapeHtml(item.id)}">
+      <div class="shop-tag-row" style="margin-top:0;">
+        <span class="shop-tag is-green">${escapeHtml(item.tag || "Spotlight")}</span>
+        <span class="shop-tag">${escapeHtml(item.type)}</span>
+      </div>
+      <strong style="margin-top:14px;">${escapeHtml(item.title)}</strong>
+      <p>${escapeHtml(item.creator)} - ${escapeHtml(item.genre)} - ${escapeHtml(String(item.price))} EUR</p>
+    </button>
+  `).join("");
 }
 
 function renderPreview() {
+  if (!hasRef("previewTitle")) return;
   const item = state.previewItem || state.products[0] || FALLBACK_PRODUCTS[0];
   refs.previewTitle.textContent = item.title;
   refs.previewMeta.textContent = `${item.creator} - ${item.type}`;
   refs.previewLabel.textContent = item.previewLabel;
+  refs.previewTypeTag.textContent = item.type;
   refs.previewCurrent.textContent = formatPreviewTime(state.previewProgress);
   refs.previewDuration.textContent = formatPreviewTime(state.previewDuration);
-  refs.previewBar.style.width = `${(state.previewProgress / state.previewDuration) * 100}%`;
+  refs.previewBar.style.width = `${Math.min(100, (state.previewProgress / state.previewDuration) * 100)}%`;
   refs.previewRange.max = String(state.previewDuration);
   refs.previewRange.value = String(state.previewProgress);
   refs.previewTags.innerHTML = `
+    <span class="shop-tag is-green">${escapeHtml(item.tag || "Selection")}</span>
     <span class="shop-tag">${escapeHtml(item.genre)}</span>
     <span class="shop-tag">${escapeHtml(String(item.bpm))} BPM</span>
     <span class="shop-tag">${escapeHtml(item.license)}</span>
+    <span class="shop-tag is-amber">${iconSvg("star")} ${escapeHtml(String(item.rating))}</span>
   `;
-  refs.previewToggleBtn.innerHTML = `${iconSvg(state.isPreviewPlaying ? "pause" : "play")} ${state.isPreviewPlaying ? "Pause" : state.previewProgress >= state.previewDuration ? "Relire" : "Lire"}`;
-  refs.previewToggleBtn.classList.toggle("is-primary", state.isPreviewPlaying);
-}
-
-function typeIcon(type) {
-  if (type === "Beat") return iconSvg("music");
-  if (type === "Sample Pack") return iconSvg("pack");
-  return iconSvg("beat");
+  if (hasRef("previewToggleBtn")) {
+    refs.previewToggleBtn.innerHTML = `${iconSvg(state.isPreviewPlaying ? "pause" : "play")} ${state.isPreviewPlaying ? "Pause" : state.previewProgress >= state.previewDuration ? "Relire" : "Lire"}`;
+    refs.previewToggleBtn.classList.toggle("is-primary", state.isPreviewPlaying);
+  }
 }
 
 function renderCatalogue() {
-  const items = filteredItems();
+  if (!hasRef("catalogue") || !hasRef("resultCount")) return;
+  const items = getFilteredItems();
   refs.resultCount.innerHTML = `${iconSvg("tag")} ${items.length} produit(s)`;
+
+  if (!items.length) {
+    refs.catalogue.innerHTML = `
+      <div class="shop-empty">
+        Aucun produit ne correspond a ta recherche pour le moment.<br />
+        Essaie un autre mot-cle, un autre type ou retire le filtre actif.
+      </div>
+    `;
+    return;
+  }
+
   refs.catalogue.innerHTML = items.map((item) => `
     <article class="shop-product-card">
       <div class="shop-product-head">
@@ -227,6 +303,7 @@ function renderCatalogue() {
 }
 
 function renderCreators() {
+  if (!hasRef("creatorsList")) return;
   refs.creatorsList.innerHTML = state.creators.map((creator) => {
     const creatorUserId = String(creator.creator_user_id || "");
     const isFollowed = creatorUserId ? state.followedCreators.includes(creatorUserId) : false;
@@ -234,9 +311,12 @@ function renderCreators() {
       <div class="shop-creator-card">
         <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
           <div>
-            <div style="font-size:16px;font-weight:800;color:#fff;">${escapeHtml(creator.name)}</div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div style="font-size:16px;font-weight:800;color:#fff;">${escapeHtml(creator.name)}</div>
+              ${creator.verified ? `<span class="shop-tag is-green">${iconSvg("check")} Verifie</span>` : ""}
+            </div>
             <div style="margin-top:6px;color:#9ca3af;font-size:14px;">${escapeHtml(creator.speciality)}</div>
-            <div style="margin-top:10px;color:#71717a;font-size:12px;">${escapeHtml(creator.followers)}</div>
+            <div style="margin-top:10px;color:#71717a;font-size:12px;">${escapeHtml(creator.followers)} followers</div>
           </div>
           <button class="shop-btn ${isFollowed ? "is-primary" : ""}" type="button" data-follow-name="${escapeHtml(creator.name)}" data-follow-user-id="${escapeHtml(creatorUserId)}">${iconSvg("follow")} ${isFollowed ? "Suivi" : "Suivre"}</button>
         </div>
@@ -246,11 +326,12 @@ function renderCreators() {
 }
 
 function renderCart() {
-  refs.cartPill.innerHTML = `${iconSvg("cart")} ${state.cart.length} article(s) - ${getCartTotal()} EUR`;
-  refs.cartTotal.textContent = `${getCartTotal()} EUR`;
+  if (hasRef("cartPill")) refs.cartPill.innerHTML = `${iconSvg("cart")} ${state.cart.length} article(s) - ${getCartTotal()} EUR`;
+  if (hasRef("cartTotal")) refs.cartTotal.textContent = `${getCartTotal()} EUR`;
+  if (!hasRef("cartList")) return;
 
   if (!state.cart.length) {
-    refs.cartList.innerHTML = `<div class="shop-empty" style="padding:18px;text-align:center;color:#71717a;font-size:14px;">Aucun article pour le moment.</div>`;
+    refs.cartList.innerHTML = `<div class="shop-empty">Aucun article pour le moment.</div>`;
     return;
   }
 
@@ -269,14 +350,26 @@ function renderCart() {
 }
 
 function renderValidation() {
+  if (!hasRef("validation")) return;
   const allPassed = runShopTests(state.products, state.cart).every((test) => test.passed);
   refs.validation.classList.toggle("is-ko", !allPassed);
   refs.validation.innerHTML = allPassed ? `${iconSvg("check")} Tests boutique passes` : "Un test boutique a echoue";
 }
 
+function applyRequestedPreview() {
+  if (!requestedPreviewId) return;
+  const match = state.products.find((item) => item.id === requestedPreviewId);
+  if (!match) return;
+  state.previewItem = match;
+  state.previewProgress = 0;
+  state.isPreviewPlaying = shouldAutoplayRequestedPreview && hasRef("previewTitle");
+}
+
 function render() {
   renderIcons();
   renderTypeChips();
+  renderHeroStats();
+  renderFeaturedRail();
   renderPreview();
   renderCatalogue();
   renderCreators();
@@ -307,11 +400,16 @@ function startPreviewTimer() {
 }
 
 function openPreview(item) {
+  if (!hasRef("previewTitle")) {
+    window.location.href = `/boutique/preview.html?item=${encodeURIComponent(item.id)}&autoplay=1`;
+    return;
+  }
   state.previewItem = item;
   state.previewProgress = 0;
   state.isPreviewPlaying = true;
   setFeedback(`Preview lancee : ${item.title}`);
   renderPreview();
+  renderFeaturedRail();
   startPreviewTimer();
 }
 
@@ -324,20 +422,27 @@ async function loadProducts() {
     state.products = products;
     state.creators = creators.length ? creators : FALLBACK_CREATORS.slice();
     state.previewItem = products[0];
+    applyRequestedPreview();
     state.usingFallback = false;
     setFeedback("Boutique chargee depuis l'API");
   } catch (error) {
     state.products = FALLBACK_PRODUCTS.slice();
     state.creators = FALLBACK_CREATORS.slice();
     state.previewItem = state.products[0];
+    applyRequestedPreview();
     state.usingFallback = true;
     setFeedback("API boutique indisponible, mode demo active");
     toast(error?.message || "Mode demo active", "Boutique");
   }
   render();
+  if (state.isPreviewPlaying) startPreviewTimer();
 }
 
 async function loadCurrentUser() {
+  if (!hasRef("formCreator")) {
+    state.currentUser = isLoggedIn() ? state.currentUser : null;
+    return;
+  }
   if (!isLoggedIn()) {
     state.currentUser = null;
     refs.formCreator.value = "";
@@ -455,6 +560,7 @@ async function toggleFavorite(id) {
 }
 
 async function submitNewItem() {
+  if (!hasRef("formTitle")) return;
   const title = refs.formTitle.value.trim();
   const genre = refs.formGenre.value.trim();
   const description = refs.formDescription.value.trim();
@@ -555,66 +661,93 @@ async function checkout() {
 }
 
 function bindEvents() {
-  refs.query.addEventListener("input", (event) => {
-    state.query = event.target.value;
-    renderCatalogue();
-  });
+  if (hasRef("query")) {
+    refs.query.addEventListener("input", (event) => {
+      state.query = event.target.value;
+      renderHeroStats();
+      renderCatalogue();
+    });
+  }
 
-  refs.sortMode.addEventListener("change", (event) => {
-    state.sortMode = event.target.value;
-    renderCatalogue();
-  });
+  if (hasRef("sortMode")) {
+    refs.sortMode.addEventListener("change", (event) => {
+      state.sortMode = event.target.value;
+      renderCatalogue();
+    });
+  }
 
-  refs.typeChips.addEventListener("click", (event) => {
-    const chip = event.target.closest("[data-type]");
-    if (!chip) return;
-    state.activeType = chip.getAttribute("data-type");
-    renderTypeChips();
-    renderCatalogue();
-  });
+  if (hasRef("typeChips")) {
+    refs.typeChips.addEventListener("click", (event) => {
+      const chip = event.target.closest("[data-type]");
+      if (!chip) return;
+      state.activeType = chip.getAttribute("data-type");
+      renderTypeChips();
+      renderHeroStats();
+      renderCatalogue();
+    });
+  }
 
-  refs.catalogue.addEventListener("click", (event) => {
-    const previewBtn = event.target.closest("[data-preview-id]");
-    if (previewBtn) {
-      const item = state.products.find((product) => product.id === previewBtn.getAttribute("data-preview-id"));
+  if (hasRef("featuredRail")) {
+    refs.featuredRail.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-featured-id]");
+      if (!button) return;
+      const item = state.products.find((product) => product.id === button.getAttribute("data-featured-id"));
       if (item) openPreview(item);
-      return;
-    }
+    });
+  }
 
-    const cartBtn = event.target.closest("[data-cart-id]");
-    if (cartBtn) {
-      const item = state.products.find((product) => product.id === cartBtn.getAttribute("data-cart-id"));
-      if (item) addToCart(item);
-      return;
-    }
+  if (hasRef("catalogue")) {
+    refs.catalogue.addEventListener("click", (event) => {
+      const previewBtn = event.target.closest("[data-preview-id]");
+      if (previewBtn) {
+        const item = state.products.find((product) => product.id === previewBtn.getAttribute("data-preview-id"));
+        if (item) openPreview(item);
+        return;
+      }
 
-    const favBtn = event.target.closest("[data-favorite-id]");
-    if (favBtn) toggleFavorite(favBtn.getAttribute("data-favorite-id"));
-  });
+      const cartBtn = event.target.closest("[data-cart-id]");
+      if (cartBtn) {
+        const item = state.products.find((product) => product.id === cartBtn.getAttribute("data-cart-id"));
+        if (item) addToCart(item);
+        return;
+      }
 
-  refs.previewToggleBtn.addEventListener("click", () => {
-    if (state.previewProgress >= state.previewDuration) state.previewProgress = 0;
-    state.isPreviewPlaying = !state.isPreviewPlaying;
-    renderPreview();
-    startPreviewTimer();
-  });
+      const favBtn = event.target.closest("[data-favorite-id]");
+      if (favBtn) toggleFavorite(favBtn.getAttribute("data-favorite-id"));
+    });
+  }
 
-  refs.previewRange.addEventListener("input", (event) => {
-    state.previewProgress = Number(event.target.value);
-    setFeedback(`Preview deplacee a ${formatPreviewTime(state.previewProgress)}`);
-    renderPreview();
-  });
+  if (hasRef("previewToggleBtn")) {
+    refs.previewToggleBtn.addEventListener("click", () => {
+      if (state.previewProgress >= state.previewDuration) state.previewProgress = 0;
+      state.isPreviewPlaying = !state.isPreviewPlaying;
+      renderPreview();
+      startPreviewTimer();
+    });
+  }
 
-  refs.publishBtn.addEventListener("click", submitNewItem);
-  refs.creatorsList.addEventListener("click", (event) => {
-    const followBtn = event.target.closest("[data-follow-name]");
-    if (followBtn) toggleCreatorFollow(followBtn);
-  });
-  refs.cartList.addEventListener("click", (event) => {
-    const removeBtn = event.target.closest("[data-remove-index]");
-    if (removeBtn) removeFromCart(Number(removeBtn.getAttribute("data-remove-index")));
-  });
-  refs.checkoutBtn.addEventListener("click", checkout);
+  if (hasRef("previewRange")) {
+    refs.previewRange.addEventListener("input", (event) => {
+      state.previewProgress = Number(event.target.value);
+      setFeedback(`Preview deplacee a ${formatPreviewTime(state.previewProgress)}`);
+      renderPreview();
+    });
+  }
+
+  if (hasRef("publishBtn")) refs.publishBtn.addEventListener("click", submitNewItem);
+  if (hasRef("creatorsList")) {
+    refs.creatorsList.addEventListener("click", (event) => {
+      const followBtn = event.target.closest("[data-follow-name]");
+      if (followBtn) toggleCreatorFollow(followBtn);
+    });
+  }
+  if (hasRef("cartList")) {
+    refs.cartList.addEventListener("click", (event) => {
+      const removeBtn = event.target.closest("[data-remove-index]");
+      if (removeBtn) removeFromCart(Number(removeBtn.getAttribute("data-remove-index")));
+    });
+  }
+  if (hasRef("checkoutBtn")) refs.checkoutBtn.addEventListener("click", checkout);
 }
 
 async function init() {

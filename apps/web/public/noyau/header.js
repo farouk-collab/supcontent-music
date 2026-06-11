@@ -73,9 +73,9 @@ const HEADER_LINKS_BY_PAGE = {
     { key: "track", label: "Track jouee", icon: "Heart", href: "/radio-artiste/radio-artiste.html#track" },
   ],
   boutique: [
-    { key: "catalogue", label: "Catalogue", icon: "Collection", href: "/boutique/boutique.html#catalogue" },
-    { key: "preview", label: "Preview", icon: "Radio", href: "/boutique/boutique.html#preview" },
-    { key: "publier", label: "Publier", icon: "Publish", href: "/boutique/boutique.html#publier" },
+    { key: "catalogue", label: "Catalogue", icon: "Collection", href: "/boutique/boutique.html" },
+    { key: "preview", label: "Preview", icon: "Radio", href: "/boutique/preview.html" },
+    { key: "publier", label: "Publier", icon: "Publish", href: "/boutique/publier.html" },
   ],
 };
 
@@ -123,7 +123,7 @@ function currentKey(pathname) {
   if (p.endsWith("/discussion/discussion.html")) return "chat";
   if (p.endsWith("/bibliotheque/bibliotheque.html")) return "biblio";
   if (p.endsWith("/radio-artiste/radio-artiste.html")) return "live";
-  if (p.endsWith("/boutique/boutique.html")) return "boutique";
+  if (p.endsWith("/boutique/boutique.html") || p.endsWith("/boutique/preview.html") || p.endsWith("/boutique/publier.html")) return "boutique";
   if (
     p.endsWith("/profil/profil.html") ||
     p.endsWith("/profil/profil-modifier.html") ||
@@ -132,6 +132,19 @@ function currentKey(pathname) {
     return "profil";
   }
   return "";
+}
+
+function resolveSearchHeaderLinkKey(pathname, hash, pageLinks) {
+  const p = String(pathname || "").toLowerCase();
+  const activeAction = String(hash || "").replace(/^#/, "");
+
+  if (p.endsWith("/utilisateurs/utilisateurs.html")) return "search-users";
+  if (p.endsWith("/recherche/recherche.html")) {
+    if (pageLinks.some((item) => item.key === activeAction)) return activeAction;
+    return "search-music";
+  }
+
+  return pageLinks[0]?.key || "";
 }
 
 function ensureHeaderStyles() {
@@ -351,8 +364,20 @@ export function initHeader() {
   header.className = "app-shell-header";
 
   const pageLinks = HEADER_LINKS_BY_PAGE[pageKey] || [];
-  const activeAction = String(window.location.hash || "").replace(/^#/, "");
-  const activeLinkKey = pageLinks.some((item) => item.key === activeAction) ? activeAction : pageLinks[0]?.key || "";
+  const activeLinkKey =
+    pageKey === "recherche"
+      ? resolveSearchHeaderLinkKey(window.location.pathname, window.location.hash, pageLinks)
+      : pageKey === "boutique"
+        ? (() => {
+            const p = String(window.location.pathname || "").toLowerCase();
+            if (p.endsWith("/boutique/preview.html")) return "preview";
+            if (p.endsWith("/boutique/publier.html")) return "publier";
+            return "catalogue";
+          })()
+      : (() => {
+          const activeAction = String(window.location.hash || "").replace(/^#/, "");
+          return pageLinks.some((item) => item.key === activeAction) ? activeAction : pageLinks[0]?.key || "";
+        })();
   const lang = getLanguage();
   const notifLabel = lang === "en" ? "Notifications" : "Notifications";
   const descriptions = PAGE_DESCRIPTIONS[lang] || PAGE_DESCRIPTIONS.en || PAGE_DESCRIPTIONS.fr;

@@ -89,6 +89,30 @@
       font-size:14px;
       font-weight:600;
     }
+    .user-search-actions{
+      margin-top:16px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+    }
+    .user-search-link{
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      min-height:42px;
+      padding:11px 18px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(255,255,255,.08);
+      color:#fff;
+      text-decoration:none;
+      font-size:14px;
+      font-weight:700;
+    }
+    .user-search-link:hover{
+      border-color:rgba(255,255,255,.18);
+      background:rgba(255,255,255,.1);
+    }
     .search-panel{
       margin-top:24px;
       border:1px solid rgba(255,255,255,.1);
@@ -481,6 +505,9 @@
             Cherche par pseudo, nom affiche ou bio. Tu peux aussi filtrer, trier, suivre, mettre en favori et decouvrir
             les profils via un fil immersif de photos et videos.
           </p>
+          <div class="user-search-actions">
+            <a class="user-search-link" href="/recherche/recherche.html">Recherche musique</a>
+          </div>
         </div>
 
         <div id="usersFeedback" class="user-search-feedback">

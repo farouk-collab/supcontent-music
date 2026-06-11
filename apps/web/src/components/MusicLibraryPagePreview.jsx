@@ -39,6 +39,7 @@ import {
   Zap as BoostIcon,
   ShoppingBag as ShopIcon,
 } from "lucide-react";
+import InlineMediaEmbedPlayer from "./InlineMediaEmbedPlayer";
 
 const FAVORITES_STORAGE_KEY = "supcontent-library-favorites-v5";
 const VIEW_STORAGE_KEY = "supcontent-library-view-v5";
@@ -892,6 +893,8 @@ export default function MusicLibraryPagePreview({ onNavigate = () => {} }) {
             )}
           </div>
         </header>
+
+        <InlineMediaEmbedPlayer />
 
         <section className="mb-6 grid gap-6 xl:grid-cols-[0.9fr_1.15fr_0.95fr]">
           <div className="rounded-[2rem] border border-white/10 bg-white/5 p-5 backdrop-blur-xl">

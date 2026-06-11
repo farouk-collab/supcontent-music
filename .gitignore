@@ -1,12 +1,16 @@
 # deps
 node_modules/
 **/node_modules/
+.expo/
+**/.expo/
+**/.idea/
 
 # build
 dist/
 build/
 **/dist/
 **/build/
+**/debug.keystore
 
 # env
 .env

@@ -44,7 +44,7 @@ const RegisterSchema = z.object({
     .regex(/[a-z]/, "Le mot de passe doit contenir une minuscule")
     .regex(/[0-9]/, "Le mot de passe doit contenir un chiffre")
     .regex(/[^A-Za-z0-9]/, "Le mot de passe doit contenir un caractère spécial"),
-  displayName: z.string().min(2).max(30),
+  displayName: z.string().min(2).max(30).optional(),
 });
 
 const LoginSchema = z.object({
@@ -387,8 +387,10 @@ router.get("/oauth/github/callback", async (req, res) => {
 
 router.get("/oauth/google/start", (req, res) => {
   const clientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
-  const redirectUri =
-    process.env.GOOGLE_REDIRECT_URI || "http://localhost:1234/auth/oauth/google/callback";
+  const redirectUri = normalizeRedirectUri(
+    process.env.GOOGLE_REDIRECT_URI,
+    `${req.protocol}://${req.get("host")}/auth/oauth/google/callback`
+  );
   if (!clientId) return res.status(503).json({ erreur: "GOOGLE_CLIENT_ID manquant" });
 
   cleanupOauthStates();
@@ -415,8 +417,10 @@ router.get("/oauth/google/callback", async (req, res) => {
   try {
     const clientId = String(process.env.GOOGLE_CLIENT_ID || "").trim();
     const clientSecret = String(process.env.GOOGLE_CLIENT_SECRET || "").trim();
-    const redirectUri =
-      process.env.GOOGLE_REDIRECT_URI || "http://localhost:1234/auth/oauth/google/callback";
+    const redirectUri = normalizeRedirectUri(
+      process.env.GOOGLE_REDIRECT_URI,
+      `${req.protocol}://${req.get("host")}/auth/oauth/google/callback`
+    );
     if (!clientId || !clientSecret) {
       return res.status(503).json({ erreur: "OAuth Google non configure" });
     }
@@ -588,7 +592,16 @@ router.post("/register", async (req, res) => {
   if (existing) return res.status(409).json({ erreur: "Email déjà utilisé" });
 
   const password_hash = await bcrypt.hash(password, 12);
-  const user = await createUser({ email, password_hash, display_name: displayName });
+  const fallbackDisplayName = String(email.split("@")[0] || "Utilisateur")
+    .replace(/[^a-zA-Z0-9_.-]/g, " ")
+    .trim()
+    .slice(0, 30);
+  const finalDisplayName = String(displayName || fallbackDisplayName || "Utilisateur").trim();
+  const user = await createUser({
+    email,
+    password_hash,
+    display_name: finalDisplayName.length >= 2 ? finalDisplayName.slice(0, 30) : "Utilisateur",
+  });
 
   const access = signAccessToken({ sub: user.id, email: user.email });
   const refresh = signRefreshToken({ sub: user.id, email: user.email });

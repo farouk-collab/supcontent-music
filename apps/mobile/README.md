@@ -7,6 +7,7 @@ Client mobile Expo/React Native pour SUPCONTENT Music.
 - Recherche media: `/search`
 - Detail media: `/media/:type/:id`
 - Profil: lecture + edition via `/auth/me`
+- Boutique mobile: catalogue, preview, favoris, panier, checkout, publication
 - Session persistante (access + refresh token)
 
 Le client mobile appelle uniquement l'API backend (`apps/api`) et jamais Spotify directement.
@@ -18,6 +19,40 @@ Le client mobile appelle uniquement l'API backend (`apps/api`) et jamais Spotify
    - `npm run dev:api`
 3. Lancer le mobile:
    - `npm --workspace apps/mobile run start`
+
+## Branding mobile
+- Nom app: `SUPCONTENT Music`
+- Android package: `com.supcontent.music`
+- Assets mobile:
+  - `apps/mobile/assets/icon.png`
+  - `apps/mobile/assets/adaptive-icon.png`
+  - `apps/mobile/assets/splash-icon.png`
+
+Pour regenerer ces assets:
+- `npm --workspace apps/mobile run assets:generate`
+
+## Android Studio
+Pour generer la vraie base Android native:
+1. Depuis la racine, lancer:
+   - `npm --workspace apps/mobile run android:native`
+2. Un dossier `apps/mobile/android` sera genere.
+3. Ouvrir ensuite ce dossier dans Android Studio.
+4. Tu pourras alors compiler une vraie app Android, gerer les signatures et produire un APK/AAB.
+
+## Builds release Android
+- APK release:
+  - `npm --workspace apps/mobile run android:apk`
+- AAB release:
+  - `npm --workspace apps/mobile run android:aab`
+
+Sorties attendues:
+- APK: `apps/mobile/android/app/build/outputs/apk/release/app-release.apk`
+- AAB: `apps/mobile/android/app/build/outputs/bundle/release/app-release.aab`
+
+Prerequis release:
+- Android Studio + Android SDK
+- JDK installe
+- Signature release Android a configurer si tu veux publier sur le Play Store
 
 ## URL API
 Par defaut:

@@ -4,8 +4,31 @@ const DEFAULT_API_BASE = (() => {
   return "https://supcontent-api.onrender.com";
 })();
 
+function readRuntimeApiBase() {
+  try {
+    if (typeof window !== "undefined" && typeof window.__API_BASE_URL__ === "string" && window.__API_BASE_URL__.trim()) {
+      return window.__API_BASE_URL__.trim();
+    }
+
+    const metaValue = document.querySelector('meta[name="supcontent-api-base"]')?.getAttribute("content");
+    if (metaValue && metaValue.trim()) return metaValue.trim();
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", "/noyau/runtime-config.json", false);
+    xhr.send(null);
+    if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) {
+      const parsed = JSON.parse(xhr.responseText);
+      const configured = String(parsed?.apiBase || "").trim();
+      if (configured) return configured;
+    }
+  } catch {
+    // Ignore runtime config read failures and fall back below.
+  }
+  return "";
+}
+
 export const API_BASE = String(
-  window.__API_BASE_URL__ || window.localStorage?.getItem("SUPCONTENT_API_BASE") || DEFAULT_API_BASE
+  readRuntimeApiBase() || window.localStorage?.getItem("SUPCONTENT_API_BASE") || DEFAULT_API_BASE
 ).replace(/\/+$/, "");
 const LS = { access: "supcontent_access", refresh: "supcontent_refresh" };
 export const APP_SETTINGS_STORAGE_KEY = "supcontent-app-settings-v1";

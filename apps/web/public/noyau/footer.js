@@ -762,7 +762,7 @@ function currentKey(pathname) {
     return "index";
   }
   if (p.endsWith("/radio-artiste/radio-artiste.html")) return "live";
-  if (p.endsWith("/boutique/boutique.html")) return "shop";
+  if (p.endsWith("/boutique/boutique.html") || p.endsWith("/boutique/preview.html") || p.endsWith("/boutique/publier.html")) return "shop";
   if (p.endsWith("/search") || p.endsWith("/recherche") || p.endsWith("/search.html") || p.endsWith("/recherche/recherche.html")) return "search";
   if (p.endsWith("/swipe") || p.endsWith("/swipe/swipe.html")) return "swipe";
   if (p.endsWith("/chat") || p.endsWith("/discussion") || p.endsWith("/chat.html") || p.endsWith("/discussion/discussion.html")) return "chat";

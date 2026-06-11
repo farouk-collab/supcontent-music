@@ -1,10 +1,25 @@
 {
   "expo": {
-    "name": "SUPCONTENT Mobile",
-    "slug": "supcontent-mobile",
+    "name": "SUPCONTENT Music",
+    "slug": "supcontent-music",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "dark",
+    "icon": "./assets/icon.png",
+    "scheme": "supcontentmusic",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050914"
+    },
+    "android": {
+      "package": "com.supcontent.music",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#050914"
+      },
+      "edgeToEdgeEnabled": true
+    },
     "assetBundlePatterns": [
       "**/*"
     ]

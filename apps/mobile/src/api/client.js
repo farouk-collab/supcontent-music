@@ -42,6 +42,13 @@ export function createApiClient() {
     return parseResponse(response);
   }
 
+  function authHeaders(accessToken, extra = {}) {
+    return {
+      ...extra,
+      Authorization: `Bearer ${accessToken}`,
+    };
+  }
+
   return {
     register: ({ email, password, displayName }) =>
       request("/auth/register", {
@@ -95,6 +102,58 @@ export function createApiClient() {
 
     media: ({ type, id }) =>
       request(`/media/${encodeURIComponent(type)}/${encodeURIComponent(id)}`),
+
+    shopProducts: () => request("/shop/products"),
+
+    shopSpotlight: () => request("/shop/spotlight"),
+
+    shopFavorites: (accessToken) =>
+      request("/shop/favorites", {
+        headers: authHeaders(accessToken),
+      }),
+
+    shopCart: (accessToken) =>
+      request("/shop/cart", {
+        headers: authHeaders(accessToken),
+      }),
+
+    shopAddToCart: (accessToken, productId) =>
+      request("/shop/cart/items", {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ productId }),
+      }),
+
+    shopRemoveFromCart: (accessToken, cartItemId) =>
+      request(`/shop/cart/items/${encodeURIComponent(cartItemId)}`, {
+        method: "DELETE",
+        headers: authHeaders(accessToken),
+      }),
+
+    shopCheckout: (accessToken) =>
+      request("/shop/checkout", {
+        method: "POST",
+        headers: authHeaders(accessToken),
+      }),
+
+    shopAddFavorite: (accessToken, productId) =>
+      request(`/shop/favorites/${encodeURIComponent(productId)}`, {
+        method: "POST",
+        headers: authHeaders(accessToken),
+      }),
+
+    shopRemoveFavorite: (accessToken, productId) =>
+      request(`/shop/favorites/${encodeURIComponent(productId)}`, {
+        method: "DELETE",
+        headers: authHeaders(accessToken),
+      }),
+
+    shopPublishProduct: (accessToken, payload) =>
+      request("/shop/products", {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      }),
 
     normalizeSearchItems: (payload) =>
       pickSearchItems(payload).map((item) => {

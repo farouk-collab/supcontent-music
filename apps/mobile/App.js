@@ -4,9 +4,23 @@ import { AuthScreen } from "./src/screens/AuthScreen";
 import { SearchScreen } from "./src/screens/SearchScreen";
 import { MediaDetailScreen } from "./src/screens/MediaDetailScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
+import { ShopScreen } from "./src/screens/ShopScreen";
 import { createApiClient, ApiError } from "./src/api/client";
 import { clearSession, loadSession, saveSession } from "./src/storage/session";
 import { API_BASE_URL } from "./src/config";
+
+const TABS = [
+  { key: "shop", label: "Shop" },
+  { key: "search", label: "Search" },
+  { key: "profile", label: "Profile" },
+];
+
+const ROUTE_TITLES = {
+  shop: "SUPCONTENT Shop",
+  search: "Music Search",
+  detail: "Media Details",
+  profile: "My Profile",
+};
 
 export default function App() {
   const api = useMemo(() => createApiClient(), []);
@@ -14,7 +28,11 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [route, setRoute] = useState({ name: "search", params: null });
+  const [route, setRoute] = useState({ name: "shop", params: null });
+
+  const navigate = useCallback((name, params = null) => {
+    setRoute((current) => ({ name, params, previous: current.name }));
+  }, []);
 
   const persistSession = useCallback(async (next) => {
     setSession(next);
@@ -30,7 +48,7 @@ export default function App() {
     }
     await clearSession();
     setSession(null);
-    setRoute({ name: "search", params: null });
+    setRoute({ name: "shop", params: null });
   }, [api, session?.refreshToken]);
 
   const callAuthed = useCallback(
@@ -135,6 +153,47 @@ export default function App() {
     [api, callAuthed, persistSession, session]
   );
 
+  const loadShopProducts = useCallback(() => api.shopProducts(), [api]);
+  const loadShopCreators = useCallback(() => api.shopSpotlight(), [api]);
+
+  const loadShopFavorites = useCallback(async () => {
+    if (!session?.accessToken) return { product_ids: [] };
+    return callAuthed((token) => api.shopFavorites(token));
+  }, [api, callAuthed, session?.accessToken]);
+
+  const loadShopCart = useCallback(async () => {
+    if (!session?.accessToken) return { items: [] };
+    return callAuthed((token) => api.shopCart(token));
+  }, [api, callAuthed, session?.accessToken]);
+
+  const addShopToCart = useCallback(
+    async (productId) => callAuthed((token) => api.shopAddToCart(token, productId)),
+    [api, callAuthed]
+  );
+
+  const removeShopFromCart = useCallback(
+    async (cartItemId) => callAuthed((token) => api.shopRemoveFromCart(token, cartItemId)),
+    [api, callAuthed]
+  );
+
+  const toggleShopFavorite = useCallback(
+    async (productId, isFavorite) =>
+      callAuthed((token) =>
+        isFavorite ? api.shopRemoveFavorite(token, productId) : api.shopAddFavorite(token, productId)
+      ),
+    [api, callAuthed]
+  );
+
+  const checkoutShop = useCallback(
+    async () => callAuthed((token) => api.shopCheckout(token)),
+    [api, callAuthed]
+  );
+
+  const publishShopProduct = useCallback(
+    async (payload) => callAuthed((token) => api.shopPublishProduct(token, payload)),
+    [api, callAuthed]
+  );
+
   if (booting) {
     return (
       <SafeAreaView style={styles.boot}>
@@ -162,13 +221,13 @@ export default function App() {
       <StatusBar barStyle="light-content" />
       <View style={styles.topBar}>
         {route.name === "detail" ? (
-          <Pressable style={styles.topBtn} onPress={() => setRoute({ name: "search", params: null })}>
+          <Pressable style={styles.topBtn} onPress={() => navigate(route.previous || "search")}>
             <Text style={styles.topBtnText}>Back</Text>
           </Pressable>
         ) : (
           <View style={styles.topBtnPlaceholder} />
         )}
-        <Text style={styles.topTitle}>SUPCONTENT Mobile</Text>
+        <Text style={styles.topTitle}>{ROUTE_TITLES[route.name] || "SUPCONTENT Mobile"}</Text>
         <Pressable style={styles.topBtn} onPress={logout}>
           <Text style={styles.topBtnText}>Logout</Text>
         </Pressable>
@@ -178,7 +237,22 @@ export default function App() {
         {route.name === "search" ? (
           <SearchScreen
             onSearch={searchMedia}
-            onOpenDetail={(type, id) => setRoute({ name: "detail", params: { type, id } })}
+            onOpenDetail={(type, id) => navigate("detail", { type, id })}
+          />
+        ) : null}
+
+        {route.name === "shop" ? (
+          <ShopScreen
+            currentUser={session.user}
+            onLoadProducts={loadShopProducts}
+            onLoadCreators={loadShopCreators}
+            onLoadFavorites={loadShopFavorites}
+            onLoadCart={loadShopCart}
+            onAddToCart={addShopToCart}
+            onRemoveFromCart={removeShopFromCart}
+            onToggleFavorite={toggleShopFavorite}
+            onCheckout={checkoutShop}
+            onPublish={publishShopProduct}
           />
         ) : null}
 
@@ -197,16 +271,14 @@ export default function App() {
 
       {route.name !== "detail" ? (
         <View style={styles.bottomTabs}>
-          <TabButton
-            label="Search"
-            active={route.name === "search"}
-            onPress={() => setRoute({ name: "search", params: null })}
-          />
-          <TabButton
-            label="Profile"
-            active={route.name === "profile"}
-            onPress={() => setRoute({ name: "profile", params: null })}
-          />
+          {TABS.map((tab) => (
+            <TabButton
+              key={tab.key}
+              label={tab.label}
+              active={route.name === tab.key}
+              onPress={() => navigate(tab.key)}
+            />
+          ))}
         </View>
       ) : null}
 
@@ -228,8 +300,8 @@ const styles = StyleSheet.create({
   boot: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#050914" },
   bootText: { color: "#e8f0ff", fontWeight: "700" },
   topBar: {
-    height: 54,
-    paddingHorizontal: 10,
+    height: 58,
+    paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#22324d",
     flexDirection: "row",
@@ -237,7 +309,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#0a1223",
   },
-  topTitle: { color: "#f3f6ff", fontWeight: "800", fontSize: 16 },
+  topTitle: { color: "#f3f6ff", fontWeight: "900", fontSize: 16 },
   topBtn: {
     minWidth: 64,
     borderWidth: 1,
@@ -255,7 +327,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 12,
     paddingTop: 8,
-    paddingBottom: 12,
+    paddingBottom: 14,
     borderTopWidth: 1,
     borderTopColor: "#22324d",
     backgroundColor: "#0a1223",

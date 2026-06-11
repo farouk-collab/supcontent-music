@@ -16,12 +16,27 @@ body.has-mobile-footer .spotify-player{
 .spotify-player .gmp-expanded-shell{
   width: min(100%, 1180px);
   margin: 0 auto;
+  min-width: 320px;
+  max-width: 96vw;
+  resize: both;
+  overflow: auto;
 }
 
 .spotify-player .gmp-expanded-card{
   display: grid;
   grid-template-columns: minmax(0, 1.15fr) minmax(320px, .85fr);
   gap: 16px;
+}
+
+.spotify-player .gmp-engine-dock{
+  position: fixed;
+  left: -9999px;
+  top: -9999px;
+  width: 320px;
+  height: 180px;
+  overflow: hidden;
+  opacity: .01;
+  pointer-events: none;
 }
 
 .spotify-player .gmp-stage,
@@ -40,6 +55,11 @@ body.has-mobile-footer .spotify-player{
   overflow: hidden;
   min-height: 280px;
   border-radius: 26px;
+}
+
+.spotify-player .gmp-video-stage{
+  position: absolute;
+  inset: 0;
 }
 
 .spotify-player .gmp-stage-meta{
@@ -230,6 +250,34 @@ body.has-mobile-footer .spotify-player{
   gap: 8px;
   align-items: center;
 }
+
+.spotify-player .gmp-waveform{
+  --wave-progress: 0%;
+  display: grid;
+  grid-template-columns: repeat(20, minmax(0, 1fr));
+  align-items: end;
+  gap: 4px;
+  height: 34px;
+  padding: 6px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.12);
+  background:
+    linear-gradient(90deg, rgba(52,211,153,.95) 0 var(--wave-progress), rgba(255,255,255,.08) var(--wave-progress) 100%);
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.spotify-player .gmp-waveform span{
+  display: block;
+  border-radius: 999px;
+  background: rgba(4,17,13,.88);
+}
+
+.spotify-player .gmp-waveform span:nth-child(5n+1){height: 28%;}
+.spotify-player .gmp-waveform span:nth-child(5n+2){height: 60%;}
+.spotify-player .gmp-waveform span:nth-child(5n+3){height: 92%;}
+.spotify-player .gmp-waveform span:nth-child(5n+4){height: 48%;}
+.spotify-player .gmp-waveform span:nth-child(5n){height: 74%;}
 
 .spotify-player .gmp-progress small{
   text-align: center;

@@ -42,6 +42,8 @@ const fallbackImportedPlaylists = [
   { id: "pl-1", title: "Night Drive", source: "Spotify", tracks: 24, favorite: true, synced: true, loginRequired: true, url: "https://open.spotify.com/playlist/mock001" },
   { id: "pl-2", title: "Rap FR Recharge", source: "YouTube", tracks: 31, favorite: false, synced: false, loginRequired: true, url: "https://music.youtube.com/playlist?list=PLmock002" },
   { id: "pl-3", title: "Afro Sunset", source: "Spotify", tracks: 18, favorite: true, synced: true, loginRequired: true, url: "https://open.spotify.com/playlist/mock003" },
+  { id: "md-1", title: "SoundHelix Demo", source: "Lien audio", tracks: 1, favorite: false, synced: true, loginRequired: true, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", mediaType: "audio", itemType: "media" },
+  { id: "md-2", title: "Video Demo", source: "Lien video", tracks: 1, favorite: false, synced: false, loginRequired: true, url: "https://www.w3schools.com/html/mov_bbb.mp4", mediaType: "video", itemType: "media" },
 ];
 
 const RANDOM_SPOTIFY_TERMS = ["afrobeats", "house", "drill", "rap fr", "amapiano", "dancehall", "rnb", "electro", "pop", "trap", "latin", "funk", "jazz", "lofi", "chill", "soul"];
@@ -61,8 +63,8 @@ const state = {
   loadingResults: false,
   spotifyResultsLive: [],
   spotifySuggestionsLive: [],
-  importedPlaylists: readImportedPlaylists(),
-  hasPersistedPlaylists: hasPersistedPlaylists(),
+  importedPlaylists: [],
+  hasPersistedPlaylists: false,
 };
 
 const refs = {
@@ -93,8 +95,15 @@ const refs = {
   playlistsGrid: document.querySelector("#searchPlaylistsGrid"),
   importSpotifyBtn: document.querySelector("#searchImportSpotifyBtn"),
   importYoutubeBtn: document.querySelector("#searchImportYoutubeBtn"),
+  importMediaBtn: document.querySelector("#searchImportMediaBtn"),
   mergePlaylistsBtn: document.querySelector("#searchMergePlaylistsBtn"),
   syncPlaylistsBtn: document.querySelector("#searchSyncPlaylistsBtn"),
+  importLinkInput: document.querySelector("#searchImportLinkInput"),
+  importLoadBtn: document.querySelector("#searchImportLoadBtn"),
+  importError: document.querySelector("#searchImportError"),
+  importErrorText: document.querySelector("#searchImportErrorText"),
+  importPlayer: document.querySelector("#searchImportPlayer"),
+  importExampleButtons: Array.from(document.querySelectorAll("[data-import-example]")),
 };
 
 let wsTimer = null;
@@ -146,6 +155,8 @@ function readImportedPlaylists() {
       synced: Boolean(item?.syncedAt || item?.synced),
       loginRequired: true,
       url: String(item?.url || ""),
+      itemType: String(item?.itemType || "playlist") === "media" ? "media" : "playlist",
+      mediaType: String(item?.mediaType || "") === "audio" ? "audio" : String(item?.mediaType || "") === "video" ? "video" : "",
     }));
   } catch {
     return [];
@@ -160,24 +171,20 @@ function hasPersistedPlaylists() {
   }
 }
 
-function writeImportedPlaylists(rows) {
+function setImportedRows(rows) {
   state.importedPlaylists = Array.isArray(rows) ? rows : [];
-  state.hasPersistedPlaylists = true;
-  const persisted = state.importedPlaylists.map((item) => ({
-    id: item.id,
-    title: item.title,
-    source: item.source,
-    tracks: Array.from({ length: Number(item.tracks || 0) }, (_, index) => ({ id: `${item.id}-${index}` })),
-    favorite: item.favorite,
-    syncedAt: item.synced ? new Date().toISOString() : "",
-    url: item.url || "",
-    createdAt: new Date().toISOString(),
-  }));
+  state.hasPersistedPlaylists = state.importedPlaylists.length > 0;
+}
+
+async function hydrateImportedPlaylists() {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
+    const data = await apiFetch("/search-hub/imports");
+    setImportedRows(Array.isArray(data?.items) ? data.items : []);
   } catch {
-    toast("Impossible de sauvegarder les playlists en local.", "Erreur");
+    setImportedRows(readImportedPlaylists());
+    state.hasPersistedPlaylists = hasPersistedPlaylists();
   }
+  renderPlaylists();
 }
 
 function escapeHtml(value) {
@@ -268,7 +275,7 @@ function getLiveResults() {
   }
 
   const query = state.searchValue.trim().toLowerCase();
-  const importedYoutube = storageRows().filter((playlist) => playlist.source.toLowerCase() === "youtube").map((playlist) => ({
+  const importedYoutube = storageRows().filter((playlist) => playlist.source.toLowerCase() === "youtube" && playlist.itemType !== "media").map((playlist) => ({
     id: playlist.id,
     kind: "albums",
     title: playlist.title,
@@ -389,29 +396,33 @@ function renderResults() {
 
 function renderPlaylists() {
   const playlists = getFilteredPlaylists();
-  refs.playlistsCount.textContent = `${playlists.length} playlists`;
+  refs.playlistsCount.textContent = `${playlists.length} imports`;
   refs.favoritesOnlyBtn.textContent = state.favoritesOnly ? "Favoris uniquement" : "Afficher les favoris";
   refs.favoritesOnlyBtn.classList.toggle("is-active-type", state.favoritesOnly);
+
   if (!playlists.length) {
-    refs.playlistsGrid.innerHTML = `<div class="search-empty-state"><p class="search-result-title">Aucune playlist</p><p>Importe une playlist ou retire le filtre favoris pour voir du contenu.</p></div>`;
+    refs.playlistsGrid.innerHTML = `<div class="search-empty-state"><p class="search-result-title">Aucun import</p><p>Importe une playlist, un son ou une video, ou retire le filtre favoris pour voir du contenu.</p></div>`;
     return;
   }
+
   refs.playlistsGrid.innerHTML = playlists.map((playlist) => `
     <article class="search-playlist-card">
       <div class="search-playlist-top">
-        <div><div class="search-playlist-title">${escapeHtml(playlist.title)}</div><div class="search-playlist-sub">${escapeHtml(playlist.source)} � ${playlist.tracks} titres</div></div>
+        <div><div class="search-playlist-title">${escapeHtml(playlist.title)}</div><div class="search-playlist-sub">${escapeHtml(playlist.source)} - ${playlist.itemType === "media" ? (playlist.mediaType === "audio" ? "1 son mp3" : "1 video mp4") : `${playlist.tracks} titres`}</div></div>
         <span class="search-playlist-status ${playlist.favorite ? "is-fav" : "is-std"}">${playlist.favorite ? "Favori" : "Standard"}</span>
       </div>
       <div class="search-playlist-tags">
         <span class="search-playlist-tag ${playlist.synced ? "is-green" : "is-amber"}">${playlist.synced ? "Synchronisee" : "Non synchronisee"}</span>
+        <span class="search-playlist-tag is-neutral">${playlist.itemType === "media" ? (playlist.mediaType === "audio" ? "MP3" : "MP4") : "Playlist"}</span>
         <span class="search-playlist-tag is-neutral">${playlist.loginRequired ? "requireLogin()" : "Libre"}</span>
       </div>
       <div class="search-playlist-actions">
-        <button class="search-pill-btn is-primary" type="button" data-open-playlist="${escapeHtml(playlist.id)}">Ouvrir</button>
+        <button class="search-pill-btn is-primary" type="button" data-open-playlist="${escapeHtml(playlist.id)}">${playlist.itemType === "media" ? "Lire" : "Ouvrir"}</button>
         <div class="search-grid-2"><button class="search-pill-btn" type="button" data-toggle-favorite="${escapeHtml(playlist.id)}">${playlist.favorite ? "Retirer fav" : "Favori"}</button><button class="search-pill-btn" type="button" data-delete-playlist="${escapeHtml(playlist.id)}">Supprimer</button></div>
       </div>
     </article>
   `).join("");
+
   refs.playlistsGrid.querySelectorAll("[data-open-playlist]").forEach((button) => button.addEventListener("click", () => openPlaylist(button.getAttribute("data-open-playlist"))));
   refs.playlistsGrid.querySelectorAll("[data-toggle-favorite]").forEach((button) => button.addEventListener("click", () => toggleFavorite(button.getAttribute("data-toggle-favorite"))));
   refs.playlistsGrid.querySelectorAll("[data-delete-playlist]").forEach((button) => button.addEventListener("click", () => deletePlaylist(button.getAttribute("data-delete-playlist"))));
@@ -588,13 +599,266 @@ function extractYouTubeVideoId(url) {
   }
 }
 
+function parseUrl(url) {
+  try {
+    return new URL(String(url || "").trim());
+  } catch {
+    return null;
+  }
+}
+
+function inferMediaTypeFromUrl(url) {
+  const parsed = parseUrl(url);
+  const target = String(parsed?.pathname || url || "").toLowerCase();
+  if (target.endsWith(".mp3")) return "audio";
+  if (target.endsWith(".mp4")) return "video";
+  return "";
+}
+
 function inferSourceFromUrl(url) {
   const lower = normalizePlaylistUrl(url).toLowerCase();
-  if (lower.includes("spotify.com/playlist")) return "spotify";
-  if (lower.includes("youtube.com/playlist") || lower.includes("music.youtube.com/playlist")) return "youtube";
-  if ((lower.includes("youtube.com/watch") || lower.includes("youtu.be/")) && extractYouTubePlaylistId(url)) return "youtube";
-  if (lower.includes("youtube.com/watch") || lower.includes("youtu.be/")) return "youtube-video";
+  if (lower.includes("spotify.com/track") || lower.includes("spotify.com/album") || lower.includes("spotify.com/playlist")) return "spotify";
+  if (
+    lower.includes("youtu.be/") ||
+    lower.includes("youtube.com/watch") ||
+    lower.includes("youtube.com/shorts/") ||
+    lower.includes("youtube.com/embed/") ||
+    lower.includes("youtube.com/playlist") ||
+    lower.includes("music.youtube.com/playlist")
+  ) {
+    if ((lower.includes("youtube.com/watch") || lower.includes("youtu.be/")) && extractYouTubePlaylistId(url)) return "youtube";
+    if (lower.includes("youtube.com/watch") || lower.includes("youtu.be/")) return "youtube-video";
+    return "youtube";
+  }
+  const mediaType = inferMediaTypeFromUrl(lower);
+  if (mediaType === "audio") return "mp3";
+  if (mediaType === "video") return "mp4";
   return "";
+}
+
+function inferImportedMediaDescriptor(url) {
+  const source = inferSourceFromUrl(url);
+  if (source === "youtube") {
+    const lower = normalizePlaylistUrl(url).toLowerCase();
+    return {
+      source: "YouTube",
+      title: lower.includes("playlist") ? "Playlist YouTube importee" : "Video YouTube importee",
+      tracks: 1,
+      itemType: "media",
+      mediaType: "video",
+    };
+  }
+  if (source === "spotify") {
+    const lower = normalizePlaylistUrl(url).toLowerCase();
+    let title = "Media Spotify importe";
+    if (lower.includes("/track/")) title = "Titre Spotify importe";
+    if (lower.includes("/album/")) title = "Album Spotify importe";
+    if (lower.includes("/playlist/")) title = "Playlist Spotify importee";
+    return {
+      source: "Spotify",
+      title,
+      tracks: lower.includes("/track/") ? 1 : Math.floor(Math.random() * 20) + 12,
+      itemType: "media",
+      mediaType: "audio",
+    };
+  }
+  return null;
+}
+
+function parseEmbeddedMediaLink(rawUrl) {
+  const url = normalizePlaylistUrl(rawUrl);
+  if (!url) return null;
+
+  try {
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname.replace(/^www\./, "").toLowerCase();
+    const pathname = parsedUrl.pathname;
+
+    if (hostname === "youtu.be") {
+      const videoId = pathname.split("/").filter(Boolean)[0];
+      if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+        return { type: "youtube-video", id: videoId, listId: parsedUrl.searchParams.get("list"), source: "YouTube", originalUrl: url };
+      }
+    }
+
+    if (hostname === "youtube.com" || hostname === "m.youtube.com" || hostname === "music.youtube.com") {
+      if (pathname === "/watch") {
+        const videoId = parsedUrl.searchParams.get("v");
+        if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return { type: "youtube-video", id: videoId, listId: parsedUrl.searchParams.get("list"), source: "YouTube", originalUrl: url };
+        }
+      }
+      if (pathname === "/playlist") {
+        const listId = parsedUrl.searchParams.get("list");
+        if (listId) return { type: "youtube-playlist", id: listId, source: "YouTube", originalUrl: url };
+      }
+      if (pathname.startsWith("/shorts/") || pathname.startsWith("/embed/")) {
+        const videoId = pathname.split("/").filter(Boolean)[1];
+        if (videoId && /^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+          return { type: "youtube-video", id: videoId, listId: parsedUrl.searchParams.get("list"), source: "YouTube", originalUrl: url };
+        }
+      }
+    }
+  } catch {
+    // Regex fallback below.
+  }
+
+  const yt = url.match(/(?:youtube\.com\/watch\?(?:[^#]*&)?v=|youtu\.be\/|youtube\.com\/shorts\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/);
+  if (yt) {
+    const listMatch = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+    return { type: "youtube-video", id: yt[1], listId: listMatch ? listMatch[1] : null, source: "YouTube", originalUrl: url };
+  }
+
+  const ytpl = url.match(/youtube\.com\/playlist\?(?:[^#]*&)?list=([a-zA-Z0-9_-]+)/);
+  if (ytpl) return { type: "youtube-playlist", id: ytpl[1], source: "YouTube", originalUrl: url };
+
+  const sptrack = url.match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?track\/([a-zA-Z0-9]+)/);
+  if (sptrack) return { type: "spotify-track", id: sptrack[1], source: "Spotify", originalUrl: url };
+
+  const sppl = url.match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?playlist\/([a-zA-Z0-9]+)/);
+  if (sppl) return { type: "spotify-playlist", id: sppl[1], source: "Spotify", originalUrl: url };
+
+  const spalb = url.match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?album\/([a-zA-Z0-9]+)/);
+  if (spalb) return { type: "spotify-album", id: spalb[1], source: "Spotify", originalUrl: url };
+
+  const mediaType = inferMediaTypeFromUrl(url);
+  if (mediaType === "audio") return { type: "direct-audio", source: "Direct", mediaType, originalUrl: url };
+  if (mediaType === "video") return { type: "direct-video", source: "Direct", mediaType, originalUrl: url };
+
+  return null;
+}
+
+function showImportPlayerError(message) {
+  if (!refs.importError || !refs.importErrorText) return;
+  refs.importErrorText.textContent = message;
+  refs.importError.style.display = "flex";
+}
+
+function hideImportPlayerError() {
+  if (refs.importError) refs.importError.style.display = "none";
+}
+
+function getImportInfoBar(source, label) {
+  const badgeClass = source === "YouTube" ? "is-youtube" : "is-spotify";
+  return `<div class="search-import-info"><span class="search-import-badge ${badgeClass}">${source}</span><span>${label}</span></div>`;
+}
+
+function renderImportLaunchState(title, subtitle) {
+  if (!refs.importPlayer) return;
+  refs.importPlayer.style.display = "block";
+  refs.importPlayer.innerHTML = `
+    <div class="search-import-audio-ui">
+      <div class="search-import-audio-row">
+        <div class="search-import-audio-icon">&#9835;</div>
+        <div style="flex:1;">
+          <div style="font-size:16px;font-weight:700;color:#fff;">${escapeHtml(title)}</div>
+          <div style="font-size:12px;color:#a1a1aa;margin-top:4px;">${escapeHtml(subtitle)}</div>
+        </div>
+      </div>
+      <div class="search-import-helper">
+        <p>La lecture est lancee dans la barre du bas en mode audio. Clique sur la waveform pour ouvrir la version etendue, puis repasse en video si le media en propose une.</p>
+        <button class="search-pill-btn is-primary" type="button" data-import-resume-player>Lancer le son</button>
+      </div>
+    </div>
+  `;
+  refs.importPlayer.querySelector("[data-import-resume-player]")?.addEventListener("click", () => {
+    window.supcontentPlayer?.resume?.();
+  });
+}
+
+function renderSpotifyImportPlayer(data) {
+  if (!refs.importPlayer) return;
+  refs.importPlayer.style.display = "block";
+
+  let src = "";
+  let label = "";
+  let frameHeight = data.type === "spotify-track" ? 80 : 400;
+
+  if (data.type === "spotify-track") {
+    src = `https://open.spotify.com/embed/track/${data.id}`;
+    label = "Titre";
+  } else if (data.type === "spotify-playlist") {
+    src = `https://open.spotify.com/embed/playlist/${data.id}`;
+    label = "Playlist";
+  } else {
+    src = `https://open.spotify.com/embed/album/${data.id}`;
+    label = "Album";
+  }
+
+  refs.importPlayer.innerHTML = `
+    <iframe src="${src}" style="height:${frameHeight}px;" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+    <div class="search-import-helper">
+      <p>Spotify bloque en general la lecture automatique avec son. Clique sur le bouton play dans le lecteur Spotify.</p>
+    </div>
+    ${getImportInfoBar("Spotify", label)}
+  `;
+}
+
+async function loadEmbeddedImportLink(urlOverride = "") {
+  const url = normalizePlaylistUrl(urlOverride || refs.importLinkInput?.value || "");
+  if (!url) {
+    showImportPlayerError("Entre un lien avant de cliquer sur Charger.");
+    return;
+  }
+
+  let data = null;
+  try {
+    const response = await apiFetch(`/search-hub/import/parse?url=${encodeURIComponent(url)}`);
+    data = response?.item || null;
+  } catch (error) {
+    data = parseEmbeddedMediaLink(url);
+    if (!data) {
+      showImportPlayerError(error?.message || "Lien non reconnu. Utilise YouTube ou Spotify.");
+      return;
+    }
+  }
+
+  if (!data) {
+    showImportPlayerError("Lien non reconnu. Utilise YouTube ou Spotify.");
+    return;
+  }
+
+  hideImportPlayerError();
+  if (refs.importLinkInput) refs.importLinkInput.value = url;
+
+  if (data.source === "YouTube") {
+    window.supcontentPlayer?.playYouTube?.({
+      url,
+      title: deriveTitleFromUrl(url, data.type === "youtube-playlist" ? "Playlist YouTube" : "Video YouTube"),
+      subtitle: data.type === "youtube-playlist" ? "Lecture audio -> clique sur la waveform pour la video" : "YouTube audio",
+      mode: "audio",
+    });
+    renderImportLaunchState("Lecture YouTube lancee", "Mode audio dans la barre du bas.");
+    return;
+  }
+
+  if (data.type === "direct-audio" || data.type === "direct-video") {
+    window.supcontentPlayer?.playMedia?.({
+      url,
+      title: deriveTitleFromUrl(url, data.type === "direct-audio" ? "Audio direct" : "Video directe"),
+      subtitle: data.type === "direct-audio" ? "Fichier audio" : "Video -> clique sur la waveform pour l'image",
+      mode: "audio",
+    });
+    renderImportLaunchState("Lecture directe lancee", "Le player bas est actif.");
+    return;
+  }
+
+  if (data.source === "Spotify") {
+    renderSpotifyImportPlayer(data);
+  } else {
+    showImportPlayerError("Type de media non gere.");
+  }
+}
+
+function deriveTitleFromUrl(url, fallback = "Media importe") {
+  const parsed = parseUrl(url);
+  const pathname = String(parsed?.pathname || "").split("/").filter(Boolean).pop() || "";
+  if (!pathname) return fallback;
+  try {
+    return decodeURIComponent(pathname);
+  } catch {
+    return pathname;
+  }
 }
 
 async function importPlaylist(source) {
@@ -625,30 +889,64 @@ async function importPlaylist(source) {
     return;
   }
 
-  let title = source === "spotify" ? "Playlist Spotify importee" : "Playlist YouTube importee";
-  let tracks = Math.floor(Math.random() * 20) + 12;
-
-  if (source === "spotify") {
-    try {
-      const data = await apiFetch(`/spotify/playlist?url=${encodeURIComponent(url)}&limit=150`);
-      title = String(data?.playlist?.name || title);
-      tracks = Array.isArray(data?.items) ? data.items.length : tracks;
-    } catch {
-      toast("Import Spotify partiel : fallback local.", "Erreur");
-    }
+  try {
+    const data = await apiFetch("/search-hub/imports/playlist", {
+      method: "POST",
+      body: JSON.stringify({ source, url }),
+    });
+    setImportedRows(data?.items);
+    renderPlaylists();
+    toast(`Playlist ${source === "spotify" ? "Spotify" : "YouTube"} importee.`, "OK");
+  } catch (error) {
+    toast(error?.message || "Import impossible.", "Erreur");
   }
+}
 
-  const existingRows = storageRows();
-  const duplicateRow = existingRows.find((item) => normalizePlaylistUrl(item.url) === url);
-  if (duplicateRow) {
-    toast("Cette playlist est deja importee.", "Info");
+async function importMediaLink() {
+  if (!requireLogin({ redirect: false })) return;
+  const rawUrl = window.prompt("Colle un lien YouTube, Spotify, MP3 ou MP4", "https://youtu.be/7CGKeID7nRc");
+  const url = normalizePlaylistUrl(rawUrl);
+  if (!url) return;
+
+  const mediaType = inferMediaTypeFromUrl(url);
+  if (mediaType) {
+    const defaultTitle = deriveTitleFromUrl(url, mediaType === "audio" ? "Son importe" : "Video importee");
+    const rawTitle = window.prompt(`Nom du ${mediaType === "audio" ? "son" : "video"} importe`, defaultTitle);
+    const title = String(rawTitle || defaultTitle).trim() || defaultTitle;
+    try {
+      const data = await apiFetch("/search-hub/imports/media", {
+        method: "POST",
+        body: JSON.stringify({ url, title }),
+      });
+      setImportedRows(data?.items);
+      renderPlaylists();
+      toast(`${mediaType === "audio" ? "Son" : "Video"} importe.`, "OK");
+    } catch (error) {
+      toast(error?.message || "Import impossible.", "Erreur");
+    }
     return;
   }
 
-  const row = { id: crypto.randomUUID(), title, source: source === "spotify" ? "Spotify" : "YouTube", tracks, favorite: false, synced: false, loginRequired: true, url };
-  writeImportedPlaylists([row, ...existingRows]);
-  renderPlaylists();
-  toast(`Playlist ${row.source} importee.`, "OK");
+  const descriptor = inferImportedMediaDescriptor(url);
+  if (!descriptor) {
+    toast("Lien invalide detecte. Utilise YouTube, Spotify, .mp3 ou .mp4.", "Erreur");
+    return;
+  }
+
+  const defaultTitle = descriptor.title;
+  const rawTitle = window.prompt("Nom du media importe", defaultTitle);
+  const title = String(rawTitle || defaultTitle).trim() || defaultTitle;
+  try {
+    const data = await apiFetch("/search-hub/imports/media", {
+      method: "POST",
+      body: JSON.stringify({ url, title }),
+    });
+    setImportedRows(data?.items);
+    renderPlaylists();
+    toast(`${descriptor.source} importe.`, "OK");
+  } catch (error) {
+    toast(error?.message || "Import impossible.", "Erreur");
+  }
 }
 
 function openPlaylist(id) {
@@ -656,6 +954,31 @@ function openPlaylist(id) {
   if (playlist?.loginRequired && !requireLogin({ redirect: false })) return;
   if (!playlist?.url) {
     toast("Playlist sans URL source", "Erreur");
+    return;
+  }
+  if (playlist.itemType === "media") {
+    const inferredSource = inferSourceFromUrl(playlist.url);
+    if (inferredSource === "youtube") {
+      if (playYouTubeInline(playlist.url, playlist.title, "Media YouTube")) return;
+      window.location.href = externalYouTubeHref(playlist.url);
+      return;
+    }
+    if (inferredSource === "spotify") {
+      const opened = window.open(playlist.url, "_blank", "noopener,noreferrer");
+      if (!opened) window.location.href = playlist.url;
+      return;
+    }
+    const player = window.supcontentPlayer;
+    if (!player?.playMedia) {
+      toast("Player global indisponible.", "Erreur");
+      return;
+    }
+    player.playMedia({
+      url: playlist.url,
+      title: playlist.title,
+      subtitle: playlist.mediaType === "audio" ? "Audio importe" : "Video importee",
+      mode: playlist.mediaType === "audio" ? "audio" : "video",
+    });
     return;
   }
   if (playlist.source.toLowerCase() === "youtube") {
@@ -667,37 +990,56 @@ function openPlaylist(id) {
   if (!opened) window.location.href = playlist.url;
 }
 
-function toggleFavorite(id) {
-  const next = storageRows().map((playlist) => (String(playlist.id) === String(id) ? { ...playlist, favorite: !playlist.favorite } : playlist));
-  writeImportedPlaylists(next);
-  renderPlaylists();
-}
-
-function deletePlaylist(id) {
-  const next = storageRows().filter((playlist) => String(playlist.id) !== String(id));
-  writeImportedPlaylists(next);
-  renderPlaylists();
-}
-
-function mergePlaylists() {
-  if (!requireLogin({ redirect: false })) return;
-  const rows = storageRows();
-  if (rows.length < 2) {
-    toast("Ajoute au moins 2 playlists pour fusionner.", "Erreur");
-    return;
+async function toggleFavorite(id) {
+  try {
+    const data = await apiFetch(`/search-hub/imports/${encodeURIComponent(String(id))}/favorite`, {
+      method: "PATCH",
+    });
+    setImportedRows(data?.items);
+    renderPlaylists();
+  } catch (error) {
+    toast(error?.message || "Impossible de changer le favori.", "Erreur");
   }
-  const merged = { id: crypto.randomUUID(), title: `Fusion ${new Date().toLocaleDateString("fr-FR")}`, source: "Spotify", tracks: rows.reduce((sum, row) => sum + Number(row.tracks || 0), 0), favorite: false, synced: false, loginRequired: true, url: "" };
-  writeImportedPlaylists([merged, ...rows]);
-  renderPlaylists();
-  toast("Playlists fusionnees.", "OK");
 }
 
-function syncPlaylists() {
+async function deletePlaylist(id) {
+  try {
+    const data = await apiFetch(`/search-hub/imports/${encodeURIComponent(String(id))}`, {
+      method: "DELETE",
+    });
+    setImportedRows(data?.items);
+    renderPlaylists();
+  } catch (error) {
+    toast(error?.message || "Suppression impossible.", "Erreur");
+  }
+}
+
+async function mergePlaylists() {
   if (!requireLogin({ redirect: false })) return;
-  const next = storageRows().map((playlist) => ({ ...playlist, synced: true }));
-  writeImportedPlaylists(next);
-  renderPlaylists();
-  toast("Synchronisation terminee.", "OK");
+  try {
+    const data = await apiFetch("/search-hub/imports/merge", {
+      method: "POST",
+    });
+    setImportedRows(data?.items);
+    renderPlaylists();
+    toast("Playlists fusionnees.", "OK");
+  } catch (error) {
+    toast(error?.message || "Fusion impossible.", "Erreur");
+  }
+}
+
+async function syncPlaylists() {
+  if (!requireLogin({ redirect: false })) return;
+  try {
+    const data = await apiFetch("/search-hub/imports/sync", {
+      method: "POST",
+    });
+    setImportedRows(data?.items);
+    renderPlaylists();
+    toast("Synchronisation terminee.", "OK");
+  } catch (error) {
+    toast(error?.message || "Synchronisation impossible.", "Erreur");
+  }
 }
 
 function bindEvents() {
@@ -769,11 +1111,22 @@ function bindEvents() {
 
   refs.importSpotifyBtn?.addEventListener("click", () => importPlaylist("spotify"));
   refs.importYoutubeBtn?.addEventListener("click", () => importPlaylist("youtube"));
+  refs.importMediaBtn?.addEventListener("click", importMediaLink);
   refs.mergePlaylistsBtn?.addEventListener("click", mergePlaylists);
   refs.syncPlaylistsBtn?.addEventListener("click", syncPlaylists);
+
+  refs.importLoadBtn?.addEventListener("click", () => loadEmbeddedImportLink());
+  refs.importLinkInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") loadEmbeddedImportLink();
+  });
+  refs.importExampleButtons.forEach((button) => button.addEventListener("click", () => {
+    const exampleUrl = button.getAttribute("data-import-example") || "";
+    loadEmbeddedImportLink(exampleUrl);
+  }));
 }
 
 bindEvents();
 renderAll();
 startRealtimeNotifications();
 fetchSuggestions();
+hydrateImportedPlaylists();

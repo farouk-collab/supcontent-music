@@ -18,7 +18,6 @@ const state = {
   showPassword: false,
   email: "farouk@email.com",
   password: "password123",
-  name: "Farouk Salami",
   forgotEmail: "farouk@email.com",
   feedback: "Connexion prete",
   authState: { ...INITIAL_AUTH_STATE },
@@ -65,7 +64,6 @@ function getInitialModeFromUrl() {
 }
 
 function syncLocalInputs() {
-  state.name = dom.nameInput?.value || "";
   state.email = dom.emailInput?.value || "";
   state.password = dom.passwordInput?.value || "";
   state.forgotEmail = dom.emailInput?.value || "";
@@ -105,11 +103,11 @@ function renderForm() {
 
   dom.tabs.forEach((button) => button.classList.toggle("is-active", button.getAttribute("data-mode") === state.mode));
 
-  if (dom.registerNameRow) dom.registerNameRow.hidden = !isRegister;
+  if (dom.registerNameRow) dom.registerNameRow.hidden = true;
   if (dom.passwordRow) dom.passwordRow.hidden = isForgot;
   if (dom.googleButton) dom.googleButton.hidden = !isLogin;
 
-  if (dom.nameInput) dom.nameInput.value = state.name;
+  if (dom.nameInput) dom.nameInput.value = "";
   if (dom.emailInput) {
     dom.emailInput.value = isForgot ? state.forgotEmail : state.email;
     dom.emailInput.placeholder = isForgot ? "Email de recuperation" : "Adresse email";
@@ -124,7 +122,7 @@ function renderForm() {
 
   if (dom.helperText) {
     if (isLogin) dom.helperText.textContent = "Connexion classique avec email et mot de passe.";
-    if (isRegister) dom.helperText.textContent = "Nom, email et mot de passe requis pour creer ton compte.";
+    if (isRegister) dom.helperText.textContent = "Email et mot de passe requis pour creer ton compte.";
     if (isForgot) dom.helperText.textContent = "Entre ton email pour recevoir un lien de reinitialisation.";
   }
 
@@ -258,15 +256,15 @@ async function handleLogin() {
 }
 
 async function handleRegister() {
-  if (!state.name.trim() || !state.email.trim() || !state.password.trim()) {
-    setFeedback("Nom, email et mot de passe requis");
+  if (!state.email.trim() || !state.password.trim()) {
+    setFeedback("Email et mot de passe requis");
     return;
   }
 
   try {
     const response = await apiFetch("/auth/register", {
       method: "POST",
-      body: JSON.stringify({ email: state.email.trim(), displayName: state.name.trim(), password: state.password }),
+      body: JSON.stringify({ email: state.email.trim(), password: state.password }),
     });
     setFeedback("Inscription reussie");
     afterAuth(response, "Compte cree via /auth/register");
@@ -302,7 +300,8 @@ async function handleForgotPassword() {
 }
 
 function handleGoogleLogin() {
-  const returnTo = window.location.origin + window.location.pathname;
+  const returnTo = `${window.location.origin}${window.location.pathname}${window.location.search || ""}`;
+  setFeedback("Redirection vers Google...");
   window.location.href = `${API_BASE}/auth/oauth/google/start?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
@@ -326,7 +325,6 @@ function bindEvents() {
     normalizeBrokenText();
   }));
 
-  dom.nameInput?.addEventListener("input", syncLocalInputs);
   dom.emailInput?.addEventListener("input", syncLocalInputs);
   dom.passwordInput?.addEventListener("input", syncLocalInputs);
 

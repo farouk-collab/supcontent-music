@@ -40,6 +40,7 @@ import profilePostsRoutes from "./routes/profilePosts";
 import chatRoutes from "./routes/chat";
 import liveRoutes from "./routes/live";
 import shopRoutes from "./routes/shop";
+import searchHubRoutes from "./routes/searchHub";
 import { AuthedRequest, requireAuth } from "./middleware/requireAuth";
 
 const app = express();
@@ -243,6 +244,7 @@ app.use("/notifications", notificationsRoutes);
 app.use("/chat", chatRoutes);
 app.use("/live", liveRoutes);
 app.use("/shop", shopRoutes);
+app.use("/search-hub", searchHubRoutes);
 
 app.get("/openapi.json", (req, res) => {
   const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "https");

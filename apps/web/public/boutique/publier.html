@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Publier - SUPCONTENT Music</title>
+  <link rel="icon" type="image/svg+xml" href="/assets/logo-supconnect.svg" />
+  <link rel="apple-touch-icon" href="/assets/logo-supconnect.svg" />
+  <link rel="stylesheet" href="/noyau/styles.css" />
+  <link rel="stylesheet" href="/boutique/shop.css" />
+</head>
+<body class="shop-page" data-shop-view="publier">
+  <div class="container shop-shell">
+    <header class="shop-hero">
+      <div class="shop-hero-grid">
+        <div>
+          <div class="shop-kicker">Boutique</div>
+          <h1 class="shop-title">Publie un produit sans noyer l’artiste dans le catalogue.</h1>
+          <p class="shop-subtitle">Une page plus directe pour ajouter un beat, un sample pack ou un vocal pack avec des champs propres et un parcours clair.</p>
+          <nav class="shop-page-nav" aria-label="Navigation boutique">
+            <a class="shop-page-link" href="/boutique/boutique.html"><span data-shop-nav-icon="catalogue"></span><span>Catalogue</span></a>
+            <a class="shop-page-link" href="/boutique/preview.html"><span data-shop-nav-icon="preview"></span><span>Preview</span></a>
+            <a class="shop-page-link is-active" href="/boutique/publier.html"><span data-shop-nav-icon="publier"></span><span>Publier</span></a>
+          </nav>
+        </div>
+        <div class="shop-hero-side">
+          <div id="shopCartPill" class="shop-cart-pill">0 article(s) - 0 EUR</div>
+          <div class="shop-hero-stats">
+            <article class="shop-stat-card">
+              <div class="shop-stat-label">Catalogue</div>
+              <strong id="shopStatProducts">0</strong>
+              <span>Produits deja en ligne.</span>
+            </article>
+            <article class="shop-stat-card">
+              <div class="shop-stat-label">Prix moyen</div>
+              <strong id="shopStatAverage">0 EUR</strong>
+              <span>Point de repere pour ton positionnement.</span>
+            </article>
+            <article class="shop-stat-card">
+              <div class="shop-stat-label">Best seller</div>
+              <strong id="shopStatTopSale">-</strong>
+              <span>Reference la plus vendue du moment.</span>
+            </article>
+            <article class="shop-stat-card">
+              <div class="shop-stat-label">Focus</div>
+              <strong id="shopStatType">Tout</strong>
+              <span>Vue boutique active.</span>
+            </article>
+          </div>
+          <div class="shop-hero-note">Le formulaire reste central, pendant que le panier et la couche sociale restent visibles a droite.</div>
+        </div>
+      </div>
+    </header>
+
+    <div class="shop-layout">
+      <main class="shop-main">
+        <section class="shop-panel">
+          <div class="shop-section-head">
+            <div>
+              <h2>Ajouter un son / produit</h2>
+              <p>Les artistes et beatmakers peuvent publier leurs creations ici avec un formulaire plus propre et plus direct.</p>
+            </div>
+            <button id="shopPublishBtn" class="shop-btn is-primary" type="button">Publier dans la boutique</button>
+          </div>
+
+          <div class="shop-form-grid">
+            <input id="shopFormTitle" type="text" placeholder="Titre du produit" />
+            <input id="shopFormCreator" type="text" placeholder="Nom de l'artiste / beatmaker" />
+            <select id="shopFormType">
+              <option>Beat</option>
+              <option>Sample Pack</option>
+              <option>Loop Kit</option>
+              <option>Vocal Pack</option>
+            </select>
+            <input id="shopFormGenre" type="text" placeholder="Genre" />
+            <div class="shop-field-inline">
+              <span id="shopEuroIcon"></span>
+              <input id="shopFormPrice" type="text" placeholder="Prix" />
+            </div>
+            <div class="shop-field-inline">
+              <span id="shopFileIcon"></span>
+              <input id="shopFormBpm" type="text" placeholder="BPM" />
+            </div>
+            <input id="shopFormLicense" class="full" type="text" placeholder="Licence" value="Licence standard" />
+            <textarea id="shopFormDescription" class="full" rows="5" placeholder="Description du son, du pack ou du produit"></textarea>
+          </div>
+        </section>
+
+        <section class="shop-panel">
+          <div class="shop-section-head">
+            <div>
+              <h2>Selection rapide</h2>
+              <p>Repere vite le niveau du catalogue avant de publier ton produit.</p>
+            </div>
+          </div>
+          <div id="shopFeaturedRail" class="shop-spotlight-rail" aria-live="polite"></div>
+        </section>
+      </main>
+
+      <aside class="shop-side-stack">
+        <section class="shop-side-card">
+          <h2>Createurs a la une</h2>
+          <div id="shopCreatorsList" class="shop-creators"></div>
+        </section>
+
+        <section class="shop-side-card">
+          <h2>Panier</h2>
+          <div id="shopCartList" class="shop-cart-list"></div>
+          <div class="shop-total">
+            <div style="font-size:14px;color:#d4d4d8;">Total</div>
+            <strong id="shopCartTotal">0 EUR</strong>
+            <button id="shopCheckoutBtn" class="shop-btn is-primary" style="width:100%;margin-top:14px;" type="button">Passer au paiement</button>
+          </div>
+        </section>
+
+        <section class="shop-side-card">
+          <h2>Validation</h2>
+          <div id="shopValidation" class="shop-validation">Tests boutique passes</div>
+        </section>
+      </aside>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script type="module" src="/boutique/boutique.js"></script>
+  <script type="module" src="/noyau/footer.js"></script>
+</body>
+</html>
