@@ -524,6 +524,21 @@
 
         <section class="settings-card">
           <div class="settings-card-head">
+            <div class="settings-card-icon">RGPD</div>
+            <h2>Mes données personnelles</h2>
+          </div>
+          <div class="settings-stack">
+            <p class="feedback-text">Exportez toutes vos données conformément au RGPD (notes, critiques, collections, profil).</p>
+            <div class="action-grid">
+              <button id="exportJsonBtn" type="button" class="ghost-btn">Exporter JSON</button>
+              <button id="exportCsvBtn" type="button" class="ghost-btn">Exporter CSV</button>
+            </div>
+            <div id="exportStatus" class="feedback-text"></div>
+          </div>
+        </section>
+
+        <section class="settings-card">
+          <div class="settings-card-head">
             <div class="settings-card-icon">Test</div>
             <h2 data-i18n="validation">Validation</h2>
           </div>

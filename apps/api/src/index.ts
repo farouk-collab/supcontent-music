@@ -43,6 +43,7 @@ import chatRoutes from "./routes/chat";
 import liveRoutes from "./routes/live";
 import shopRoutes from "./routes/shop";
 import searchHubRoutes from "./routes/searchHub";
+import adminRoutes from "./routes/admin";
 import { AuthedRequest, requireAuth } from "./middleware/requireAuth";
 
 export function createApp() {
@@ -258,6 +259,7 @@ const buildOpenApiSpec = (baseUrl: string) => {
   app.use("/live", liveRoutes);
   app.use("/shop", shopRoutes);
   app.use("/search-hub", searchHubRoutes);
+  app.use("/admin", adminRoutes);
 
   app.get("/openapi.json", (req, res) => {
   const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "https");

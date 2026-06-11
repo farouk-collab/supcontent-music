@@ -661,6 +661,9 @@ function bindInputs() {
 
   els.saveSettingsBtn?.addEventListener("click", saveAllSettings);
 
+  document.querySelector("#exportJsonBtn")?.addEventListener("click", () => exportUserData("json"));
+  document.querySelector("#exportCsvBtn")?.addEventListener("click", () => exportUserData("csv"));
+
   els.blockUserBtn?.addEventListener("click", async () => {
     const userId = String(els.blockUserIdInput?.value || "").trim();
     if (!userId) return;
@@ -674,6 +677,59 @@ function bindInputs() {
       toast(error?.message || "Blocage impossible", "Erreur");
     }
   });
+}
+
+async function exportUserData(format) {
+  const statusEl = document.querySelector("#exportStatus");
+  if (statusEl) statusEl.textContent = "Collecte de vos données en cours...";
+  try {
+    const [profileData, collectionsData, reviewsData] = await Promise.all([
+      apiFetch("/auth/me").catch(() => ({})),
+      apiFetch("/collections/me").catch(() => ({ collections: [] })),
+      apiFetch("/social/media/track/export-mine").catch(() => ({ reviews: [] })),
+    ]);
+
+    const exportData = {
+      exported_at: new Date().toISOString(),
+      profile: profileData?.user || profileData,
+      collections: collectionsData?.collections || [],
+      reviews: reviewsData?.reviews || [],
+    };
+
+    if (format === "json") {
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `supcontent-export-${Date.now()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      const rows = [["type", "id", "name", "status", "rating", "body", "created_at"]];
+      (collectionsData?.collections || []).forEach((col) => {
+        (col.items || []).forEach((item) => {
+          rows.push(["collection", item.media_id || "", item.media_type || "", col.name, "", "", item.added_at || ""]);
+        });
+      });
+      (exportData.reviews || []).forEach((r) => {
+        rows.push(["review", r.id || "", r.media_id || "", "", r.rating || "", (r.body || "").replace(/,/g, ";"), r.created_at || ""]);
+      });
+      const csv = rows.map((row) => row.map((cell) => `"${cell}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `supcontent-export-${Date.now()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    if (statusEl) statusEl.textContent = `Export ${format.toUpperCase()} téléchargé.`;
+    toast(`Export ${format.toUpperCase()} prêt.`, "Succès");
+  } catch (e) {
+    if (statusEl) statusEl.textContent = "Erreur lors de l'export.";
+    toast(e?.message || "Export impossible", "Erreur");
+  }
 }
 
 window.addEventListener("beforeunload", () => stopLiveLocationWatch());

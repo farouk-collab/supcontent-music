@@ -129,6 +129,16 @@
             <button class="search-chip" type="button" data-type="artists">Artistes</button>
             <button class="search-chip" type="button" data-type="albums">Albums</button>
           </div>
+          <div class="search-chip-row" style="gap:10px;margin-top:8px;align-items:center;flex-wrap:wrap">
+            <input id="yearFilterInput" type="number" min="1900" max="2030" placeholder="Année (ex: 2023)"
+              style="width:130px;border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;padding:7px 12px;font:inherit;outline:0;font-size:13px;" />
+            <select id="sortBySelect"
+              style="border:1px solid rgba(255,255,255,.14);border-radius:10px;background:rgba(0,0,0,.2);color:#fff;padding:7px 12px;font:inherit;outline:0;font-size:13px;cursor:pointer">
+              <option value="relevance">Tri : Pertinence</option>
+              <option value="popularity">Tri : Popularité</option>
+              <option value="name">Tri : Nom A→Z</option>
+            </select>
+          </div>
           <div class="search-advanced-grid">
             <div class="search-filter-box">
               <span class="search-filter-label">Ambiance</span>

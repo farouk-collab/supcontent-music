@@ -70,6 +70,8 @@ const state = {
   spotifySuggestionsLive: [],
   importedPlaylists: [],
   hasPersistedPlaylists: false,
+  yearFilter: "",
+  sortBy: "relevance",
 };
 
 const refs = {
@@ -617,9 +619,17 @@ async function fetchSearchResults() {
   renderResults();
   try {
     const typeMap = { tracks: "track", artists: "artist", albums: "album" };
-    const data = await apiFetch(`/search?q=${encodeURIComponent(query)}&type=${encodeURIComponent(typeMap[state.activeType] || "track")}&limit=12`);
+    const year = String(state.yearFilter || "").trim();
+    const finalQuery = year ? `${query} year:${year}` : query;
+    const data = await apiFetch(`/search?q=${encodeURIComponent(finalQuery)}&type=${encodeURIComponent(typeMap[state.activeType] || "track")}&limit=20`);
     if (requestId !== searchRequestId) return;
-    state.spotifyResultsLive = pickItems(data).map(mapApiItem).filter((item) => item.kind === state.activeType);
+    let results = pickItems(data).map(mapApiItem).filter((item) => item.kind === state.activeType);
+    if (state.sortBy === "popularity") {
+      results = results.sort((a, b) => Number(b.popularity || 0) - Number(a.popularity || 0));
+    } else if (state.sortBy === "name") {
+      results = results.sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""), "fr"));
+    }
+    state.spotifyResultsLive = results;
   } catch (error) {
     if (requestId !== searchRequestId) return;
     state.spotifyResultsLive = [];
@@ -1192,6 +1202,23 @@ function bindEvents() {
     if (option === "synced") state.syncedOnly = !state.syncedOnly;
     renderAll();
   }));
+
+  document.getElementById("yearFilterInput")?.addEventListener("change", async (e) => {
+    state.yearFilter = String(e.target.value || "").trim();
+    if (state.activeSource === "spotify" && state.searchValue.trim()) await fetchSearchResults();
+  });
+
+  document.getElementById("sortBySelect")?.addEventListener("change", async (e) => {
+    state.sortBy = String(e.target.value || "relevance");
+    if (state.spotifyResultsLive.length > 0) {
+      if (state.sortBy === "popularity") {
+        state.spotifyResultsLive = [...state.spotifyResultsLive].sort((a, b) => Number(b.popularity || 0) - Number(a.popularity || 0));
+      } else if (state.sortBy === "name") {
+        state.spotifyResultsLive = [...state.spotifyResultsLive].sort((a, b) => String(a.title || "").localeCompare(String(b.title || ""), "fr"));
+      }
+      renderResults();
+    }
+  });
 
   refs.refreshSuggestionsBtn?.addEventListener("click", async () => {
     state.suggestionsSeed += 1;

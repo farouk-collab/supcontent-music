@@ -171,5 +171,112 @@ export function createApiClient() {
           image: pickImage(item),
         };
       }),
+
+    // Feed
+    feed: (accessToken, limit = 30) =>
+      request(`/feed/me?limit=${limit}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+
+    // Notifications
+    notifications: (accessToken) =>
+      request("/notifications/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+
+    // Collections
+    collectionsMe: (accessToken) =>
+      request("/collections/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }),
+
+    createCollection: (accessToken, payload) =>
+      request("/collections", {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      }),
+
+    updateCollection: (accessToken, id, payload) =>
+      request(`/collections/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      }),
+
+    deleteCollection: (accessToken, id) =>
+      request(`/collections/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: authHeaders(accessToken),
+      }),
+
+    addCollectionItem: (accessToken, collectionId, mediaType, mediaId) =>
+      request(`/collections/${encodeURIComponent(collectionId)}/items`, {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ media_type: mediaType, media_id: mediaId }),
+      }),
+
+    removeCollectionItem: (accessToken, collectionId, mediaType, mediaId) =>
+      request(
+        `/collections/${encodeURIComponent(collectionId)}/items/${encodeURIComponent(mediaType)}/${encodeURIComponent(mediaId)}`,
+        { method: "DELETE", headers: authHeaders(accessToken) }
+      ),
+
+    addToStatus: (accessToken, status, mediaType, mediaId) =>
+      request(`/collections/status/${encodeURIComponent(status)}/items`, {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ media_type: mediaType, media_id: mediaId }),
+      }),
+
+    // Social / Reviews
+    mediaReviews: (mediaType, mediaId, accessToken = null) =>
+      request(`/social/media/${encodeURIComponent(mediaType)}/${encodeURIComponent(mediaId)}`, {
+        headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+      }),
+
+    createReview: (accessToken, mediaType, mediaId, rating, body = "") =>
+      request(`/social/media/${encodeURIComponent(mediaType)}/${encodeURIComponent(mediaId)}/reviews`, {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ rating, body }),
+      }),
+
+    updateReview: (accessToken, reviewId, rating, body = "") =>
+      request(`/social/reviews/${encodeURIComponent(reviewId)}`, {
+        method: "PATCH",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ rating, body }),
+      }),
+
+    deleteReview: (accessToken, reviewId) =>
+      request(`/social/reviews/${encodeURIComponent(reviewId)}`, {
+        method: "DELETE",
+        headers: authHeaders(accessToken),
+      }),
+
+    voteReview: (accessToken, reviewId, vote) =>
+      request(`/social/reviews/${encodeURIComponent(reviewId)}/vote`, {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ vote }),
+      }),
+
+    // Follows
+    followUser: (accessToken, userId) =>
+      request(`/follows/${encodeURIComponent(userId)}`, {
+        method: "POST",
+        headers: authHeaders(accessToken),
+      }),
+
+    unfollowUser: (accessToken, userId) =>
+      request(`/follows/${encodeURIComponent(userId)}`, {
+        method: "DELETE",
+        headers: authHeaders(accessToken),
+      }),
+
+    userFollows: (userId) =>
+      request(`/follows/users/${encodeURIComponent(userId)}`),
   };
 }

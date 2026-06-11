@@ -4,7 +4,9 @@ import { AuthScreen } from "./src/screens/AuthScreen";
 import { SearchScreen } from "./src/screens/SearchScreen";
 import { MediaDetailScreen } from "./src/screens/MediaDetailScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
-import { ShopScreen } from "./src/screens/ShopScreen";
+import { LibraryScreen } from "./src/screens/LibraryScreen";
+import { FeedScreen } from "./src/screens/FeedScreen";
+import { NotificationsScreen } from "./src/screens/NotificationsScreen";
 import { createApiClient, ApiError } from "./src/api/client";
 import { clearSession, loadSession, saveSession } from "./src/storage/session";
 import { API_BASE_URL } from "./src/config";
@@ -13,16 +15,20 @@ import { extractGoogleOAuthTokens } from "./src/oauth.mjs";
 const GOOGLE_MOBILE_REDIRECT_URI = "supcontentmusic://auth/callback";
 
 const TABS = [
-  { key: "shop", label: "Shop" },
-  { key: "search", label: "Search" },
-  { key: "profile", label: "Profile" },
+  { key: "feed", label: "Fil" },
+  { key: "search", label: "Recherche" },
+  { key: "library", label: "Biblio." },
+  { key: "notifs", label: "Notifs" },
+  { key: "profile", label: "Profil" },
 ];
 
 const ROUTE_TITLES = {
-  shop: "SUPCONTENT Shop",
-  search: "Music Search",
-  detail: "Media Details",
-  profile: "My Profile",
+  feed: "Fil d'actualité",
+  search: "Recherche musicale",
+  library: "Ma bibliothèque",
+  notifs: "Notifications",
+  profile: "Mon profil",
+  detail: "Détail",
 };
 
 export default function App() {
@@ -31,7 +37,7 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
-  const [route, setRoute] = useState({ name: "shop", params: null });
+  const [route, setRoute] = useState({ name: "feed", params: null });
 
   const persistSession = useCallback(async (next) => {
     setSession(next);
@@ -71,23 +77,20 @@ export default function App() {
     const refreshToken = session?.refreshToken;
     try {
       if (refreshToken) await api.logout(refreshToken);
-    } catch {
-      // ignore remote logout error
-    }
+    } catch {}
     await clearSession();
     setSession(null);
-    setRoute({ name: "shop", params: null });
+    setRoute({ name: "feed", params: null });
   }, [api, session?.refreshToken]);
 
   const callAuthed = useCallback(
     async (work) => {
-      if (!session?.accessToken) throw new ApiError("Not authenticated", 401);
+      if (!session?.accessToken) throw new ApiError("Non authentifié", 401);
       try {
         return await work(session.accessToken);
       } catch (e) {
         if (!(e instanceof ApiError) || e.status !== 401 || !session?.refreshToken) throw e;
       }
-
       const refreshed = await api.refresh(session.refreshToken);
       const nextSession = { ...session, accessToken: refreshed.accessToken };
       await persistSession(nextSession);
@@ -120,45 +123,32 @@ export default function App() {
     return () => subscription.remove();
   }, [hydrateOauthSession]);
 
-  const onLogin = useCallback(
-    async ({ email, password }) => {
-      setAuthLoading(true);
-      setAuthError("");
-      try {
-        const data = await api.login({ email, password });
-        await persistSession({
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-          user: data.user || null,
-        });
-      } catch (e) {
-        setAuthError(e?.message || "Login failed");
-      } finally {
-        setAuthLoading(false);
-      }
-    },
-    [api, persistSession]
-  );
+  // Auth
+  const onLogin = useCallback(async ({ email, password }) => {
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const data = await api.login({ email, password });
+      await persistSession({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: data.user || null });
+    } catch (e) {
+      setAuthError(e?.message || "Échec de la connexion");
+    } finally {
+      setAuthLoading(false);
+    }
+  }, [api, persistSession]);
 
-  const onRegister = useCallback(
-    async ({ email, password, displayName }) => {
-      setAuthLoading(true);
-      setAuthError("");
-      try {
-        const data = await api.register({ email, password, displayName });
-        await persistSession({
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken,
-          user: data.user || null,
-        });
-      } catch (e) {
-        setAuthError(e?.message || "Register failed");
-      } finally {
-        setAuthLoading(false);
-      }
-    },
-    [api, persistSession]
-  );
+  const onRegister = useCallback(async ({ email, password, displayName }) => {
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const data = await api.register({ email, password, displayName });
+      await persistSession({ accessToken: data.accessToken, refreshToken: data.refreshToken, user: data.user || null });
+    } catch (e) {
+      setAuthError(e?.message || "Échec de l'inscription");
+    } finally {
+      setAuthLoading(false);
+    }
+  }, [api, persistSession]);
 
   const onGoogleLogin = useCallback(async () => {
     setAuthLoading(true);
@@ -174,81 +164,70 @@ export default function App() {
     }
   }, []);
 
-  const searchMedia = useCallback(
-    async ({ q, type }) => {
-      const data = await api.search({ q, type });
-      return api.normalizeSearchItems(data);
-    },
-    [api]
-  );
+  // Search & Media
+  const searchMedia = useCallback(async ({ q, type }) => {
+    const data = await api.search({ q, type });
+    return api.normalizeSearchItems(data);
+  }, [api]);
 
-  const loadMedia = useCallback(
-    async ({ type, id }) => {
-      return api.media({ type, id });
-    },
-    [api]
-  );
+  const loadMedia = useCallback(async ({ type, id }) => api.media({ type, id }), [api]);
 
+  // Feed
+  const loadFeed = useCallback(async () => callAuthed((token) => api.feed(token)), [api, callAuthed]);
+
+  // Notifications
+  const loadNotifications = useCallback(async () => callAuthed((token) => api.notifications(token)), [api, callAuthed]);
+
+  // Collections / Library
+  const loadCollections = useCallback(async () => callAuthed((token) => api.collectionsMe(token)), [api, callAuthed]);
+
+  const createCollection = useCallback(async (payload) =>
+    callAuthed((token) => api.createCollection(token, payload)), [api, callAuthed]);
+
+  const deleteCollection = useCallback(async (id) =>
+    callAuthed((token) => api.deleteCollection(token, id)), [api, callAuthed]);
+
+  const updateCollection = useCallback(async (id, payload) =>
+    callAuthed((token) => api.updateCollection(token, id, payload)), [api, callAuthed]);
+
+  // Reviews
+  const loadReviews = useCallback(async (mediaType, mediaId) =>
+    api.mediaReviews(mediaType, mediaId, session?.accessToken || null), [api, session?.accessToken]);
+
+  const createReview = useCallback(async (mediaType, mediaId, rating, body) =>
+    callAuthed((token) => api.createReview(token, mediaType, mediaId, rating, body)), [api, callAuthed]);
+
+  const deleteReview = useCallback(async (reviewId) =>
+    callAuthed((token) => api.deleteReview(token, reviewId)), [api, callAuthed]);
+
+  const voteReview = useCallback(async (reviewId, vote) =>
+    callAuthed((token) => api.voteReview(token, reviewId, vote)), [api, callAuthed]);
+
+  // Add to status collection
+  const addToStatus = useCallback(async (status, mediaType, mediaId) =>
+    callAuthed((token) => api.addToStatus(token, status, mediaType, mediaId)), [api, callAuthed]);
+
+  // Follows
+  const followUser = useCallback(async (userId) =>
+    callAuthed((token) => api.followUser(token, userId)), [api, callAuthed]);
+
+  // Profile
   const refreshMe = useCallback(async () => {
     const data = await callAuthed((token) => api.me(token));
     await persistSession({ ...session, user: data.user || null });
     return data.user;
   }, [api, callAuthed, persistSession, session]);
 
-  const saveMe = useCallback(
-    async (payload) => {
-      const data = await callAuthed((token) => api.patchMe(token, payload));
-      await persistSession({ ...session, user: data.user || null });
-      return data.user;
-    },
-    [api, callAuthed, persistSession, session]
-  );
-
-  const loadShopProducts = useCallback(() => api.shopProducts(), [api]);
-  const loadShopCreators = useCallback(() => api.shopSpotlight(), [api]);
-
-  const loadShopFavorites = useCallback(async () => {
-    if (!session?.accessToken) return { product_ids: [] };
-    return callAuthed((token) => api.shopFavorites(token));
-  }, [api, callAuthed, session?.accessToken]);
-
-  const loadShopCart = useCallback(async () => {
-    if (!session?.accessToken) return { items: [] };
-    return callAuthed((token) => api.shopCart(token));
-  }, [api, callAuthed, session?.accessToken]);
-
-  const addShopToCart = useCallback(
-    async (productId) => callAuthed((token) => api.shopAddToCart(token, productId)),
-    [api, callAuthed]
-  );
-
-  const removeShopFromCart = useCallback(
-    async (cartItemId) => callAuthed((token) => api.shopRemoveFromCart(token, cartItemId)),
-    [api, callAuthed]
-  );
-
-  const toggleShopFavorite = useCallback(
-    async (productId, isFavorite) =>
-      callAuthed((token) =>
-        isFavorite ? api.shopRemoveFavorite(token, productId) : api.shopAddFavorite(token, productId)
-      ),
-    [api, callAuthed]
-  );
-
-  const checkoutShop = useCallback(
-    async () => callAuthed((token) => api.shopCheckout(token)),
-    [api, callAuthed]
-  );
-
-  const publishShopProduct = useCallback(
-    async (payload) => callAuthed((token) => api.shopPublishProduct(token, payload)),
-    [api, callAuthed]
-  );
+  const saveMe = useCallback(async (payload) => {
+    const data = await callAuthed((token) => api.patchMe(token, payload));
+    await persistSession({ ...session, user: data.user || null });
+    return data.user;
+  }, [api, callAuthed, persistSession, session]);
 
   if (booting) {
     return (
       <SafeAreaView style={styles.boot}>
-        <Text style={styles.bootText}>Loading mobile app...</Text>
+        <Text style={styles.bootText}>SUPCONTENT Music</Text>
       </SafeAreaView>
     );
   }
@@ -271,40 +250,44 @@ export default function App() {
   return (
     <SafeAreaView style={styles.root}>
       <StatusBar barStyle="light-content" />
+
       <View style={styles.topBar}>
         {route.name === "detail" ? (
           <Pressable style={styles.topBtn} onPress={() => navigate(route.previous || "search")}>
-            <Text style={styles.topBtnText}>Back</Text>
+            <Text style={styles.topBtnText}>← Retour</Text>
           </Pressable>
         ) : (
           <View style={styles.topBtnPlaceholder} />
         )}
-        <Text style={styles.topTitle}>{ROUTE_TITLES[route.name] || "SUPCONTENT Mobile"}</Text>
+        <Text style={styles.topTitle}>{ROUTE_TITLES[route.name] || "SUPCONTENT"}</Text>
         <Pressable style={styles.topBtn} onPress={logout}>
-          <Text style={styles.topBtnText}>Logout</Text>
+          <Text style={styles.topBtnText}>Déco.</Text>
         </Pressable>
       </View>
 
       <View style={styles.content}>
+        {route.name === "feed" ? (
+          <FeedScreen onLoadFeed={loadFeed} onOpenDetail={(type, id) => navigate("detail", { type, id })} />
+        ) : null}
+
         {route.name === "search" ? (
-          <SearchScreen
-            onSearch={searchMedia}
-            onOpenDetail={(type, id) => navigate("detail", { type, id })}
+          <SearchScreen onSearch={searchMedia} onOpenDetail={(type, id) => navigate("detail", { type, id })} />
+        ) : null}
+
+        {route.name === "library" ? (
+          <LibraryScreen
+            onLoadCollections={loadCollections}
+            onCreateCollection={createCollection}
+            onDeleteCollection={deleteCollection}
+            onUpdateCollection={updateCollection}
           />
         ) : null}
 
-        {route.name === "shop" ? (
-          <ShopScreen
-            currentUser={session.user}
-            onLoadProducts={loadShopProducts}
-            onLoadCreators={loadShopCreators}
-            onLoadFavorites={loadShopFavorites}
-            onLoadCart={loadShopCart}
-            onAddToCart={addShopToCart}
-            onRemoveFromCart={removeShopFromCart}
-            onToggleFavorite={toggleShopFavorite}
-            onCheckout={checkoutShop}
-            onPublish={publishShopProduct}
+        {route.name === "notifs" ? (
+          <NotificationsScreen
+            onLoadNotifications={loadNotifications}
+            onFollowUser={followUser}
+            onNavigate={navigate}
           />
         ) : null}
 
@@ -313,6 +296,12 @@ export default function App() {
             mediaType={route.params?.type}
             mediaId={route.params?.id}
             onLoad={loadMedia}
+            onLoadReviews={loadReviews}
+            onCreateReview={createReview}
+            onDeleteReview={deleteReview}
+            onVoteReview={voteReview}
+            onAddToStatus={addToStatus}
+            session={session}
           />
         ) : null}
 
@@ -324,17 +313,10 @@ export default function App() {
       {route.name !== "detail" ? (
         <View style={styles.bottomTabs}>
           {TABS.map((tab) => (
-            <TabButton
-              key={tab.key}
-              label={tab.label}
-              active={route.name === tab.key}
-              onPress={() => navigate(tab.key)}
-            />
+            <TabButton key={tab.key} label={tab.label} active={route.name === tab.key} onPress={() => navigate(tab.key)} />
           ))}
         </View>
       ) : null}
-
-      <Text style={styles.apiHint}>API: {API_BASE_URL}</Text>
     </SafeAreaView>
   );
 }
@@ -342,7 +324,7 @@ export default function App() {
 function TabButton({ label, active, onPress }) {
   return (
     <Pressable style={[styles.tabBtn, active && styles.tabBtnActive]} onPress={onPress}>
-      <Text style={styles.tabText}>{label}</Text>
+      <Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text>
     </Pressable>
   );
 }
@@ -350,9 +332,9 @@ function TabButton({ label, active, onPress }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: "#050914" },
   boot: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#050914" },
-  bootText: { color: "#e8f0ff", fontWeight: "700" },
+  bootText: { color: "#77c3ff", fontWeight: "900", fontSize: 22, letterSpacing: 2 },
   topBar: {
-    height: 58,
+    height: 54,
     paddingHorizontal: 12,
     borderBottomWidth: 1,
     borderBottomColor: "#22324d",
@@ -361,9 +343,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#0a1223",
   },
-  topTitle: { color: "#f3f6ff", fontWeight: "900", fontSize: 16 },
+  topTitle: { color: "#f3f6ff", fontWeight: "900", fontSize: 15 },
   topBtn: {
-    minWidth: 64,
+    minWidth: 60,
     borderWidth: 1,
     borderColor: "#334b72",
     backgroundColor: "#12203a",
@@ -371,15 +353,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: 10,
   },
-  topBtnPlaceholder: { minWidth: 64 },
+  topBtnPlaceholder: { minWidth: 60 },
   topBtnText: { textAlign: "center", color: "#d9e8ff", fontWeight: "700", fontSize: 12 },
   content: { flex: 1 },
   bottomTabs: {
     flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 12,
+    gap: 5,
+    paddingHorizontal: 10,
     paddingTop: 8,
-    paddingBottom: 14,
+    paddingBottom: 12,
     borderTopWidth: 1,
     borderTopColor: "#22324d",
     backgroundColor: "#0a1223",
@@ -388,17 +370,11 @@ const styles = StyleSheet.create({
     flex: 1,
     borderWidth: 1,
     borderColor: "#2f4264",
-    borderRadius: 10,
+    borderRadius: 9,
     backgroundColor: "#121d33",
-    paddingVertical: 10,
+    paddingVertical: 9,
   },
   tabBtnActive: { borderColor: "#76c4ff", backgroundColor: "#1b2b47" },
-  tabText: { textAlign: "center", color: "#e3edff", fontWeight: "700" },
-  apiHint: {
-    position: "absolute",
-    right: 10,
-    bottom: 84,
-    color: "#7088b3",
-    fontSize: 10,
-  },
+  tabText: { textAlign: "center", color: "#8fa8d8", fontWeight: "700", fontSize: 11 },
+  tabTextActive: { color: "#e3edff" },
 });
