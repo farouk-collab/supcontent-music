@@ -82,8 +82,15 @@ export function SearchScreen({ onSearch, onOpenDetail }) {
               <Text style={styles.sub} numberOfLines={1}>
                 {item.subtitle || "-"}
               </Text>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{item.type}</Text>
+              <View style={styles.badgeRow}>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{item.type}</Text>
+                </View>
+                {item.previewUrl ? (
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>Preview</Text>
+                  </View>
+                ) : null}
               </View>
             </View>
           </Pressable>
@@ -140,7 +147,6 @@ const styles = StyleSheet.create({
   name: { color: "#eff4ff", fontWeight: "800" },
   sub: { color: "#8fa2c9", marginTop: 2, fontSize: 12 },
   badge: {
-    marginTop: 8,
     alignSelf: "flex-start",
     borderWidth: 1,
     borderColor: "#334665",
@@ -148,6 +154,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 4,
   },
+  badgeRow: { flexDirection: "row", gap: 6, marginTop: 8, flexWrap: "wrap" },
   badgeText: { color: "#9fb3db", fontSize: 11, textTransform: "uppercase", fontWeight: "700" },
   empty: { color: "#8ea2ca", marginTop: 24, textAlign: "center" },
 });

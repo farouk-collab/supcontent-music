@@ -10,6 +10,8 @@ import path from "path";
 dotenv.config();
 
 import { pool, redis } from "./connections";
+import { ensureUsersTable } from "./db/users";
+import { ensureRefreshTokensTable } from "./db/refreshTokens";
 import { ensureCollectionsTables } from "./db/collections";
 import { ensureSocialTables } from "./db/social";
 import { ensureFollowTables } from "./db/follows";
@@ -44,6 +46,7 @@ import { AuthedRequest, requireAuth } from "./middleware/requireAuth";
 
 const app = express();
 app.set("trust proxy", 1);
+const DEV_AUDIO_PREVIEW_URL = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
 app.use(
   helmet({
@@ -401,9 +404,9 @@ app.get("/search", async (req, res) => {
       const statusCode = e?.status ?? e?.response?.status ?? null;
       const errData = e?.data ?? e?.response?.data ?? null;
       const errMessage =
-        (errData && (errData.error?.message || errData.message)) || e?.message || "";
+        (errData && (errData.error?.message || errData.message || errData.error || errData.error_description)) || e?.message || "";
       if (statusCode === 400 && String(errMessage).includes("Invalid limit")) {
-        console.warn("Spotify returned Invalid limit — retrying with smaller limit=10");
+        console.warn("Spotify returned Invalid limit - retrying with smaller limit=10");
         const fallback = await spotifySearch({ q, type, limit: 10, offset: 0 });
         try {
           await redis.set(cacheKey, JSON.stringify(fallback), "EX", 300);
@@ -414,7 +417,11 @@ app.get("/search", async (req, res) => {
         res.setHeader("X-Cache", "MISS");
         return res.json(fallback);
       }
-      if (statusCode === 429) {
+      const spotifyUnavailable =
+        statusCode === 429 ||
+        (statusCode === 400 && String(errMessage).toLowerCase().includes("invalid_client")) ||
+        (statusCode === 503 && String(errMessage).toLowerCase().includes("spotify credentials not configured"));
+      if (spotifyUnavailable) {
         try {
           const cached = await redis.get(cacheKey);
           if (cached) {
@@ -559,21 +566,27 @@ app.get("/search", async (req, res) => {
             }
           }
         }
+        const playableWindowed = windowed.map((it) => ({
+          ...it,
+          preview_url: String(it?.preview_url || DEV_AUDIO_PREVIEW_URL),
+          preview_is_demo: !it?.preview_url,
+        }));
         const degradedBucket = {
           href: "",
-          items: windowed,
+          items: playableWindowed,
           limit: finalLimit,
           next: null,
           offset: finalOffset,
           previous: null,
           total: sourcePool.length,
         };
+        const degradedReason = statusCode === 429 ? "spotify_rate_limited" : "spotify_unconfigured";
         const degraded =
           type === "album"
-            ? { albums: degradedBucket, degraded: true, degraded_reason: "spotify_rate_limited" }
+            ? { albums: degradedBucket, degraded: true, degraded_reason: degradedReason }
             : type === "artist"
-              ? { artists: degradedBucket, degraded: true, degraded_reason: "spotify_rate_limited" }
-              : { tracks: degradedBucket, degraded: true, degraded_reason: "spotify_rate_limited" };
+              ? { artists: degradedBucket, degraded: true, degraded_reason: degradedReason }
+              : { tracks: degradedBucket, degraded: true, degraded_reason: degradedReason };
         res.setHeader("X-Cache", "EMPTY-FALLBACK");
         return res.status(200).json(degraded);
       }
@@ -629,7 +642,12 @@ app.get("/media/:type/:id", async (req, res) => {
     const type = String(req.params.type || "").trim();
     const id = String(req.params.id || "").trim();
     const statusCode = e?.status ?? e?.response?.status ?? 500;
-    if (statusCode === 429 && ["track", "album", "artist"].includes(type) && id) {
+    const errMessage = JSON.stringify(e?.data ?? e?.response?.data ?? e?.message ?? "").toLowerCase();
+    const spotifyUnavailable =
+      statusCode === 429 ||
+      (statusCode === 400 && errMessage.includes("invalid_client")) ||
+      (statusCode === 503 && errMessage.includes("spotify credentials not configured"));
+    if (spotifyUnavailable && ["track", "album", "artist"].includes(type) && id) {
       const cacheKey = `media:v1:${type}:${id}`;
       try {
         const cached = await redis.get(cacheKey);
@@ -696,10 +714,26 @@ app.get("/media/:type/:id", async (req, res) => {
           album: { images: [{ url: oembed.image }] },
           images: [{ url: oembed.image }],
           external_urls: { spotify: spotifyUrl },
+          preview_url: DEV_AUDIO_PREVIEW_URL,
+          preview_is_demo: true,
           degraded: true,
-          degraded_reason: "spotify_rate_limited",
+          degraded_reason: statusCode === 429 ? "spotify_rate_limited" : "spotify_unconfigured",
         });
       }
+      res.setHeader("X-Cache", "DEMO-FALLBACK");
+      return res.status(200).json({
+        id,
+        type,
+        name: type === "artist" ? "Artiste Spotify" : type === "album" ? "Album Spotify" : "Titre Spotify",
+        artists: [],
+        album: { images: [] },
+        images: [],
+        external_urls: { spotify: spotifyUrl },
+        preview_url: DEV_AUDIO_PREVIEW_URL,
+        preview_is_demo: true,
+        degraded: true,
+        degraded_reason: statusCode === 429 ? "spotify_rate_limited" : "spotify_unconfigured",
+      });
     }
     console.error(
       "Spotify /media error:",
@@ -1333,36 +1367,23 @@ app.get("/", (_req, res) => {
 const PORT = process.env.PORT || 1234;
 app.listen(PORT, () => console.log(`?? API: http://localhost:${PORT}`));
 
-ensureCollectionsTables().catch((err) => {
-  console.error("Collections tables init failed (non-blocking):", err?.message || err);
-});
+async function ensureDatabaseTables() {
+  await ensureUsersTable();
+  await ensureRefreshTokensTable();
+  await ensureFollowTables();
+  await Promise.all([
+    ensureCollectionsTables(),
+    ensureSocialTables(),
+    ensureSpotifyLinksTable(),
+    ensurePasswordResetTable(),
+    ensureProfilePostsTable(),
+    ensureLiveTables(),
+    ensureShopTables(),
+  ]);
+  await ensureChatTables();
+}
 
-ensureSocialTables().catch((err) => {
-  console.error("Social tables init failed (non-blocking):", err?.message || err);
-});
-
-ensureFollowTables().catch((err) => {
-  console.error("Follow tables init failed (non-blocking):", err?.message || err);
-});
-
-ensureSpotifyLinksTable().catch((err) => {
-  console.error("Spotify links table init failed (non-blocking):", err?.message || err);
-});
-
-ensurePasswordResetTable().catch((err) => {
-  console.error("Password reset table init failed (non-blocking):", err?.message || err);
-});
-
-ensureProfilePostsTable().catch((err) => {
-  console.error("Profile posts table init failed (non-blocking):", err?.message || err);
-});
-ensureChatTables().catch((err) => {
-  console.error("Chat tables init failed (non-blocking):", err?.message || err);
-});
-ensureLiveTables().catch((err) => {
-  console.error("Live tables init failed (non-blocking):", err?.message || err);
-});
-ensureShopTables().catch((err) => {
-  console.error("Shop tables init failed (non-blocking):", err?.message || err);
+ensureDatabaseTables().catch((err) => {
+  console.error("Database tables init failed (non-blocking):", err?.message || err);
 });
 

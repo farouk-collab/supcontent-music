@@ -284,10 +284,11 @@ router.post("/checkout", requireAuth, async (req: AuthedRequest, res) => {
 
   const totalAmount = cartRows.rows.reduce((sum: number, row: any) => sum + Number(row.price || 0), 0);
   const orderId = makeShopEntityId();
+  const client = await pool.connect();
 
-  await pool.query("BEGIN");
   try {
-    await pool.query(
+    await client.query("BEGIN");
+    await client.query(
       `
         INSERT INTO shop_orders (id, user_id, total_amount, item_count, status, created_at)
         VALUES ($1, $2, $3, $4, 'paid', NOW())
@@ -296,7 +297,7 @@ router.post("/checkout", requireAuth, async (req: AuthedRequest, res) => {
     );
 
     for (const row of cartRows.rows) {
-      await pool.query(
+      await client.query(
         `
           INSERT INTO shop_order_items (id, order_id, product_id, unit_price, created_at)
           VALUES ($1, $2, $3, $4, NOW())
@@ -305,7 +306,7 @@ router.post("/checkout", requireAuth, async (req: AuthedRequest, res) => {
       );
     }
 
-    await pool.query(
+    await client.query(
       `
         UPDATE shop_products sp
         SET sales_count = sp.sales_count + src.sales_delta,
@@ -321,11 +322,13 @@ router.post("/checkout", requireAuth, async (req: AuthedRequest, res) => {
       [userId]
     );
 
-    await pool.query(`DELETE FROM shop_cart_items WHERE user_id = $1`, [userId]);
-    await pool.query("COMMIT");
+    await client.query(`DELETE FROM shop_cart_items WHERE user_id = $1`, [userId]);
+    await client.query("COMMIT");
   } catch (error) {
-    await pool.query("ROLLBACK");
+    await client.query("ROLLBACK");
     throw error;
+  } finally {
+    client.release();
   }
 
   return res.status(201).json({

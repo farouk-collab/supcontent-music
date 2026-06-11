@@ -47,6 +47,51 @@ const dom = {
   testsBox: document.querySelector("#authTestsBox"),
 };
 
+function askPassword() {
+  return new Promise((resolve) => {
+    const modal = document.createElement("div");
+    modal.className = "auth-reset-modal";
+    modal.innerHTML = `
+      <form class="auth-reset-card">
+        <h2>Nouveau mot de passe</h2>
+        <p>Utilise au moins 8 caracteres avec majuscule, minuscule, chiffre et caractere special.</p>
+        <input name="password" type="password" autocomplete="new-password" placeholder="Nouveau mot de passe" required />
+        <div>
+          <button type="button" data-cancel="1">Annuler</button>
+          <button type="submit">Reinitialiser</button>
+        </div>
+      </form>
+    `;
+    const style = document.createElement("style");
+    style.textContent = `
+      .auth-reset-modal{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.68)}
+      .auth-reset-card{width:min(440px,100%);border:1px solid rgba(255,255,255,.12);border-radius:24px;background:#111827;color:#fff;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+      .auth-reset-card h2{margin:0;font-size:22px}.auth-reset-card p{margin:10px 0 0;color:#a1a1aa;line-height:1.45}
+      .auth-reset-card input{width:100%;margin-top:16px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:#0b1020;color:#fff;padding:13px;font:inherit}
+      .auth-reset-card div{display:flex;gap:10px;justify-content:flex-end;margin-top:16px;flex-wrap:wrap}
+      .auth-reset-card button{border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(255,255,255,.08);color:#fff;padding:10px 14px;font-weight:800;cursor:pointer}
+      .auth-reset-card button[type=submit]{background:#34d399;color:#04130d;border-color:#34d399}
+    `;
+    const close = (value) => {
+      modal.remove();
+      style.remove();
+      resolve(value);
+    };
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+    const input = modal.querySelector("input");
+    input?.focus();
+    modal.querySelector("[data-cancel]")?.addEventListener("click", () => close(""));
+    modal.addEventListener("mousedown", (event) => {
+      if (event.target === modal) close("");
+    });
+    modal.querySelector("form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      close(String(input?.value || ""));
+    });
+  });
+}
+
 function runLoginTests() {
   const cases = [
     { check: () => FEATURE_CARDS.length === 3 },
@@ -213,7 +258,7 @@ async function consumeResetTokenFromUrl() {
 
   state.mode = "forgot";
   renderForm();
-  const nextPassword = window.prompt("Nouveau mot de passe (8+ caracteres, maj/min/chiffre/special):", "");
+  const nextPassword = await askPassword();
   if (!nextPassword) return;
 
   try {
@@ -260,6 +305,18 @@ async function handleLogin() {
 async function handleRegister() {
   if (!state.name.trim() || !state.email.trim() || !state.password.trim()) {
     setFeedback("Nom, email et mot de passe requis");
+    return;
+  }
+  if (
+    state.password.length < 8 ||
+    !/[A-Z]/.test(state.password) ||
+    !/[a-z]/.test(state.password) ||
+    !/[0-9]/.test(state.password) ||
+    !/[^A-Za-z0-9]/.test(state.password)
+  ) {
+    const message = "Mot de passe requis : 8 caracteres minimum, une majuscule, une minuscule, un chiffre et un caractere special.";
+    setFeedback(message);
+    toast(message, "Erreur");
     return;
   }
 

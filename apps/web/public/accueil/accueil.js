@@ -28,16 +28,16 @@ const HOME_MOCK_FEED = [
 ];
 const HOME_MOCK_CATEGORIES = {
   trending: [
-    { id: "trend-1", type: "track", name: "HÃ‰ TCHAI (feat. Jojo Le Barbu & Suspect95)", artists: [{ name: "Himra, Jojo le Barbu, Suspect95" }], image: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80" }] } },
+    { id: "trend-1", type: "track", name: "HE TCHAI (feat. Jojo Le Barbu & Suspect95)", artists: [{ name: "Himra, Jojo le Barbu, Suspect95" }], image: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "trend-2", type: "track", name: "CIEL", artists: [{ name: "GIMS" }], image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=900&q=80" }] } },
-    { id: "trend-3", type: "track", name: "Jâ€™emmÃ¨ne au vent", artists: [{ name: "Louise Attaque" }], image: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=900&q=80" }] } },
+    { id: "trend-3", type: "track", name: "J'emmene au vent", artists: [{ name: "Louise Attaque" }], image: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1519996529931-28324d5a630e?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "trend-4", type: "track", name: "Recommence-moi", artists: [{ name: "SANTA" }], image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?auto=format&fit=crop&w=900&q=80" }] } },
   ],
   rap: [
-    { id: "rap-1", type: "track", name: "BÃ©bÃ© Ã  panthÃ¨re", artists: [{ name: "SDM, Niska" }], image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80" }] } },
+    { id: "rap-1", type: "track", name: "Bebe a panthere", artists: [{ name: "SDM, Niska" }], image: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "rap-2", type: "track", name: "A7", artists: [{ name: "SCH" }], image: "https://images.unsplash.com/photo-1501612780327-45045538702b?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1501612780327-45045538702b?auto=format&fit=crop&w=900&q=80" }] } },
     { id: "rap-3", type: "track", name: "Air Max", artists: [{ name: "Gazo, Tiakola, Maes" }], image: "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1504593811423-6dd665756598?auto=format&fit=crop&w=900&q=80" }] } },
-    { id: "rap-4", type: "track", name: "ParanoÃ¯enne", artists: [{ name: "L2B" }], image: "https://images.unsplash.com/photo-1507677428836-81f7639c8f26?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1507677428836-81f7639c8f26?auto=format&fit=crop&w=900&q=80" }] } },
+    { id: "rap-4", type: "track", name: "Paranoienne", artists: [{ name: "L2B" }], image: "https://images.unsplash.com/photo-1507677428836-81f7639c8f26?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1507677428836-81f7639c8f26?auto=format&fit=crop&w=900&q=80" }] } },
   ],
   afro: [
     { id: "afro-1", type: "track", name: "Whoâ€™s Dat Girl", artists: [{ name: "Aya Starr, Rema" }], image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80", album: { images: [{ url: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80" }] } },
@@ -185,7 +185,7 @@ function notifIcon(type) {
     follow: "+",
     comment: "??",
     playlist: "?",
-    system: "â€¢",
+    system: "-",
   };
   return icons[type] || icons.system;
 }
@@ -291,8 +291,8 @@ function startRealtimeNotifications() {
     if (document.hidden) return;
     loadHomeNotifications({ silent: false }).catch(() => {});
   }, 15000);
-  /* legacy mock code removed
-    lastRealtimeEvent = `${next.user} â€¢ ${next.text}`;
+  /* legacy sample code removed
+    lastRealtimeEvent = `${next.user} - ${next.text}`;
     renderNotifications();
     index += 1;
   */
@@ -358,7 +358,7 @@ function bindLogout() {
     e.preventDefault();
     await serverLogout();
     syncAuthUI();
-    toast("DÃ©connectÃ©.", "OK");
+    toast("Deconnecte.", "OK");
   });
 }
 
@@ -609,7 +609,7 @@ async function loadMusicNews() {
       : `<small style="color:var(--muted)">Sois le premier à partager une review ou une collection.</small>`;
   } catch (err) {
     renderMockNews();
-    console.warn("Actualites musique en fallback mock:", err?.message || err);
+    console.warn("Actualites musique en donnees de secours:", err?.message || err);
   }
 }
 
@@ -640,9 +640,9 @@ function renderFollowingFeedItem(it) {
         </div>
       </a>
       <div class="home-feed-meta">
-        <span>â™¡ ${Math.max(12, text.length)}</span>
-        <span>Ã°Å¸â€™Â¬ ${Math.max(3, Math.floor((text.length || 10) / 14))}</span>
-        <span>â†— Partager</span>
+        <span>Like ${Math.max(12, text.length)}</span>
+        <span>Commentaires ${Math.max(3, Math.floor((text.length || 10) / 14))}</span>
+        <span>Partager</span>
       </div>
     </article>
   `;
@@ -730,7 +730,7 @@ async function loadMusicCategories() {
   }
 
   if (HOME_FORCE_MOCK) {
-    setFeedModeHint("mock visuel");
+    setFeedModeHint("visuel de secours");
     fillCategoryTracksFromMap(HOME_MOCK_CATEGORIES, categoryKeys);
     return;
   }
@@ -812,8 +812,8 @@ async function loadMusicCategories() {
       finalItems.forEach((it) => trackEl.appendChild(makeTile(it)));
     }
   } catch (err) {
-    console.warn("Spotify categories en fallback mock:", err?.message || err);
-    setFeedModeHint("fallback visuel");
+    console.warn("Spotify categories en donnees de secours:", err?.message || err);
+    setFeedModeHint("visuel de secours");
     fillCategoryTracksFromMap(HOME_MOCK_CATEGORIES, categoryKeys);
   }
 }

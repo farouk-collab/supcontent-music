@@ -63,6 +63,7 @@ async function loadNotifications(onFollowSuccess) {
     const followers = Array.isArray(data?.followers) ? data.followers : [];
     const suggestions = Array.isArray(data?.suggestions) ? data.suggestions : [];
     const replies = Array.isArray(data?.comment_replies) ? data.comment_replies : [];
+    const reviewLikes = Array.isArray(data?.review_likes) ? data.review_likes : [];
 
     followersBox.innerHTML = `
       <h4 style="margin:0 0 8px 0">Nouveaux followers</h4>
@@ -89,6 +90,26 @@ async function loadNotifications(onFollowSuccess) {
               )
               .join("")
           : `<small style="color:var(--muted)">Aucune reponse recente.</small>`
+      }
+      <h4 style="margin:16px 0 8px 0">Likes sur tes critiques</h4>
+      ${
+        reviewLikes.length
+          ? reviewLikes
+              .map(
+                (like) => `
+                <a class="news-item" href="${mediaHref(like.media_type, like.media_id)}">
+                  <div class="news-cover" style="width:40px;height:40px;border-radius:999px">
+                    ${like.avatar_url ? `<img src="${escapeHtml(resolveMediaUrl(String(like.avatar_url)))}" alt="">` : `<span class="badge">L</span>`}
+                  </div>
+                  <div>
+                    <div class="news-title">@${escapeHtml(String(like.username || "user"))} aime ta critique</div>
+                    <div class="news-sub">${escapeHtml(String(like.media_type || "media"))} - ${escapeHtml(String(like.media_id || ""))}</div>
+                  </div>
+                </a>
+              `
+              )
+              .join("")
+          : `<small style="color:var(--muted)">Aucun like recent.</small>`
       }
     `;
 

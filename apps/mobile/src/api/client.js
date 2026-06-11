@@ -42,6 +42,13 @@ export function createApiClient() {
     return parseResponse(response);
   }
 
+  function authHeaders(accessToken, extra = {}) {
+    return {
+      ...extra,
+      Authorization: `Bearer ${accessToken}`,
+    };
+  }
+
   return {
     register: ({ email, password, displayName }) =>
       request("/auth/register", {
@@ -96,6 +103,118 @@ export function createApiClient() {
     media: ({ type, id }) =>
       request(`/media/${encodeURIComponent(type)}/${encodeURIComponent(id)}`),
 
+    collections: (accessToken) =>
+      request("/collections/me?include_items=1", {
+        headers: authHeaders(accessToken),
+      }),
+
+    createCollection: (accessToken, payload) =>
+      request("/collections", {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      }),
+
+    patchCollection: (accessToken, id, payload) =>
+      request(`/collections/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      }),
+
+    deleteCollection: (accessToken, id) =>
+      request(`/collections/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+        headers: authHeaders(accessToken),
+      }),
+
+    addCollectionItem: (accessToken, collectionId, payload) =>
+      request(`/collections/${encodeURIComponent(collectionId)}/items`, {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      }),
+
+    removeCollectionItem: (accessToken, collectionId, mediaType, mediaId) =>
+      request(
+        `/collections/${encodeURIComponent(collectionId)}/items/${encodeURIComponent(mediaType)}/${encodeURIComponent(mediaId)}`,
+        {
+          method: "DELETE",
+          headers: authHeaders(accessToken),
+        }
+      ),
+
+    addStatusItem: (accessToken, status, payload) =>
+      request(`/collections/status/${encodeURIComponent(status)}/items`, {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      }),
+
+    socialForMedia: (accessToken, { type, id }) =>
+      request(`/social/media/${encodeURIComponent(type)}/${encodeURIComponent(id)}`, {
+        headers: accessToken ? authHeaders(accessToken) : {},
+      }),
+
+    createReview: (accessToken, { type, id, rating, body }) =>
+      request(`/social/media/${encodeURIComponent(type)}/${encodeURIComponent(id)}/reviews`, {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ rating, body }),
+      }),
+
+    patchReview: (accessToken, reviewId, payload) =>
+      request(`/social/reviews/${encodeURIComponent(reviewId)}`, {
+        method: "PATCH",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify(payload),
+      }),
+
+    deleteReview: (accessToken, reviewId) =>
+      request(`/social/reviews/${encodeURIComponent(reviewId)}`, {
+        method: "DELETE",
+        headers: authHeaders(accessToken),
+      }),
+
+    likeReview: (accessToken, reviewId, liked) =>
+      request(`/social/reviews/${encodeURIComponent(reviewId)}/like`, {
+        method: liked ? "DELETE" : "POST",
+        headers: authHeaders(accessToken),
+      }),
+
+    addComment: (accessToken, reviewId, body) =>
+      request(`/social/reviews/${encodeURIComponent(reviewId)}/comments`, {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ body }),
+      }),
+
+    feed: (accessToken) =>
+      request("/feed/me?limit=30", {
+        headers: authHeaders(accessToken),
+      }),
+
+    notifications: (accessToken) =>
+      request("/notifications/me?limit=20", {
+        headers: authHeaders(accessToken),
+      }),
+
+    searchUsers: (accessToken, q) =>
+      request(`/users/search?q=${encodeURIComponent(q)}&limit=20`, {
+        headers: accessToken ? authHeaders(accessToken) : {},
+      }),
+
+    follow: (accessToken, userId, following) =>
+      request(`/follows/${encodeURIComponent(userId)}`, {
+        method: following ? "DELETE" : "POST",
+        headers: authHeaders(accessToken),
+      }),
+
+    followsMe: (accessToken) =>
+      request("/follows/me?limit=50", {
+        headers: authHeaders(accessToken),
+      }),
+
     normalizeSearchItems: (payload) =>
       pickSearchItems(payload).map((item) => {
         const artists = Array.isArray(item?.artists)
@@ -110,6 +229,8 @@ export function createApiClient() {
           name: String(item?.name || "Unknown"),
           subtitle: artists.join(", ") || genres.join(", "),
           image: pickImage(item),
+          previewUrl: String(item?.preview_url || ""),
+          spotifyUrl: String(item?.external_urls?.spotify || item?.spotify_url || ""),
         };
       }),
   };

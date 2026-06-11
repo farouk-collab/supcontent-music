@@ -843,8 +843,8 @@ function syncSiteSettingsFromGlobalPreferences() {
 async function handleDeleteAccount() {
   const first = window.confirm("Supprimer ton compte ? Cette action est definitive.");
   if (!first) return;
-  const second = window.prompt("Tape SUPPRIMER pour confirmer");
-  if (second !== "SUPPRIMER") {
+  const second = window.confirm("Confirme une derniere fois la suppression definitive du compte.");
+  if (!second) {
     toast("Suppression annulee.", "Info");
     return;
   }

@@ -4,6 +4,9 @@ import { AuthScreen } from "./src/screens/AuthScreen";
 import { SearchScreen } from "./src/screens/SearchScreen";
 import { MediaDetailScreen } from "./src/screens/MediaDetailScreen";
 import { ProfileScreen } from "./src/screens/ProfileScreen";
+import { LibraryScreen } from "./src/screens/LibraryScreen";
+import { ActivityScreen } from "./src/screens/ActivityScreen";
+import { UsersScreen } from "./src/screens/UsersScreen";
 import { createApiClient, ApiError } from "./src/api/client";
 import { clearSession, loadSession, saveSession } from "./src/storage/session";
 import { API_BASE_URL } from "./src/config";
@@ -120,6 +123,94 @@ export default function App() {
     [api]
   );
 
+  const loadSocialForMedia = useCallback(
+    async ({ type, id }) => {
+      return callAuthed((token) => api.socialForMedia(token, { type, id }));
+    },
+    [api, callAuthed]
+  );
+
+  const addStatusItem = useCallback(
+    async (status, payload) => callAuthed((token) => api.addStatusItem(token, status, payload)),
+    [api, callAuthed]
+  );
+
+  const createReview = useCallback(
+    async (payload) => callAuthed((token) => api.createReview(token, payload)),
+    [api, callAuthed]
+  );
+
+  const patchReview = useCallback(
+    async (reviewId, payload) => callAuthed((token) => api.patchReview(token, reviewId, payload)),
+    [api, callAuthed]
+  );
+
+  const deleteReview = useCallback(
+    async (reviewId) => callAuthed((token) => api.deleteReview(token, reviewId)),
+    [api, callAuthed]
+  );
+
+  const likeReview = useCallback(
+    async (reviewId, liked) => callAuthed((token) => api.likeReview(token, reviewId, liked)),
+    [api, callAuthed]
+  );
+
+  const addComment = useCallback(
+    async (reviewId, body) => callAuthed((token) => api.addComment(token, reviewId, body)),
+    [api, callAuthed]
+  );
+
+  const loadCollections = useCallback(
+    async () => callAuthed((token) => api.collections(token)),
+    [api, callAuthed]
+  );
+
+  const createCollection = useCallback(
+    async (payload) => callAuthed((token) => api.createCollection(token, payload)),
+    [api, callAuthed]
+  );
+
+  const renameCollection = useCallback(
+    async (id, payload) => callAuthed((token) => api.patchCollection(token, id, payload)),
+    [api, callAuthed]
+  );
+
+  const deleteCollection = useCallback(
+    async (id) => callAuthed((token) => api.deleteCollection(token, id)),
+    [api, callAuthed]
+  );
+
+  const removeCollectionItem = useCallback(
+    async (collectionId, mediaType, mediaId) =>
+      callAuthed((token) => api.removeCollectionItem(token, collectionId, mediaType, mediaId)),
+    [api, callAuthed]
+  );
+
+  const loadFeed = useCallback(
+    async () => callAuthed((token) => api.feed(token)),
+    [api, callAuthed]
+  );
+
+  const loadNotifications = useCallback(
+    async () => callAuthed((token) => api.notifications(token)),
+    [api, callAuthed]
+  );
+
+  const searchUsers = useCallback(
+    async (q) => callAuthed((token) => api.searchUsers(token, q)),
+    [api, callAuthed]
+  );
+
+  const toggleFollow = useCallback(
+    async (userId, following) => callAuthed((token) => api.follow(token, userId, following)),
+    [api, callAuthed]
+  );
+
+  const loadFollows = useCallback(
+    async () => callAuthed((token) => api.followsMe(token)),
+    [api, callAuthed]
+  );
+
   const refreshMe = useCallback(async () => {
     const data = await callAuthed((token) => api.me(token));
     await persistSession({ ...session, user: data.user || null });
@@ -187,6 +278,36 @@ export default function App() {
             mediaType={route.params?.type}
             mediaId={route.params?.id}
             onLoad={loadMedia}
+            onLoadSocial={loadSocialForMedia}
+            onAddStatus={addStatusItem}
+            onCreateReview={createReview}
+            onPatchReview={patchReview}
+            onDeleteReview={deleteReview}
+            onLikeReview={likeReview}
+            onAddComment={addComment}
+          />
+        ) : null}
+
+        {route.name === "library" ? (
+          <LibraryScreen
+            onLoad={loadCollections}
+            onCreate={createCollection}
+            onRename={renameCollection}
+            onDelete={deleteCollection}
+            onRemoveItem={removeCollectionItem}
+            onOpenDetail={(type, id) => setRoute({ name: "detail", params: { type, id } })}
+          />
+        ) : null}
+
+        {route.name === "activity" ? (
+          <ActivityScreen onLoadFeed={loadFeed} onLoadNotifications={loadNotifications} />
+        ) : null}
+
+        {route.name === "users" ? (
+          <UsersScreen
+            onSearchUsers={searchUsers}
+            onToggleFollow={toggleFollow}
+            onLoadFollows={loadFollows}
           />
         ) : null}
 
@@ -201,6 +322,21 @@ export default function App() {
             label="Search"
             active={route.name === "search"}
             onPress={() => setRoute({ name: "search", params: null })}
+          />
+          <TabButton
+            label="Library"
+            active={route.name === "library"}
+            onPress={() => setRoute({ name: "library", params: null })}
+          />
+          <TabButton
+            label="Feed"
+            active={route.name === "activity"}
+            onPress={() => setRoute({ name: "activity", params: null })}
+          />
+          <TabButton
+            label="Users"
+            active={route.name === "users"}
+            onPress={() => setRoute({ name: "users", params: null })}
           />
           <TabButton
             label="Profile"

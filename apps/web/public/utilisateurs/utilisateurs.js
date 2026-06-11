@@ -434,7 +434,7 @@ function renderFeed() {
             <h3>Fil immersif</h3>
             <p>Comme un feed Reels : tu regardes un contenu, puis tu passes au suivant ou au precedent.</p>
             <div class="feed-nav" style="margin-top:14px;">
-              <span class="badge">swipe gauche/droite simule</span>
+              <span class="badge">swipe gauche/droite</span>
               <span class="badge">double tap pour liker</span>
               <span class="badge">ouvrir le profil</span>
             </div>

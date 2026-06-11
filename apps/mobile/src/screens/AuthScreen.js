@@ -25,7 +25,7 @@ export function AuthScreen({ onLogin, onRegister, loading, errorText }) {
   return (
     <View style={styles.wrap}>
       <Text style={styles.title}>SUPCONTENT Mobile</Text>
-      <Text style={styles.subtitle}>Auth + Search + Media + Profile</Text>
+      <Text style={styles.subtitle}>Decouvre, note, classe et suis la communaute musicale.</Text>
 
       <View style={styles.modeRow}>
         <Pressable

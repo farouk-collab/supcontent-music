@@ -41,6 +41,51 @@ function fillTemplate(html, values = {}) {
   return String(html || "").replace(/\{\{([A-Z0-9_]+)\}\}/g, (_m, key) => String(values[key] ?? ""));
 }
 
+function askText({ title, label, value = "" }) {
+  return new Promise((resolve) => {
+    const modal = document.createElement("div");
+    modal.className = "cmt-inline-modal";
+    modal.innerHTML = `
+      <form class="cmt-inline-card">
+        <h3>${escapeHtml(title)}</h3>
+        <label>${escapeHtml(label)}</label>
+        <textarea name="value" rows="5">${escapeHtml(value)}</textarea>
+        <div class="cmt-inline-actions">
+          <button class="reaction-chip" type="button" data-cancel="1">Annuler</button>
+          <button class="primary-action" type="submit">Enregistrer</button>
+        </div>
+      </form>
+    `;
+    const style = document.createElement("style");
+    style.textContent = `
+      .cmt-inline-modal{position:fixed;inset:0;z-index:9999;display:grid;place-items:center;padding:18px;background:rgba(0,0,0,.68)}
+      .cmt-inline-card{width:min(460px,100%);border:1px solid rgba(255,255,255,.12);border-radius:22px;background:#111827;padding:18px;box-shadow:0 24px 70px rgba(0,0,0,.5)}
+      .cmt-inline-card h3{margin:0;color:#fff;font-size:20px}
+      .cmt-inline-card label{display:block;margin-top:12px;color:#cbd5e1;font-weight:700;font-size:13px}
+      .cmt-inline-card textarea{width:100%;margin-top:8px;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:#0b1020;color:#fff;padding:12px;font:inherit;resize:vertical}
+      .cmt-inline-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap}
+    `;
+    const close = (valueToResolve) => {
+      modal.remove();
+      style.remove();
+      resolve(valueToResolve);
+    };
+    document.head.appendChild(style);
+    document.body.appendChild(modal);
+    const textarea = modal.querySelector("textarea");
+    textarea?.focus();
+    textarea?.select();
+    modal.querySelector("[data-cancel]")?.addEventListener("click", () => close(null));
+    modal.addEventListener("mousedown", (event) => {
+      if (event.target === modal) close(null);
+    });
+    modal.querySelector("form")?.addEventListener("submit", (event) => {
+      event.preventDefault();
+      close(String(textarea?.value || ""));
+    });
+  });
+}
+
 function normalizeMediaUrl(rawUrl) {
   return String(resolveMediaUrl(String(rawUrl || "").trim()) || "").trim();
 }
@@ -591,7 +636,7 @@ export function createSocialController({ socialBox, commentsSheet, commentsBackd
           const rating = Number(btn.getAttribute("data-rating") || 5);
           const bodyNode = btn.closest(".cmt-main")?.querySelector(".cmt-body");
           const currentBody = String(bodyNode?.textContent || "").trim();
-          const nextBody = window.prompt("Modifier ton commentaire:", currentBody);
+          const nextBody = await askText({ title: "Modifier la critique", label: "Texte", value: currentBody });
           if (nextBody == null) return;
           await apiFetch(`/social/reviews/${encodeURIComponent(reviewId)}`, {
             method: "PATCH",
@@ -721,7 +766,7 @@ export function createSocialController({ socialBox, commentsSheet, commentsBackd
           if (!commentId) return;
           const bodyNode = btn.closest(".cmt-main")?.querySelector(".cmt-body");
           const currentBody = String(bodyNode?.textContent || "").trim();
-          const nextBody = window.prompt("Modifier ta reponse:", currentBody);
+          const nextBody = await askText({ title: "Modifier la reponse", label: "Texte", value: currentBody });
           if (nextBody == null) return;
           await apiFetch(`/social/comments/${encodeURIComponent(commentId)}`, {
             method: "PATCH",

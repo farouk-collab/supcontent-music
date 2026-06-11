@@ -25,7 +25,7 @@
     .library-pill,.library-chip,.library-ghost,.library-primary,.library-badge{border-radius:999px;font:inherit;font-weight:700}
     .library-pill,.library-chip,.library-ghost,.library-badge{border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.08);color:#e5e7eb}
     .library-primary{border:1px solid transparent;background:#34d399;color:#04130d}
-    .library-pill,.library-chip,.library-ghost,.library-primary{cursor:pointer;padding:11px 16px;min-height:42px}
+    .library-pill,.library-chip,.library-ghost,.library-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;padding:11px 16px;min-height:42px;line-height:1.15}
     .library-chip.is-active{background:#34d399;border-color:#34d399;color:#04130d}
     .library-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;font-size:12px}
     .library-notifications{position:relative}
@@ -44,7 +44,7 @@
     .library-notif-card{width:100%;display:grid;grid-template-columns:42px 1fr;gap:12px;padding:12px;color:inherit;text-align:left;cursor:pointer}
     .library-notif-card.is-unread{background:rgba(217,70,239,.12);border-color:rgba(217,70,239,.24)}
     .library-notif-icon,.library-icon-btn,.library-player-cover{display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08)}
-    .library-notif-icon{width:42px;height:42px;border-radius:999px;font-size:18px}
+    .library-notif-icon{width:42px;height:42px;border-radius:999px;font-size:18px;line-height:1}
     .library-grid{display:grid;gap:20px;grid-template-columns:minmax(300px,.9fr) minmax(420px,1.15fr) minmax(300px,.95fr)}
     .library-col,.library-main,.library-side,.library-lower{padding:18px}
     .library-panel-title-row,.library-hero-top,.library-media-top,.library-player-head,.library-progress-meta{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
@@ -57,7 +57,8 @@
     .library-list-button.is-active{border-color:rgba(52,211,153,.34);background:rgba(16,185,129,.12)}
     .library-media-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
     .library-media-actions button,.library-transport button,.library-queue-move{cursor:pointer;font:inherit}
-    .library-icon-btn{width:42px;height:42px;border:none;border-radius:999px;color:#fff}
+    .library-icon-btn{width:42px;height:42px;border:none;border-radius:999px;color:#fff;line-height:1;font-size:20px;flex:0 0 auto}
+    .library-icon-btn svg,.library-pill svg,.library-chip svg,.library-ghost svg,.library-primary svg{width:1em;height:1em;display:block;flex:0 0 auto}
     .library-icon-btn.is-favorite{color:#86efac}
     .library-empty{padding:32px 18px;text-align:center;color:#a1a1aa}
     .library-stat-card{padding:14px}
@@ -77,6 +78,15 @@
     .library-footer-meta{min-width:0;flex:1}
     .library-footer-meta strong{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .library-footer-meta span{display:block;margin-top:4px;font-size:12px;color:#a1a1aa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .library-modal{position:fixed;inset:0;z-index:200;display:grid;place-items:center;padding:20px;background:rgba(0,0,0,.68)}
+    .library-modal[hidden]{display:none}
+    .library-modal-card{width:min(480px,100%);border:1px solid rgba(255,255,255,.12);border-radius:28px;background:rgba(17,24,39,.98);box-shadow:0 28px 80px rgba(0,0,0,.55);padding:22px}
+    .library-modal-card h2{margin:0;font-size:24px;line-height:1.15}
+    .library-modal-card p{margin:8px 0 0;color:#a1a1aa;font-size:14px;line-height:1.5}
+    .library-modal-field{display:grid;gap:8px;margin-top:18px}
+    .library-modal-field label{font-size:13px;color:#d1d5db;font-weight:700}
+    .library-modal-field input,.library-modal-field select{width:100%;min-height:46px;border:1px solid rgba(255,255,255,.12);border-radius:18px;background:rgba(0,0,0,.24);color:#fff;padding:0 14px;font:inherit;outline:0}
+    .library-modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:20px}
     @media (max-width:1180px){.library-hero-strip,.library-grid{grid-template-columns:1fr}}
     @media (max-width:860px){.library-header{flex-direction:column}.library-header-main{align-items:flex-start}.library-header-actions{justify-content:flex-start}.library-footer-row{flex-wrap:wrap}.library-footer-meta{flex:1 1 100%}}
   </style>
@@ -277,6 +287,17 @@
         </div>
       </div>
     </section>
+  </div>
+  <div id="libraryActionModal" class="library-modal" hidden>
+    <form id="libraryActionForm" class="library-modal-card">
+      <h2 id="libraryActionTitle">Action bibliotheque</h2>
+      <p id="libraryActionHint">Complete le champ pour continuer.</p>
+      <div id="libraryActionInputWrap" class="library-modal-field"></div>
+      <div class="library-modal-actions">
+        <button id="libraryActionCancel" class="library-pill" type="button">Annuler</button>
+        <button id="libraryActionSubmit" class="library-primary" type="submit">Valider</button>
+      </div>
+    </form>
   </div>
   <script type="module" src="/bibliotheque/bibliotheque.js"></script>
   <script type="module" src="/noyau/footer.js"></script>

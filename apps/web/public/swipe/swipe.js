@@ -758,7 +758,7 @@ async function performSwipe(direction) {
   }, ...state.history];
 
   if (!isAuthedSwipeUser()) {
-    if ((direction === "like" || direction === "superlike") && state.viewMode !== "music" && currentCard.mockReciprocalLike) {
+    if ((direction === "like" || direction === "superlike") && state.viewMode !== "music" && currentCard.hasReciprocalLike) {
       pushLocalMatch(currentCard, direction);
     }
     if (direction === "pass") state.passedIds = [...state.passedIds, currentCard.id];
@@ -786,7 +786,7 @@ async function performSwipe(direction) {
         method: "POST",
         body: JSON.stringify({ direction, message: direction === "superlike" ? "Super like envoye" : "" }),
       });
-      if ((direction === "like" || direction === "superlike") && (res?.can_chat_direct || currentCard.mockReciprocalLike)) {
+      if ((direction === "like" || direction === "superlike") && (res?.can_chat_direct || currentCard.hasReciprocalLike)) {
         const match = {
           matchId: String(res?.match?.id || `match-${currentCard.id}`),
           profileId: String(currentCard.id),
@@ -882,7 +882,7 @@ async function loadProfiles() {
   if (!isAuthedSwipeUser()) {
     state.profiles = [
       {
-        id: "mock-profile-1",
+        id: "sample-profile-1",
         name: "Nina.beats",
         age: 23,
         city: "Paris",
@@ -895,7 +895,7 @@ async function loadProfiles() {
         playlists: ["Late Night Energy", "Purple Lights"],
         bio: "Je cherche quelqu'un qui peut noter un album track par track sans sauter l'intro.",
         status: "Ecoute actuellement Timeless",
-        mockReciprocalLike: false,
+        hasReciprocalLike: false,
         gender: "female",
         heightCm: 168,
         race: "black",
@@ -904,7 +904,7 @@ async function loadProfiles() {
         raw: null,
       },
       {
-        id: "mock-profile-2",
+        id: "sample-profile-2",
         name: "Ayo.wav",
         age: 22,
         city: "Lome",
@@ -917,7 +917,7 @@ async function loadProfiles() {
         playlists: ["Afro Sunset", "Beach Bounce"],
         bio: "Je veux decouvrir des gens qui vivent la musique comme une ambiance entiere.",
         status: "En boucle sur DND",
-        mockReciprocalLike: true,
+        hasReciprocalLike: true,
         gender: "male",
         heightCm: 176,
         race: "black",
@@ -926,7 +926,7 @@ async function loadProfiles() {
         raw: null,
       },
       {
-        id: "mock-profile-3",
+        id: "sample-profile-3",
         name: "Luna.mix",
         age: 24,
         city: "Lyon",
@@ -939,7 +939,7 @@ async function loadProfiles() {
         playlists: ["Neon Pop", "3AM Feelings"],
         bio: "Je swipe surtout selon les gouts musicaux. Le reste vient apres.",
         status: "A partage une playlist aujourd'hui",
-        mockReciprocalLike: false,
+        hasReciprocalLike: false,
         gender: "female",
         heightCm: 164,
         race: "white",
@@ -1154,7 +1154,7 @@ async function bootstrap() {
       if (!state.profiles.length) {
         state.profiles = [
           {
-            id: "mock-profile-1",
+            id: "sample-profile-1",
             name: "Nina.beats",
             age: 23,
             city: "Paris",
@@ -1167,7 +1167,7 @@ async function bootstrap() {
             playlists: ["Late Night Energy", "Purple Lights"],
             bio: "Je cherche quelqu'un qui peut noter un album track par track sans sauter l'intro.",
             status: "Ecoute actuellement Timeless",
-            mockReciprocalLike: false,
+            hasReciprocalLike: false,
             gender: "female",
             heightCm: 168,
             race: "black",
@@ -1176,7 +1176,7 @@ async function bootstrap() {
             raw: null,
           },
           {
-            id: "mock-profile-2",
+            id: "sample-profile-2",
             name: "Ayo.wav",
             age: 22,
             city: "Lome",
@@ -1189,7 +1189,7 @@ async function bootstrap() {
             playlists: ["Afro Sunset", "Beach Bounce"],
             bio: "Je veux decouvrir des gens qui vivent la musique comme une ambiance entiere.",
             status: "En boucle sur DND",
-            mockReciprocalLike: true,
+            hasReciprocalLike: true,
             gender: "male",
             heightCm: 176,
             race: "black",

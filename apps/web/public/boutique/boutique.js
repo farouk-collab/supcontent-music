@@ -25,11 +25,15 @@ const EMPTY_UPLOAD_FORM = {
   description: "",
 };
 
+const SHOP_FAVORITES_STORAGE_KEY = "supcontent-shop-favorites-v2";
+const SHOP_CART_STORAGE_KEY = "supcontent-shop-cart-v2";
+const SHOP_PRODUCTS_STORAGE_KEY = "supcontent-shop-products-v2";
+
 const state = {
   query: "",
   activeType: "Tout",
   sortMode: "popularite",
-  favorites: ["p2"],
+  favorites: loadLocalShopFavorites(),
   followedCreators: [],
   cart: [],
   products: FALLBACK_PRODUCTS.slice(),
@@ -83,6 +87,63 @@ const refs = {
 
 const TYPES = ["Tout", "Beat", "Sample Pack", "Loop Kit", "Vocal Pack"];
 let previewTimer = 0;
+
+function readJsonStorage(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return parsed ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeJsonStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    toast("Impossible de sauvegarder cette action sur cet appareil.", "Boutique");
+  }
+}
+
+function loadLocalShopFavorites() {
+  const values = readJsonStorage(SHOP_FAVORITES_STORAGE_KEY, ["p2"]);
+  return Array.isArray(values) ? values.map((item) => String(item || "")).filter(Boolean) : ["p2"];
+}
+
+function persistLocalShopFavorites() {
+  writeJsonStorage(SHOP_FAVORITES_STORAGE_KEY, state.favorites);
+}
+
+function loadLocalShopCart() {
+  const values = readJsonStorage(SHOP_CART_STORAGE_KEY, []);
+  return Array.isArray(values) ? values.filter((item) => item && typeof item === "object") : [];
+}
+
+function persistLocalShopCart() {
+  writeJsonStorage(SHOP_CART_STORAGE_KEY, state.cart);
+}
+
+function loadLocalShopProducts() {
+  const values = readJsonStorage(SHOP_PRODUCTS_STORAGE_KEY, []);
+  return Array.isArray(values) ? values.filter((item) => item && typeof item === "object") : [];
+}
+
+function persistLocalShopProducts() {
+  const localProducts = state.products.filter((item) => String(item.id || "").startsWith("local-"));
+  writeJsonStorage(SHOP_PRODUCTS_STORAGE_KEY, localProducts);
+}
+
+function mergeLocalProducts(products) {
+  const localProducts = loadLocalShopProducts();
+  const byId = new Map([...localProducts, ...products].map((item) => [String(item.id || ""), item]));
+  return Array.from(byId.values());
+}
+
+function shouldUseLocalShopState() {
+  return state.usingFallback || !isLoggedIn();
+}
 
 function iconSvg(name) {
   const common = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"';
@@ -321,18 +382,18 @@ async function loadProducts() {
     const products = Array.isArray(productsData?.products) ? productsData.products : [];
     const creators = Array.isArray(creatorsData?.creators) ? creatorsData.creators : [];
     if (!products.length) throw new Error("Aucun produit boutique disponible");
-    state.products = products;
+    state.products = mergeLocalProducts(products);
     state.creators = creators.length ? creators : FALLBACK_CREATORS.slice();
-    state.previewItem = products[0];
+    state.previewItem = state.products[0];
     state.usingFallback = false;
     setFeedback("Boutique chargee depuis l'API");
   } catch (error) {
-    state.products = FALLBACK_PRODUCTS.slice();
+    state.products = mergeLocalProducts(FALLBACK_PRODUCTS.slice());
     state.creators = FALLBACK_CREATORS.slice();
     state.previewItem = state.products[0];
     state.usingFallback = true;
-    setFeedback("API boutique indisponible, mode demo active");
-    toast(error?.message || "Mode demo active", "Boutique");
+    setFeedback("API boutique indisponible, mode local actif");
+    toast(error?.message || "Mode local actif", "Boutique");
   }
   render();
 }
@@ -341,8 +402,8 @@ async function loadCurrentUser() {
   if (!isLoggedIn()) {
     state.currentUser = null;
     refs.formCreator.value = "";
-    refs.formCreator.placeholder = "Connecte-toi pour publier";
-    refs.formCreator.readOnly = true;
+    refs.formCreator.placeholder = "Nom artiste / beatmaker";
+    refs.formCreator.readOnly = false;
     return;
   }
 
@@ -360,7 +421,11 @@ async function loadCurrentUser() {
 }
 
 async function loadFavorites() {
-  if (!isLoggedIn()) return;
+  if (shouldUseLocalShopState()) {
+    state.favorites = loadLocalShopFavorites();
+    renderCatalogue();
+    return;
+  }
   try {
     const data = await apiFetch("/shop/favorites");
     state.favorites = Array.isArray(data?.product_ids) ? data.product_ids : state.favorites;
@@ -371,8 +436,8 @@ async function loadFavorites() {
 }
 
 async function loadCart() {
-  if (!isLoggedIn()) {
-    state.cart = [];
+  if (shouldUseLocalShopState()) {
+    state.cart = loadLocalShopCart();
     renderCart();
     renderValidation();
     return;
@@ -384,16 +449,22 @@ async function loadCart() {
       cart_item_id: item.cart_item_id,
     }));
   } catch {
-    state.cart = [];
+    state.cart = loadLocalShopCart();
+    setFeedback("Panier local charge, API panier indisponible");
   }
   renderCart();
   renderValidation();
 }
 
 async function addToCart(item) {
-  if (state.usingFallback) {
-    setFeedback("Panier indisponible tant que l'API boutique est en fallback");
-    toast("Panier backend indisponible", "Boutique");
+  if (!item) return;
+  if (shouldUseLocalShopState()) {
+    const localItem = { ...item, cart_item_id: `local-cart-${Date.now()}` };
+    state.cart = [localItem, ...state.cart];
+    persistLocalShopCart();
+    setFeedback(`${item.title} ajoute au panier local`);
+    renderCart();
+    renderValidation();
     return;
   }
   if (!requireLogin({ redirect: false, message: "Connecte-toi pour enregistrer ton panier." })) return;
@@ -418,8 +489,12 @@ async function addToCart(item) {
 async function removeFromCart(index) {
   const item = state.cart[index];
   if (!item) return;
-  if (state.usingFallback || !item.cart_item_id) {
-    setFeedback("Suppression panier indisponible en mode fallback");
+  if (shouldUseLocalShopState() || String(item.cart_item_id || "").startsWith("local-cart-")) {
+    state.cart = state.cart.filter((_, itemIndex) => itemIndex !== index);
+    persistLocalShopCart();
+    setFeedback(`${item.title} retire du panier`);
+    renderCart();
+    renderValidation();
     return;
   }
   try {
@@ -439,8 +514,11 @@ async function removeFromCart(index) {
 async function toggleFavorite(id) {
   const item = state.products.find((product) => product.id === id);
   const isFav = state.favorites.includes(id);
-  if (state.usingFallback) {
-    setFeedback("Favoris indisponibles tant que l'API boutique est en fallback");
+  if (shouldUseLocalShopState()) {
+    state.favorites = isFav ? state.favorites.filter((itemId) => itemId !== id) : [...state.favorites, id];
+    persistLocalShopFavorites();
+    if (item) setFeedback(isFav ? `${item.title} retire des favoris` : `${item.title} ajoute aux favoris`);
+    renderCatalogue();
     return;
   }
   if (!requireLogin({ redirect: false, message: "Connecte-toi pour gerer tes favoris." })) return;
@@ -465,9 +543,35 @@ async function submitNewItem() {
     setFeedback("Remplis tous les champs du formulaire d'ajout.");
     return;
   }
-  if (state.usingFallback) {
-    setFeedback("Publication indisponible tant que l'API boutique est en fallback");
-    toast("Publication backend indisponible", "Boutique");
+  if (shouldUseLocalShopState()) {
+    const product = {
+      id: `local-product-${Date.now()}`,
+      type: refs.formType.value,
+      title,
+      creator: refs.formCreator.value.trim() || "Mon profil",
+      verified: false,
+      price,
+      license: refs.formLicense.value.trim() || "Licence standard",
+      bpm,
+      genre,
+      rating: 5,
+      sales: 0,
+      description,
+      tag: "Publication locale",
+      previewLabel: `Extrait ${title}`,
+    };
+    state.products = [product, ...state.products];
+    state.previewItem = product;
+    persistLocalShopProducts();
+    refs.formTitle.value = "";
+    refs.formPrice.value = EMPTY_UPLOAD_FORM.price;
+    refs.formType.value = EMPTY_UPLOAD_FORM.type;
+    refs.formGenre.value = EMPTY_UPLOAD_FORM.genre;
+    refs.formBpm.value = EMPTY_UPLOAD_FORM.bpm;
+    refs.formLicense.value = EMPTY_UPLOAD_FORM.license;
+    refs.formDescription.value = EMPTY_UPLOAD_FORM.description;
+    setFeedback(`${title} publie dans ta boutique locale`);
+    render();
     return;
   }
   if (!requireLogin({ redirect: false, message: "Connecte-toi pour publier dans la boutique." })) return;
@@ -534,9 +638,21 @@ async function checkout() {
     toast("Le panier est vide.", "Boutique");
     return;
   }
-  if (state.usingFallback) {
-    setFeedback("Checkout indisponible tant que l'API boutique est en fallback");
-    toast("Checkout backend indisponible", "Boutique");
+  if (shouldUseLocalShopState()) {
+    const itemCount = state.cart.length;
+    const total = getCartTotal();
+    const purchasedIds = new Set(state.cart.map((item) => String(item.id || "")));
+    state.products = state.products.map((product) => (
+      purchasedIds.has(String(product.id || ""))
+        ? { ...product, sales: Number(product.sales || 0) + 1 }
+        : product
+    ));
+    state.cart = [];
+    persistLocalShopCart();
+    persistLocalShopProducts();
+    setFeedback(`Commande locale validee - ${itemCount} article(s) - ${total} EUR`);
+    toast("Commande validee", "Boutique");
+    render();
     return;
   }
   if (!requireLogin({ redirect: false, message: "Connecte-toi pour finaliser le paiement." })) return;
@@ -620,7 +736,9 @@ function bindEvents() {
 async function init() {
   bindEvents();
   render();
-  await Promise.all([loadProducts(), loadCart(), loadCurrentUser(), loadFavorites()]);
+  await loadProducts();
+  await loadCurrentUser();
+  await Promise.all([loadCart(), loadFavorites()]);
 }
 
 init();

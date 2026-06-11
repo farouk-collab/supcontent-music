@@ -26,6 +26,48 @@ const PUBLIC_COLS = `
   location, gender, birth_date::text AS birth_date, role, created_at
 `;
 
+export async function ensureUsersTable() {
+  await pool.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      username TEXT NULL UNIQUE,
+      avatar_url TEXT NULL,
+      cover_url TEXT NULL,
+      bio TEXT NULL,
+      website TEXT NULL,
+      location TEXT NULL,
+      gender TEXT NULL CHECK (
+        gender IS NULL
+        OR gender IN ('male', 'female', 'other', 'prefer_not_to_say')
+      ),
+      birth_date DATE NULL,
+      role TEXT NULL DEFAULT 'user',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS username TEXT NULL`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT NULL`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_url TEXT NULL`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT NULL`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS website TEXT NULL`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS location TEXT NULL`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT NULL`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS birth_date DATE NULL`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT NULL DEFAULT 'user'`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+  await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`);
+
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_users_email ON users (lower(email))`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_users_username ON users (lower(username)) WHERE username IS NOT NULL`);
+}
+
 /** Utilisé pour login (on a besoin de password_hash) */
 export async function findUserByEmail(email: string): Promise<DbUser | null> {
   const r = await pool.query<DbUser>(

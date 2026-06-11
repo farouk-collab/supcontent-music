@@ -1010,6 +1010,10 @@ p{margin:0; color:var(--muted); line-height:1.5}
 .row{display:flex; gap:12px; align-items:center; flex-wrap:wrap}
 
 .btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
   border:1px solid var(--border);
   background: rgba(255,255,255,.06);
   color:var(--text);
@@ -1017,7 +1021,9 @@ p{margin:0; color:var(--muted); line-height:1.5}
   border-radius: 12px;
   cursor:pointer;
   font-weight:700;
+  line-height:1.15;
 }
+.btn svg{width:1em;height:1em;display:block;flex:0 0 auto}
 .btn:hover{border-color: rgba(124,92,255,.6)}
 .btn.primary{
   background: linear-gradient(135deg, rgba(124,92,255,.95), rgba(46,229,157,.75));

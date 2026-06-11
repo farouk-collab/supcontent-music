@@ -418,8 +418,8 @@ async function loadLiveData({ silent = false } = {}) {
   } catch (error) {
     state.usingFallback = true;
     if (!silent) {
-      setFeedback("API live indisponible, mode demo active");
-      toast(error?.message || "Mode demo active", "Live");
+      setFeedback("API live indisponible, mode local actif");
+      toast(error?.message || "Mode local actif", "Live");
     }
     render();
   } finally {

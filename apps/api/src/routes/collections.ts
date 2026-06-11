@@ -30,6 +30,7 @@ const AddItemSchema = z.object({
   media_type: MediaTypeSchema,
   media_id: z.string().min(1).max(120),
 });
+const DEV_AUDIO_PREVIEW_URL = "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3";
 
 type CollectionItemRow = {
   collection_id: string;
@@ -73,6 +74,7 @@ function spotifySummary(item: any) {
     subtitle: artists || genres || "",
     image: pickSpotifyImage(item),
     spotify_url: String(item?.external_urls?.spotify || ""),
+    preview_url: String(item?.preview_url || ""),
   };
 }
 
@@ -156,8 +158,9 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
         ),
         like_stats AS (
           SELECT r.media_type, r.media_id, COUNT(*)::int AS like_count
-          FROM review_likes rl
-          JOIN reviews r ON r.id = rl.review_id
+          FROM review_votes rv
+          JOIN reviews r ON r.id = rv.review_id
+          WHERE rv.vote_type = 'up'
           GROUP BY r.media_type, r.media_id
         ),
         comment_stats AS (
@@ -206,6 +209,7 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
           subtitle: "",
           image: "",
           spotify_url: "",
+          preview_url: DEV_AUDIO_PREVIEW_URL,
         });
       }
     })
@@ -219,7 +223,7 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
       comment_count: 0,
       avg_rating: null,
     };
-    const media = spotifyMap.get(k) || { name: "", subtitle: "", image: "", spotify_url: "" };
+    const media = spotifyMap.get(k) || { name: "", subtitle: "", image: "", spotify_url: "", preview_url: "" };
     const enriched = { ...it, social, media };
     const arr = map.get(it.collection_id) || [];
     arr.push(enriched);

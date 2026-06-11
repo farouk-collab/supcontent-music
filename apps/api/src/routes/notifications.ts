@@ -9,7 +9,7 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
   const limitRaw = Number.parseInt(String(req.query.limit || "12"), 10);
   const limit = Number.isFinite(limitRaw) ? Math.max(1, Math.min(40, limitRaw)) : 12;
 
-  const [followersRes, suggestionsRes, repliesRes, chatMessagesRes] = await Promise.all([
+  const [followersRes, suggestionsRes, repliesRes, chatMessagesRes, reviewLikesRes] = await Promise.all([
     pool.query(
       `
         SELECT
@@ -102,6 +102,28 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
       `,
       [userId, limit]
     ),
+    pool.query(
+      `
+        SELECT
+          rv.review_id,
+          rv.created_at,
+          r.media_type,
+          r.media_id,
+          u.id AS actor_id,
+          u.display_name,
+          u.username,
+          u.avatar_url
+        FROM review_votes rv
+        JOIN reviews r ON r.id = rv.review_id
+        JOIN users u ON u.id = rv.user_id
+        WHERE r.user_id = $1
+          AND rv.user_id <> $1
+          AND rv.vote_type = 'up'
+        ORDER BY rv.created_at DESC
+        LIMIT $2
+      `,
+      [userId, limit]
+    ),
   ]);
 
   return res.json({
@@ -109,6 +131,7 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
     suggestions: suggestionsRes.rows,
     comment_replies: repliesRes.rows,
     chat_messages: chatMessagesRes.rows,
+    review_likes: reviewLikesRes.rows,
   });
 });
 

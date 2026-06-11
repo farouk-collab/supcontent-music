@@ -20,3 +20,7 @@ build/
 uploads/
 public/uploads/
 apps/**/uploads/
+
+# Expo local state
+.expo/
+**/.expo/

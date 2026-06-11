@@ -4,6 +4,14 @@ const FAVORITES_STORAGE_KEY = "supcontent-library-favorites-v5";
 const VIEW_STORAGE_KEY = "supcontent-library-view-v5";
 const PLAYER_MODE_STORAGE_KEY = "supcontent-library-player-mode-v2";
 const PLAYER_STATE_STORAGE_KEY = "supcontent-library-player-state-v1";
+const COLLECTION_MODAL_DEFAULTS = {
+  title: "",
+  hint: "",
+  submitLabel: "Valider",
+  value: "",
+  type: "text",
+  options: [],
+};
 
 const DEFAULT_NOTIFICATIONS = [
   { id: 1, type: "playlist", user: "Bibliotheque", text: "ta collection Night Drive a ete synchronisee", time: "Il y a 4 min", read: false },
@@ -74,6 +82,13 @@ const dom = {
   footerPlay: document.querySelector("#libraryFooterPlay"),
   footerNext: document.querySelector("#libraryFooterNext"),
   footerRepeat: document.querySelector("#libraryFooterRepeat"),
+  modal: document.querySelector("#libraryActionModal"),
+  modalForm: document.querySelector("#libraryActionForm"),
+  modalTitle: document.querySelector("#libraryActionTitle"),
+  modalHint: document.querySelector("#libraryActionHint"),
+  modalInputWrap: document.querySelector("#libraryActionInputWrap"),
+  modalSubmit: document.querySelector("#libraryActionSubmit"),
+  modalCancel: document.querySelector("#libraryActionCancel"),
 };
 
 const state = {
@@ -85,10 +100,11 @@ const state = {
   favoritesOnly: false,
   favorites: new Set(),
   playerMode: "audio",
-  feedback: "Bibliotheque premium prete · /collections/me simule",
+  feedback: "Bibliotheque prete a synchroniser",
   nowPlaying: null,
   recentlyPlayed: [],
   queue: [],
+  modalResolver: null,
 };
 
 let librarySyncTimer = null;
@@ -219,14 +235,16 @@ function toCollectionModel(collection) {
     const youtubeUrl = String(item?.media?.youtube_url || "");
     const sourceUrl = String(item?.media?.source_url || "");
     const spotifyUrl = String(item?.media?.spotify_url || "");
+    const previewUrl = String(item?.media?.preview_url || "");
     const title = String(item?.media?.name || mediaId || "Sans titre");
     const subtitle = String(item?.media?.subtitle || "");
     const artist = subtitle.split("·")[0]?.trim() || title;
-    return { id: mediaKey(mediaType, mediaId), media_type: mediaType, media_id: mediaId, collectionId: String(collection?.id || ""), collectionName: String(collection?.name || "Collection"), title, subtitle, image: resolveMediaUrl(item?.media?.image || ""), source: youtubeUrl ? "YouTube" : "Spotify", isYoutube: Boolean(youtubeUrl), canPlayVideo: Boolean(youtubeUrl || sourceUrl.toLowerCase().includes("youtube") || spotifyUrl.toLowerCase().includes("youtube")), youtube_url: youtubeUrl, source_url: sourceUrl, spotify_url: spotifyUrl, duplicateKey: `${title.toLowerCase()}-${artist.toLowerCase()}`, artist, mood: inferMood(`${title} ${subtitle} ${collection?.name || ""}`), energy: inferEnergy(`${title} ${subtitle}`), type: mediaType };
+    const isYoutube = Boolean(youtubeUrl || sourceUrl.toLowerCase().includes("youtube"));
+    return { id: mediaKey(mediaType, mediaId), media_type: mediaType, media_id: mediaId, collectionId: String(collection?.id || ""), collectionName: String(collection?.name || "Collection"), title, subtitle, image: resolveMediaUrl(item?.media?.image || ""), source: isYoutube ? "YouTube" : "Spotify", isYoutube, canPlayAudio: Boolean(previewUrl || youtubeUrl), canPlayVideo: Boolean(youtubeUrl || sourceUrl.toLowerCase().includes("youtube") || spotifyUrl.toLowerCase().includes("youtube")), youtube_url: youtubeUrl, source_url: sourceUrl, spotify_url: spotifyUrl, preview_url: previewUrl, duplicateKey: `${title.toLowerCase()}-${artist.toLowerCase()}`, artist, mood: inferMood(`${title} ${subtitle} ${collection?.name || ""}`), energy: inferEnergy(`${title} ${subtitle}`), type: mediaType };
   });
   const counts = new Map();
   rows.forEach((row) => counts.set(row.duplicateKey, (counts.get(row.duplicateKey) || 0) + 1));
-  return { id: String(collection?.id || ""), name: String(collection?.name || "Collection"), description: collection?.status_code ? `Liste statut : ${String(collection.status_code).replaceAll("_", " ")}` : `${rows.length} medias dans cette collection`, rows, duplicates: rows.filter((row) => (counts.get(row.duplicateKey) || 0) > 1), socials: { likes: 80 + rows.length * 17, comments: 10 + rows.length * 3, listeners: Math.max(4, rows.length * 2) }, isEditable: !collection?.status_code };
+  return { id: String(collection?.id || ""), name: String(collection?.name || "Collection"), description: collection?.status_code ? `Liste statut : ${String(collection.status_code).replaceAll("_", " ")}` : `${rows.length} medias dans cette collection`, is_public: Boolean(collection?.is_public), rows, duplicates: rows.filter((row) => (counts.get(row.duplicateKey) || 0) > 1), socials: { likes: 80 + rows.length * 17, comments: 10 + rows.length * 3, listeners: Math.max(4, rows.length * 2) }, isEditable: !collection?.status_code };
 }
 
 function getSelectedCollection() { return state.collections.find((collection) => collection.id === state.selectedCollectionId) || state.collections[0] || null; }
@@ -238,6 +256,53 @@ function getUnreadCount() { return sanitizeNotifications(state.notifications).fi
 function getNotificationIcon(type) { if (type === "playlist") return "♫"; if (type === "comment") return "◌"; if (type === "community") return "✦"; return "•"; }
 function getPlayerVisualMode() { return state.playerMode === "video" && state.nowPlaying?.canPlayVideo ? "video" : "audio"; }
 function setFeedback(message) { state.feedback = String(message || ""); renderStatusBox(); }
+
+function closeLibraryModal(value = null) {
+  if (!dom.modal || !state.modalResolver) return;
+  const resolve = state.modalResolver;
+  state.modalResolver = null;
+  dom.modal.hidden = true;
+  dom.modalInputWrap.innerHTML = "";
+  resolve(value);
+}
+
+function openLibraryModal(config = {}) {
+  const settings = { ...COLLECTION_MODAL_DEFAULTS, ...config };
+  if (!dom.modal || !dom.modalForm) return Promise.resolve(null);
+
+  dom.modalTitle.textContent = settings.title;
+  dom.modalHint.textContent = settings.hint;
+  dom.modalSubmit.textContent = settings.submitLabel;
+  if (settings.type === "select") {
+    dom.modalInputWrap.innerHTML = `
+      <label for="libraryActionInput">${escapeHtml(settings.label || "Choix")}</label>
+      <select id="libraryActionInput" required>
+        ${settings.options.map((option) => `<option value="${escapeHtml(option.value)}">${escapeHtml(option.label)}</option>`).join("")}
+      </select>
+    `;
+  } else {
+    dom.modalInputWrap.innerHTML = `
+      <label for="libraryActionInput">${escapeHtml(settings.label || "Valeur")}</label>
+      <input id="libraryActionInput" type="${escapeHtml(settings.inputType || "text")}" value="${escapeHtml(settings.value)}" placeholder="${escapeHtml(settings.placeholder || "")}" required />
+      ${settings.visibility ? `
+        <label for="libraryActionVisibility">${escapeHtml(settings.visibilityLabel || "Confidentialite")}</label>
+        <select id="libraryActionVisibility">
+          <option value="private"${settings.isPublic ? "" : " selected"}>Privee</option>
+          <option value="public"${settings.isPublic ? " selected" : ""}>Publique</option>
+        </select>
+      ` : ""}
+    `;
+  }
+
+  const input = dom.modalInputWrap.querySelector("#libraryActionInput");
+  if (settings.type === "select" && settings.value) input.value = settings.value;
+  dom.modal.hidden = false;
+  window.setTimeout(() => input?.focus(), 20);
+
+  return new Promise((resolve) => {
+    state.modalResolver = resolve;
+  });
+}
 
 function syncFromGlobalPlayerState() {
   const globalState = window.supcontentPlayer?.state?.();
@@ -334,7 +399,7 @@ function toggleFavorite(rowId) {
   if (state.favorites.has(rowId)) state.favorites.delete(rowId);
   else state.favorites.add(rowId);
   persistFavorites();
-  setFeedback("Favoris mis a jour dans localStorage");
+  setFeedback("Favoris mis a jour sur cet appareil");
   renderAll();
 }
 
@@ -349,13 +414,17 @@ function playMedia(row, forcedMode) {
   state.nowPlaying = { ...row, progress: Math.floor(Math.random() * 55) + 20, collectionName: row.collectionName || getSelectedCollection()?.name || "Bibliotheque", duration: row.canPlayVideo ? "12:44" : row.media_type === "album" ? "42:18" : "03:24", artist: row.artist || row.subtitle.split("·")[0]?.trim() || "Artiste inconnu", isPlaying: true, volume: state.nowPlaying?.volume ?? 72, shuffle: state.nowPlaying?.shuffle ?? false, repeat: state.nowPlaying?.repeat ?? false };
   persistPlayerState();
   pushRecentlyPlayed(state.nowPlaying);
-  const mediaUrl = row.youtube_url || row.source_url || "";
-  if (mediaUrl && row.isYoutube && window.supcontentPlayer?.playYouTube) {
-    window.supcontentPlayer.playYouTube({ url: mediaUrl, title: row.title, subtitle: row.subtitle || row.collectionName, cover: row.image || "", mode: state.playerMode });
-  } else if (mediaUrl && !row.isYoutube && window.supcontentPlayer?.playMedia && state.playerMode === "video") {
-    window.supcontentPlayer.playMedia({ url: mediaUrl, title: row.title, subtitle: row.subtitle || row.collectionName, cover: row.image || "", mode: "video" });
+  const youtubeUrl = row.youtube_url || (String(row.source_url || "").toLowerCase().includes("youtube") ? row.source_url : "");
+  const previewUrl = String(row.preview_url || "");
+  if (youtubeUrl && window.supcontentPlayer?.playYouTube) {
+    window.supcontentPlayer.playYouTube({ url: youtubeUrl, title: row.title, subtitle: row.subtitle || row.collectionName, cover: row.image || "", mode: state.playerMode });
+  } else if (previewUrl && window.supcontentPlayer?.playMedia) {
+    window.supcontentPlayer.playMedia({ url: previewUrl, title: row.title, subtitle: row.subtitle || row.collectionName, cover: row.image || "", mode: "audio" });
+  } else {
+    state.nowPlaying.isPlaying = false;
+    toast("Preview audio indisponible pour ce titre. Ouvre Spotify pour le morceau complet.", "Info");
   }
-  setFeedback(state.playerMode === "video" ? "Lecture video lancee depuis la bibliotheque" : row.isYoutube ? "Lecture audio lancee via player global YouTube si disponible" : "Lecture audio lancee depuis la bibliotheque");
+  setFeedback(youtubeUrl ? "Lecture YouTube lancee dans le player global" : previewUrl ? "Preview Spotify lancee dans le player global" : "Preview audio indisponible pour ce media");
   renderAll();
 }
 
@@ -460,10 +529,20 @@ async function loadCollections() {
 
 async function createCollection() {
   if (!requireLogin({ redirect: true })) return;
-  const name = window.prompt("Nom de la nouvelle collection :", "");
+  const result = await openLibraryModal({
+    title: "Nouvelle collection",
+    hint: "Donne un nom clair a ta collection. Elle sera creee dans ton espace backend.",
+    label: "Nom",
+    placeholder: "Ex: Rap francais 2026",
+    visibility: true,
+    isPublic: false,
+    submitLabel: "Creer",
+  });
+  const name = typeof result === "object" && result ? result.value : result;
+  const isPublic = typeof result === "object" && result ? Boolean(result.is_public) : false;
   if (!name || !name.trim()) return;
   try {
-    await apiFetch("/collections", { method: "POST", body: JSON.stringify({ name: name.trim(), is_public: false }) });
+    await apiFetch("/collections", { method: "POST", body: JSON.stringify({ name: name.trim(), is_public: isPublic }) });
     setFeedback("Collection creee via /collections");
     await loadCollections();
   } catch (error) {
@@ -475,10 +554,20 @@ async function createCollection() {
 async function renameCollection() {
   const selected = getSelectedCollection();
   if (!selected?.isEditable || !requireLogin({ redirect: true })) return;
-  const nextName = window.prompt("Nouveau nom de la collection :", selected.name);
+  const result = await openLibraryModal({
+    title: "Renommer la collection",
+    hint: "Le nouveau nom sera synchronise sur le backend.",
+    label: "Nouveau nom",
+    value: selected.name,
+    visibility: true,
+    isPublic: selected.is_public,
+    submitLabel: "Renommer",
+  });
+  const nextName = typeof result === "object" && result ? result.value : result;
+  const isPublic = typeof result === "object" && result ? Boolean(result.is_public) : selected.is_public;
   if (!nextName || !nextName.trim()) return;
   try {
-    await apiFetch(`/collections/${encodeURIComponent(selected.id)}`, { method: "PATCH", body: JSON.stringify({ name: nextName.trim() }) });
+    await apiFetch(`/collections/${encodeURIComponent(selected.id)}`, { method: "PATCH", body: JSON.stringify({ name: nextName.trim(), is_public: isPublic }) });
     setFeedback("Collection renommee cote backend");
     await loadCollections();
   } catch (error) {
@@ -504,7 +593,13 @@ async function deleteCollection() {
 async function addMediaToCollection() {
   const selected = getSelectedCollection();
   if (!selected?.isEditable || !requireLogin({ redirect: true })) return;
-  const raw = window.prompt("Ajoute un media : URL Spotify ou track:ID / album:ID / artist:ID", "");
+  const raw = await openLibraryModal({
+    title: "Ajouter un media",
+    hint: "Colle une URL Spotify ou utilise un format court comme track:ID, album:ID ou artist:ID.",
+    label: "Media Spotify",
+    placeholder: "https://open.spotify.com/track/...",
+    submitLabel: "Ajouter",
+  });
   const parsed = parseSpotifyInput(raw);
   if (!parsed) { toast("Format invalide. Utilise par exemple track:123 ou une URL Spotify.", "Erreur"); return; }
   try {
@@ -557,11 +652,19 @@ async function mergeCollections() {
   if (!requireLogin({ redirect: true })) return;
   const source = getSelectedCollection()?.isEditable ? getSelectedCollection() : editableCollections[0];
   const choices = editableCollections.filter((collection) => collection.id !== source.id);
-  const name = window.prompt(`Fusion avec quelle collection ? Disponibles: ${choices.map((collection) => collection.name).join(", ")}`, choices[0]?.name || "");
-  const other = choices.find((collection) => collection.name.toLowerCase() === String(name || "").trim().toLowerCase());
+  const targetId = await openLibraryModal({
+    title: "Fusionner deux collections",
+    hint: `La collection "${source.name}" sera fusionnee avec la collection choisie dans une nouvelle liste.`,
+    label: "Collection cible",
+    type: "select",
+    value: choices[0]?.id || "",
+    options: choices.map((collection) => ({ value: collection.id, label: collection.name })),
+    submitLabel: "Fusionner",
+  });
+  const other = choices.find((collection) => collection.id === String(targetId || ""));
   if (!other) { toast("Collection cible introuvable.", "Erreur"); return; }
   try {
-    const created = await apiFetch("/collections", { method: "POST", body: JSON.stringify({ name: `${source.name} + ${other.name}`, is_public: false }) });
+    const created = await apiFetch("/collections", { method: "POST", body: JSON.stringify({ name: `${source.name} + ${other.name}`, is_public: Boolean(source.is_public || other.is_public) }) });
     const mergedId = String(created?.collection?.id || "");
     if (!mergedId) throw new Error("Creation de la collection fusionnee impossible");
     const uniqueRows = new Map();
@@ -609,7 +712,7 @@ function renderAutoCollections() {
 
 function renderCollectionsList() {
   if (!state.collections.length) { dom.collectionsList.innerHTML = `<div class="library-empty">Aucune collection disponible pour le moment.</div>`; return; }
-  dom.collectionsList.innerHTML = state.collections.map((collection) => `<button class="library-list-card library-list-button ${collection.id === state.selectedCollectionId ? "is-active" : ""}" type="button" data-collection-id="${escapeHtml(collection.id)}"><div class="library-hero-top"><div><p style="margin:0;font-weight:700;">${escapeHtml(collection.name)}</p><p style="margin:6px 0 0;color:#9ca3af;font-size:14px;">${escapeHtml(collection.description)}</p></div><span class="library-badge">${collection.rows.length} medias</span></div><div class="library-badge-row" style="margin-top:12px;"><span class="library-badge">${collection.socials.likes} likes</span><span class="library-badge">${collection.socials.comments} commentaires</span><span class="library-badge">${collection.socials.listeners} ecoutent</span></div></button>`).join("");
+  dom.collectionsList.innerHTML = state.collections.map((collection) => `<button class="library-list-card library-list-button ${collection.id === state.selectedCollectionId ? "is-active" : ""}" type="button" data-collection-id="${escapeHtml(collection.id)}"><div class="library-hero-top"><div><p style="margin:0;font-weight:700;">${escapeHtml(collection.name)}</p><p style="margin:6px 0 0;color:#9ca3af;font-size:14px;">${escapeHtml(collection.description)}</p></div><span class="library-badge">${collection.rows.length} medias</span></div><div class="library-badge-row" style="margin-top:12px;"><span class="library-badge">${collection.is_public ? "publique" : "privee"}</span><span class="library-badge">${collection.socials.likes} likes</span><span class="library-badge">${collection.socials.comments} commentaires</span><span class="library-badge">${collection.socials.listeners} ecoutent</span></div></button>`).join("");
   dom.collectionsList.querySelectorAll("[data-collection-id]").forEach((button) => button.addEventListener("click", () => { state.selectedCollectionId = String(button.getAttribute("data-collection-id") || ""); renderAll(); }));
 }
 
@@ -621,8 +724,8 @@ function renderViewButtons() {
 function renderCollectionHero() {
   const selected = getSelectedCollection();
   const favoriteRows = getFavoriteRows();
-  if (state.viewMode === "favorites") dom.collectionHero.innerHTML = `<p class="library-kicker" style="color:#f0fdf4;">Favoris</p><h2>Mes favoris</h2><p>${favoriteRows.length} elements stockes en localStorage pour un acces rapide.</p><div class="library-badge-row" style="margin-top:14px;"><span class="library-badge">${favoriteRows.length} elements</span><span class="library-badge">vue rapide</span></div>`;
-  else if (selected) dom.collectionHero.innerHTML = `<p class="library-kicker" style="color:#f0fdf4;">Collection ouverte</p><h2>${escapeHtml(selected.name)}</h2><p>${escapeHtml(selected.description)}</p><div class="library-badge-row" style="margin-top:14px;"><span class="library-badge">${selected.socials.likes} likes</span><span class="library-badge">${selected.socials.comments} commentaires</span><span class="library-badge">${selected.socials.listeners} ecoutent</span></div>`;
+  if (state.viewMode === "favorites") dom.collectionHero.innerHTML = `<p class="library-kicker" style="color:#f0fdf4;">Favoris</p><h2>Mes favoris</h2><p>${favoriteRows.length} elements sauvegardes sur cet appareil pour un acces rapide.</p><div class="library-badge-row" style="margin-top:14px;"><span class="library-badge">${favoriteRows.length} elements</span><span class="library-badge">vue rapide</span></div>`;
+  else if (selected) dom.collectionHero.innerHTML = `<p class="library-kicker" style="color:#f0fdf4;">Collection ouverte</p><h2>${escapeHtml(selected.name)}</h2><p>${escapeHtml(selected.description)}</p><div class="library-badge-row" style="margin-top:14px;"><span class="library-badge">${selected.is_public ? "publique" : "privee"}</span><span class="library-badge">${selected.socials.likes} likes</span><span class="library-badge">${selected.socials.comments} commentaires</span><span class="library-badge">${selected.socials.listeners} ecoutent</span></div>`;
   else dom.collectionHero.innerHTML = `<p class="library-kicker" style="color:#f0fdf4;">Bibliotheque</p><h2>Aucune collection chargee</h2><p>Connecte-toi puis recharge la bibliotheque pour commencer.</p>`;
   const editable = Boolean(selected?.isEditable) && state.viewMode === "collections";
   dom.addMediaButton.disabled = !editable;
@@ -632,7 +735,8 @@ function renderCollectionHero() {
 }
 
 function mediaCard(row, selectedCollection) {
-  return `<article class="library-media-card"><div class="library-media-top"><div><p style="margin:0;font-weight:700;">${escapeHtml(row.title)}</p><p style="margin:6px 0 0;color:#9ca3af;">${escapeHtml(row.subtitle || row.collectionName)}</p><div class="library-badge-row" style="margin-top:12px;"><span class="library-badge">${escapeHtml(row.media_type)}</span><span class="library-badge">${escapeHtml(row.source)}</span><span class="library-badge">${escapeHtml(row.mood)}</span>${state.favorites.has(row.id) ? `<span class="library-badge">favori</span>` : ""}</div></div><button class="library-icon-btn ${state.favorites.has(row.id) ? "is-favorite" : ""}" type="button" data-favorite-id="${escapeHtml(row.id)}">${state.favorites.has(row.id) ? "♥" : "♡"}</button></div><div class="library-media-actions"><button class="library-primary" type="button" data-play-audio-id="${escapeHtml(row.id)}">Audio</button><button class="library-ghost" type="button" data-play-video-id="${escapeHtml(row.id)}">Video</button><button class="library-ghost" type="button" data-queue-id="${escapeHtml(row.id)}">Jouer apres</button><button class="library-ghost" type="button" data-open-id="${escapeHtml(row.id)}">Ouvrir</button>${selectedCollection?.isEditable && state.viewMode === "collections" ? `<button class="library-ghost" type="button" data-remove-id="${escapeHtml(row.id)}">Retirer</button>` : ""}</div></article>`;
+  const canPlayAudio = Boolean(row.canPlayAudio || row.preview_url || row.youtube_url);
+  return `<article class="library-media-card"><div class="library-media-top"><div><p style="margin:0;font-weight:700;">${escapeHtml(row.title)}</p><p style="margin:6px 0 0;color:#9ca3af;">${escapeHtml(row.subtitle || row.collectionName)}</p><div class="library-badge-row" style="margin-top:12px;"><span class="library-badge">${escapeHtml(row.media_type)}</span><span class="library-badge">${escapeHtml(row.source)}</span><span class="library-badge">${escapeHtml(row.mood)}</span><span class="library-badge">${canPlayAudio ? "preview dispo" : "preview indispo"}</span>${state.favorites.has(row.id) ? `<span class="library-badge">favori</span>` : ""}</div></div><button class="library-icon-btn ${state.favorites.has(row.id) ? "is-favorite" : ""}" type="button" data-favorite-id="${escapeHtml(row.id)}">${state.favorites.has(row.id) ? "♥" : "♡"}</button></div><div class="library-media-actions"><button class="library-primary" type="button" data-play-audio-id="${escapeHtml(row.id)}" ${canPlayAudio ? "" : "disabled"}>Audio</button><button class="library-ghost" type="button" data-play-video-id="${escapeHtml(row.id)}">Video</button><button class="library-ghost" type="button" data-queue-id="${escapeHtml(row.id)}">Jouer apres</button><button class="library-ghost" type="button" data-open-id="${escapeHtml(row.id)}">Ouvrir</button>${selectedCollection?.isEditable && state.viewMode === "collections" ? `<button class="library-ghost" type="button" data-remove-id="${escapeHtml(row.id)}">Retirer</button>` : ""}</div></article>`;
 }
 
 function renderMainContent() {
@@ -665,7 +769,7 @@ function renderPlayer() {
   dom.playerProgress.style.width = `${Math.max(0, Math.min(100, Number(current.progress || 0)))}%`;
   dom.volumeInput.value = String(current.volume ?? 72);
   dom.playerBadges.innerHTML = [current.source || "Source", visualMode === "video" ? "video" : "audio", current.canPlayVideo ? "clip dispo" : "audio seul"].map((item) => `<span class="library-badge">${escapeHtml(item)}</span>`).join("");
-  dom.playerVisual.innerHTML = visualMode === "video" && current.canPlayVideo ? `<div><strong style="display:block;margin-bottom:6px;">Lecteur video simule</strong><div>Clip, live session ou video YouTube.</div></div>` : `<div><strong style="display:block;margin-bottom:6px;">Lecture audio en cours</strong><div>Player global ou audio bibliotheque.</div></div>`;
+  dom.playerVisual.innerHTML = visualMode === "video" && current.canPlayVideo ? `<div><strong style="display:block;margin-bottom:6px;">Mode video actif</strong><div>Clip, live session ou video YouTube.</div></div>` : `<div><strong style="display:block;margin-bottom:6px;">Lecture audio en cours</strong><div>Player global ou audio bibliotheque.</div></div>`;
   dom.footerPlay.textContent = current.isPlaying ? "Pause" : "Play";
   dom.prevButton.disabled = !state.nowPlaying;
   dom.nextButton.disabled = !state.queue.length;
@@ -706,7 +810,7 @@ function renderSocial() {
 }
 
 function renderRightsBox() { dom.rightsList.innerHTML = `<div class="library-list-card"><p style="margin:0;">${isLoggedIn() ? "Actions de gestion autorisees" : "Actions de gestion bloquees"}</p><small>${isLoggedIn() ? "Creation, edition et suppression actives sur /collections." : "Connexion requise pour modifier les collections."}</small></div>`; }
-function renderStatusBox() { dom.statusList.innerHTML = `<div class="library-list-card"><p style="margin:0;">backend principal : /collections/me · favoris : localStorage · player persistant</p><small>${escapeHtml(state.feedback)}</small></div>`; }
+function renderStatusBox() { dom.statusList.innerHTML = `<div class="library-list-card"><p style="margin:0;">Collections synchronisees avec /collections/me</p><small>${escapeHtml(state.feedback)}</small></div>`; }
 
 function renderRecentAndSimilar() {
   dom.recentList.innerHTML = state.recentlyPlayed.length ? state.recentlyPlayed.map((row) => `<button class="library-list-card library-list-button" type="button" data-recent-id="${escapeHtml(row.id)}"><p style="margin:0;font-weight:700;">${escapeHtml(row.title)}</p><small style="display:block;margin-top:6px;color:#9ca3af;">${escapeHtml(row.artist || row.subtitle || "")}</small></button>`).join("") : `<div class="library-list-card"><p style="margin:0;">Aucun historique recent.</p></div>`;
@@ -735,6 +839,24 @@ function bindEvents() {
   dom.notificationsButton?.addEventListener("click", () => { state.notificationsOpen = !state.notificationsOpen; renderNotifications(); });
   dom.notificationsReadButton?.addEventListener("click", markAllNotificationsRead);
   document.addEventListener("mousedown", (event) => { if (!state.notificationsOpen) return; if (dom.notificationsPanel.contains(event.target) || dom.notificationsButton.contains(event.target)) return; state.notificationsOpen = false; renderNotifications(); });
+  dom.modalForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const input = dom.modalInputWrap.querySelector("#libraryActionInput");
+    const visibility = dom.modalInputWrap.querySelector("#libraryActionVisibility");
+    const value = String(input?.value || "").trim();
+    if (visibility) {
+      closeLibraryModal({ value, is_public: String(visibility.value || "") === "public" });
+      return;
+    }
+    closeLibraryModal(value);
+  });
+  dom.modalCancel?.addEventListener("click", () => closeLibraryModal(null));
+  dom.modal?.addEventListener("mousedown", (event) => {
+    if (event.target === dom.modal) closeLibraryModal(null);
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !dom.modal?.hidden) closeLibraryModal(null);
+  });
   dom.syncButton?.addEventListener("click", () => syncCollections().catch((error) => toast(error?.message || "Erreur", "Erreur")));
   dom.createCollectionButton?.addEventListener("click", () => createCollection().catch((error) => toast(error?.message || "Erreur", "Erreur")));
   dom.renameCollectionButton?.addEventListener("click", () => renameCollection().catch((error) => toast(error?.message || "Erreur", "Erreur")));

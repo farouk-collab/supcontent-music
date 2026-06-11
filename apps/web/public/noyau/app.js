@@ -1,6 +1,10 @@
 const DEFAULT_API_BASE = (() => {
   const h = String(window.location.hostname || "").toLowerCase();
-  if (h === "localhost" || h === "127.0.0.1") return "http://localhost:1234";
+  if (h === "localhost" || h === "127.0.0.1") {
+    const apiPortByWebPort = { "4173": "1234", "4174": "1235" };
+    const apiPort = apiPortByWebPort[String(window.location.port || "")] || "1234";
+    return `http://${h}:${apiPort}`;
+  }
   return "https://supcontent-api.onrender.com";
 })();
 
@@ -232,7 +236,12 @@ export async function apiFetch(path, opts = {}) {
   }
 
   if (!res.ok) {
-    const msg = data?.erreur || data?.error || (typeof data === "string" ? data : "Erreur API");
+    const fieldErrors = data?.details?.fieldErrors && typeof data.details.fieldErrors === "object"
+      ? Object.values(data.details.fieldErrors).flat().filter(Boolean)
+      : [];
+    const formErrors = Array.isArray(data?.details?.formErrors) ? data.details.formErrors.filter(Boolean) : [];
+    const detailMessage = [...fieldErrors, ...formErrors].join(" ");
+    const msg = detailMessage || data?.erreur || data?.error || (typeof data === "string" ? data : "Erreur API");
     const e = new Error(msg);
     e.status = res.status;
     e.data = data;
