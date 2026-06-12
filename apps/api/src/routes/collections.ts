@@ -322,7 +322,7 @@ router.post("/:id/items", requireAuth, async (req: AuthedRequest, res) => {
     `
       INSERT INTO collection_items (collection_id, media_type, media_id)
       VALUES ($1, $2, $3)
-      ON CONFLICT (collection_id, media_type, media_id) DO NOTHING
+      ON CONFLICT DO NOTHING
     `,
     [id, media_type, media_id]
   );

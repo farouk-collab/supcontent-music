@@ -74,6 +74,25 @@ export async function ensureCollectionsTables() {
     )
   `);
 
+  await pool.query(`
+    DO $$
+    DECLARE
+      current_def text;
+    BEGIN
+      SELECT pg_get_constraintdef(oid)
+      INTO current_def
+      FROM pg_constraint
+      WHERE conrelid = 'collection_items'::regclass
+        AND conname = 'collection_items_pkey';
+
+      IF current_def IS NOT NULL AND current_def <> 'PRIMARY KEY (collection_id, media_type, media_id)' THEN
+        ALTER TABLE collection_items DROP CONSTRAINT collection_items_pkey;
+        ALTER TABLE collection_items ADD PRIMARY KEY (collection_id, media_type, media_id);
+      END IF;
+    END
+    $$;
+  `);
+
   // Schema migration: normalize legacy TEXT ids to UUID.
   await pool.query(`
     DO $$
