@@ -13,7 +13,7 @@
     "android:aab": "expo prebuild --platform android && cd android && gradlew.bat bundleRelease",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "build": "node -e \"console.log('No production build script for mobile yet')\""
+    "build": "npm run assets:generate && expo export --platform web"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "^1.23.1",

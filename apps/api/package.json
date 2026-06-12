@@ -6,7 +6,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "verify:swipe-live": "node scripts/verify-swipe-live.mjs",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "test": "npm run build && node --test ../../tests/api/*.test.mjs"
   },
   "dependencies": {
     "@types/bcrypt": "^6.0.0",

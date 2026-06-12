@@ -43,33 +43,34 @@ import shopRoutes from "./routes/shop";
 import searchHubRoutes from "./routes/searchHub";
 import { AuthedRequest, requireAuth } from "./middleware/requireAuth";
 
-const app = express();
-app.set("trust proxy", 1);
+export function createApp() {
+  const app = express();
+  app.set("trust proxy", 1);
 
-app.use(
-  helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" },
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        baseUri: ["'self'"],
-        fontSrc: ["'self'", "https:", "data:"],
-        formAction: ["'self'"],
-        frameAncestors: ["'self'"],
-        imgSrc: ["'self'", "data:", "blob:", "https://i.scdn.co", "https://mosaic.scdn.co"],
-        objectSrc: ["'none'"],
-        scriptSrc: ["'self'", "https:", "'unsafe-inline'"],
-        scriptSrcAttr: ["'none'"],
-        styleSrc: ["'self'", "https:", "'unsafe-inline'"],
-        upgradeInsecureRequests: [],
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: "cross-origin" },
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          baseUri: ["'self'"],
+          fontSrc: ["'self'", "https:", "data:"],
+          formAction: ["'self'"],
+          frameAncestors: ["'self'"],
+          imgSrc: ["'self'", "data:", "blob:", "https://i.scdn.co", "https://mosaic.scdn.co"],
+          objectSrc: ["'none'"],
+          scriptSrc: ["'self'", "https:", "'unsafe-inline'"],
+          scriptSrcAttr: ["'none'"],
+          styleSrc: ["'self'", "https:", "'unsafe-inline'"],
+          upgradeInsecureRequests: [],
+        },
       },
-    },
-  })
-);
-app.use(cors({ origin: true, credentials: true }));
-app.use(express.json());
-app.use(cookieParser());
-app.use(morgan("dev"));
+    })
+  );
+  app.use(cors({ origin: true, credentials: true }));
+  app.use(express.json());
+  app.use(cookieParser());
+  app.use(morgan("dev"));
 
 type Method = "get" | "post" | "put" | "patch" | "delete";
 type EndpointDef = { method: Method; path: string; tag: string; auth?: boolean; summary?: string };
@@ -174,6 +175,14 @@ const endpointCatalog: EndpointDef[] = [
   { method: "post", path: "/shop/checkout", tag: "Shop", auth: true },
   { method: "delete", path: "/shop/favorites/{productId}", tag: "Shop", auth: true },
   { method: "delete", path: "/shop/cart/items/{cartItemId}", tag: "Shop", auth: true },
+  { method: "get", path: "/search-hub/imports", tag: "SearchHub" },
+  { method: "get", path: "/search-hub/import/parse", tag: "SearchHub" },
+  { method: "post", path: "/search-hub/imports/playlist", tag: "SearchHub" },
+  { method: "post", path: "/search-hub/imports/media", tag: "SearchHub" },
+  { method: "patch", path: "/search-hub/imports/{id}/favorite", tag: "SearchHub" },
+  { method: "delete", path: "/search-hub/imports/{id}", tag: "SearchHub" },
+  { method: "post", path: "/search-hub/imports/merge", tag: "SearchHub" },
+  { method: "post", path: "/search-hub/imports/sync", tag: "SearchHub" },
 ];
 
 const buildOpenApiSpec = (baseUrl: string) => {
@@ -214,6 +223,7 @@ const buildOpenApiSpec = (baseUrl: string) => {
       { name: "Chat" },
       { name: "Live" },
       { name: "Shop" },
+      { name: "SearchHub" },
       { name: "Upload" },
     ],
     components: {
@@ -232,28 +242,28 @@ const buildOpenApiSpec = (baseUrl: string) => {
 /* ======================
    API ROUTES
 ====================== */
-app.use("/auth", authRoutes);
-app.use("/collections", collectionsRoutes);
-app.use("/users", usersRoutes);
-app.use("/upload", uploadRoutes);
-app.use("/social", socialRoutes);
-app.use("/follows", followsRoutes);
-app.use("/profile-posts", profilePostsRoutes);
-app.use("/feed", feedRoutes);
-app.use("/notifications", notificationsRoutes);
-app.use("/chat", chatRoutes);
-app.use("/live", liveRoutes);
-app.use("/shop", shopRoutes);
-app.use("/search-hub", searchHubRoutes);
+  app.use("/auth", authRoutes);
+  app.use("/collections", collectionsRoutes);
+  app.use("/users", usersRoutes);
+  app.use("/upload", uploadRoutes);
+  app.use("/social", socialRoutes);
+  app.use("/follows", followsRoutes);
+  app.use("/profile-posts", profilePostsRoutes);
+  app.use("/feed", feedRoutes);
+  app.use("/notifications", notificationsRoutes);
+  app.use("/chat", chatRoutes);
+  app.use("/live", liveRoutes);
+  app.use("/shop", shopRoutes);
+  app.use("/search-hub", searchHubRoutes);
 
-app.get("/openapi.json", (req, res) => {
+  app.get("/openapi.json", (req, res) => {
   const proto = String(req.headers["x-forwarded-proto"] || req.protocol || "https");
   const host = String(req.headers["x-forwarded-host"] || req.get("host") || "");
   const baseUrl = host ? `${proto}://${host}` : "";
   return res.json(buildOpenApiSpec(baseUrl));
-});
+  });
 
-app.get("/docs", (_req, res) => {
+  app.get("/docs", (_req, res) => {
   res.type("html").send(`<!doctype html>
 <html lang="en">
   <head>
@@ -274,9 +284,9 @@ app.get("/docs", (_req, res) => {
     ></rapi-doc>
   </body>
 </html>`);
-});
+  });
 
-app.get("/swagger", (_req, res) => {
+  app.get("/swagger", (_req, res) => {
   res.type("html").send(`<!doctype html>
 <html lang="en">
   <head>
@@ -301,11 +311,11 @@ app.get("/swagger", (_req, res) => {
     </script>
   </body>
 </html>`);
-});
+  });
 
-app.get("/health", (_req, res) => res.json({ ok: true }));
+  app.get("/health", (_req, res) => res.json({ ok: true }));
 
-app.get("/env-check", (_req, res) => {
+  app.get("/env-check", (_req, res) => {
   res.json({
     spotifyClientIdLoaded: Boolean(process.env.SPOTIFY_CLIENT_ID),
     spotifyClientSecretLoaded: Boolean(process.env.SPOTIFY_CLIENT_SECRET),
@@ -314,9 +324,9 @@ app.get("/env-check", (_req, res) => {
     jwtAccessLoaded: Boolean(process.env.JWT_ACCESS_SECRET),
     jwtRefreshLoaded: Boolean(process.env.JWT_REFRESH_SECRET),
   });
-});
+  });
 
-app.get("/db-test", async (_req, res) => {
+  app.get("/db-test", async (_req, res) => {
   try {
     const r = await pool.query("SELECT NOW() as now");
     res.json(r.rows[0]);
@@ -324,9 +334,9 @@ app.get("/db-test", async (_req, res) => {
     console.error("DB error:", e?.message);
     res.status(500).json({ error: "DB connection failed" });
   }
-});
+  });
 
-app.get("/redis-test", async (_req, res) => {
+  app.get("/redis-test", async (_req, res) => {
   try {
     await redis.set("ping", "pong", "EX", 30);
     res.json({ ping: await redis.get("ping") });
@@ -334,9 +344,9 @@ app.get("/redis-test", async (_req, res) => {
     console.error("Redis error:", e?.message);
     res.status(500).json({ error: "Redis connection failed" });
   }
-});
+  });
 
-app.get("/search", async (req, res) => {
+  app.get("/search", async (req, res) => {
   try {
     res.setHeader("Cache-Control", "no-store");
     const SPOTIFY_SEARCH_MAX_LIMIT = 10;
@@ -594,7 +604,7 @@ app.get("/search", async (req, res) => {
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
     });
   }
-});
+  });
 
 app.get("/media/:type/:id", async (req, res) => {
   try {
@@ -1031,7 +1041,7 @@ async function fetchCategoryTracks(queries: string[], limit: number) {
   return Array.from(dedup.values()).slice(0, wanted);
 }
 
-app.get("/music/personalized", requireAuth, async (req: AuthedRequest, res) => {
+  app.get("/music/personalized", requireAuth, async (req: AuthedRequest, res) => {
   try {
     const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
     const limitNum = Number.parseInt(String(limitRaw ?? "10"), 10);
@@ -1089,9 +1099,9 @@ app.get("/music/personalized", requireAuth, async (req: AuthedRequest, res) => {
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
     });
   }
-});
+  });
 
-app.get("/music/categories", async (req, res) => {
+  app.get("/music/categories", async (req, res) => {
   try {
     const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
     const limitNum = Number.parseInt(String(limitRaw ?? "10"), 10);
@@ -1154,9 +1164,9 @@ app.get("/music/categories", async (req, res) => {
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
     });
   }
-});
+  });
 
-app.get("/music/news", async (req, res) => {
+  app.get("/music/news", async (req, res) => {
   try {
     const limitRaw = Array.isArray(req.query.limit) ? req.query.limit[0] : req.query.limit;
     const limitNum = Number.parseInt(String(limitRaw ?? "10"), 10);
@@ -1317,54 +1327,73 @@ app.get("/music/news", async (req, res) => {
       details: e?.data ?? e?.response?.data ?? e?.message ?? null,
     });
   }
-});
+  });
 
-app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error("Unhandled API error:", err?.message || err);
-  if (res.headersSent) return;
-  return res.status(500).json({ erreur: "Erreur serveur" });
-});
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error("Unhandled API error:", err?.message || err);
+    if (res.headersSent) return;
+    return res.status(500).json({ erreur: "Erreur serveur" });
+  });
 
-// Serve uploads from the same directory used by local upload fallback.
-app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
+  // Serve uploads from the same directory used by local upload fallback.
+  app.use("/uploads", express.static(path.join(process.cwd(), "public", "uploads")));
 
-app.get("/", (_req, res) => {
-  res.json({ ok: true, service: "supcontent-api" });
-});
+  app.get("/", (_req, res) => {
+    res.json({ ok: true, service: "supcontent-api" });
+  });
 
-const PORT = process.env.PORT || 1234;
-app.listen(PORT, () => console.log(`?? API: http://localhost:${PORT}`));
+  return app;
+}
 
-ensureCollectionsTables().catch((err) => {
-  console.error("Collections tables init failed (non-blocking):", err?.message || err);
-});
+export const app = createApp();
+let runtimeInitialized = false;
 
-ensureSocialTables().catch((err) => {
-  console.error("Social tables init failed (non-blocking):", err?.message || err);
-});
+export function initializeRuntimeServices() {
+  if (runtimeInitialized) return;
+  runtimeInitialized = true;
+  const skipInit = ["1", "true", "yes", "on"].includes(String(process.env.SUPCONTENT_SKIP_INIT || "").trim().toLowerCase());
+  if (skipInit) return;
 
-ensureFollowTables().catch((err) => {
-  console.error("Follow tables init failed (non-blocking):", err?.message || err);
-});
+  ensureCollectionsTables().catch((err) => {
+    console.error("Collections tables init failed (non-blocking):", err?.message || err);
+  });
 
-ensureSpotifyLinksTable().catch((err) => {
-  console.error("Spotify links table init failed (non-blocking):", err?.message || err);
-});
+  ensureSocialTables().catch((err) => {
+    console.error("Social tables init failed (non-blocking):", err?.message || err);
+  });
 
-ensurePasswordResetTable().catch((err) => {
-  console.error("Password reset table init failed (non-blocking):", err?.message || err);
-});
+  ensureFollowTables().catch((err) => {
+    console.error("Follow tables init failed (non-blocking):", err?.message || err);
+  });
 
-ensureProfilePostsTable().catch((err) => {
-  console.error("Profile posts table init failed (non-blocking):", err?.message || err);
-});
-ensureChatTables().catch((err) => {
-  console.error("Chat tables init failed (non-blocking):", err?.message || err);
-});
-ensureLiveTables().catch((err) => {
-  console.error("Live tables init failed (non-blocking):", err?.message || err);
-});
-ensureShopTables().catch((err) => {
-  console.error("Shop tables init failed (non-blocking):", err?.message || err);
-});
+  ensureSpotifyLinksTable().catch((err) => {
+    console.error("Spotify links table init failed (non-blocking):", err?.message || err);
+  });
+
+  ensurePasswordResetTable().catch((err) => {
+    console.error("Password reset table init failed (non-blocking):", err?.message || err);
+  });
+
+  ensureProfilePostsTable().catch((err) => {
+    console.error("Profile posts table init failed (non-blocking):", err?.message || err);
+  });
+  ensureChatTables().catch((err) => {
+    console.error("Chat tables init failed (non-blocking):", err?.message || err);
+  });
+  ensureLiveTables().catch((err) => {
+    console.error("Live tables init failed (non-blocking):", err?.message || err);
+  });
+  ensureShopTables().catch((err) => {
+    console.error("Shop tables init failed (non-blocking):", err?.message || err);
+  });
+}
+
+export function startServer(port = process.env.PORT || 1234) {
+  initializeRuntimeServices();
+  return app.listen(port, () => console.log(`API: http://localhost:${port}`));
+}
+
+if (require.main === module) {
+  startServer();
+}
 
