@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { SafeAreaView, StatusBar, StyleSheet, Text, View, Pressable } from "react-native";
+import { SafeAreaView, StatusBar, StyleSheet, Text, View, Pressable, Linking } from "react-native";
 import { AuthScreen } from "./src/screens/AuthScreen";
 import { SearchScreen } from "./src/screens/SearchScreen";
 import { MediaDetailScreen } from "./src/screens/MediaDetailScreen";
@@ -8,6 +8,8 @@ import { ShopScreen } from "./src/screens/ShopScreen";
 import { createApiClient, ApiError } from "./src/api/client";
 import { clearSession, loadSession, saveSession } from "./src/storage/session";
 import { API_BASE_URL } from "./src/config";
+
+const GOOGLE_MOBILE_REDIRECT_URI = "supcontentmusic://auth/callback";
 
 const TABS = [
   { key: "shop", label: "Shop" },
@@ -29,6 +31,34 @@ export default function App() {
   const [authLoading, setAuthLoading] = useState(false);
   const [authError, setAuthError] = useState("");
   const [route, setRoute] = useState({ name: "shop", params: null });
+
+  const hydrateOauthSession = useCallback(
+    async (url) => {
+      if (!url) return false;
+      try {
+        const parsed = new URL(url);
+        const accessToken = parsed.searchParams.get("accessToken");
+        const refreshToken = parsed.searchParams.get("refreshToken");
+        const provider = parsed.searchParams.get("oauth");
+        if (!accessToken || !refreshToken || provider !== "google") return false;
+
+        const data = await api.me(accessToken);
+        await persistSession({
+          accessToken,
+          refreshToken,
+          user: data.user || null,
+        });
+        setAuthError("");
+        return true;
+      } catch (e) {
+        setAuthError(e?.message || "Google sign-in failed");
+        return false;
+      } finally {
+        setAuthLoading(false);
+      }
+    },
+    [api, persistSession]
+  );
 
   const navigate = useCallback((name, params = null) => {
     setRoute((current) => ({ name, params, previous: current.name }));
@@ -72,8 +102,10 @@ export default function App() {
     let cancelled = false;
     async function boot() {
       const stored = await loadSession();
+      const initialUrl = await Linking.getInitialURL();
+      const oauthSessionLoaded = await hydrateOauthSession(initialUrl);
       if (!cancelled) {
-        setSession(stored);
+        setSession(oauthSessionLoaded ? await loadSession() : stored);
         setBooting(false);
       }
     }
@@ -81,7 +113,14 @@ export default function App() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [hydrateOauthSession]);
+
+  useEffect(() => {
+    const subscription = Linking.addEventListener("url", ({ url }) => {
+      hydrateOauthSession(url);
+    });
+    return () => subscription.remove();
+  }, [hydrateOauthSession]);
 
   const onLogin = useCallback(
     async ({ email, password }) => {
@@ -122,6 +161,20 @@ export default function App() {
     },
     [api, persistSession]
   );
+
+  const onGoogleLogin = useCallback(async () => {
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const target = `${API_BASE_URL}/auth/oauth/google/start?returnTo=${encodeURIComponent(
+        GOOGLE_MOBILE_REDIRECT_URI
+      )}`;
+      await Linking.openURL(target);
+    } catch (e) {
+      setAuthError(e?.message || "Unable to start Google sign-in");
+      setAuthLoading(false);
+    }
+  }, []);
 
   const searchMedia = useCallback(
     async ({ q, type }) => {
@@ -209,6 +262,7 @@ export default function App() {
         <AuthScreen
           onLogin={onLogin}
           onRegister={onRegister}
+          onGoogleLogin={onGoogleLogin}
           loading={authLoading}
           errorText={authError}
         />

@@ -16,11 +16,15 @@ build/
 .env
 .env.*
 *.local
+!.env.production.example
 
 # logs
 *.log
+desktop.ini
 
 # uploads / files persos
 uploads/
 public/uploads/
 apps/**/uploads/
+.vercel
+supabase/.temp/

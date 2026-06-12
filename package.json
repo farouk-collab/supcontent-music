@@ -7,8 +7,9 @@
   ],
   "scripts": {
     "dev": "concurrently -n api,web -c cyan,green \"npm run dev:api\" \"npm run dev:web\"",
-    "dev:api": "npm --workspace apps/api run dev",
-    "dev:web": "node scripts/dev-web-server.mjs",
+    "dev:all": "npm run dev",
+    "dev:api": "node scripts/dev-api-server.mjs",
+    "dev:web": "npm --workspace apps/web run dev:static",
     "build": "npm run build:api && npm run build:web",
     "build:api": "npm --workspace apps/api run build",
     "build:web": "npm --workspace apps/web run build",

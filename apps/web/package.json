@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "dev:static": "node ./scripts/dev-server.mjs",
+    "build": "vite build && node ./scripts/write-runtime-config.mjs",
     "preview": "vite preview",
     "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "test": "node --test ../../tests/web/*.test.mjs"

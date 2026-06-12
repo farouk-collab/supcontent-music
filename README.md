@@ -45,6 +45,13 @@ npm run dev
 - API: `http://localhost:1234`
 - Web: `http://localhost:4173`
 
+Chaque app peut aussi tourner separement :
+
+```bash
+npm --workspace apps/api run dev
+npm --workspace apps/web run dev:static
+```
+
 ### Mobile
 
 Dans un second terminal :
@@ -58,6 +65,7 @@ npm --workspace apps/mobile run start
 Exemples disponibles :
 
 - [`.env.example`](./.env.example)
+- [`.env.production.example`](./.env.production.example)
 - [`apps/api/.env.example`](./apps/api/.env.example)
 
 Les variables backend les plus importantes :
@@ -67,8 +75,15 @@ Les variables backend les plus importantes :
 - `JWT_ACCESS_SECRET`
 - `JWT_REFRESH_SECRET`
 - `FRONTEND_URL`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
 - `SPOTIFY_CLIENT_ID`
 - `SPOTIFY_CLIENT_SECRET`
+
+Variable frontend utile en local :
+
+- `SUPCONTENT_API_BASE`
 
 ## Scripts utiles
 
@@ -117,9 +132,11 @@ Elle execute :
 ## Documentation connexe
 
 - [`docs/FONCTIONNALITES_PAR_PAGE.md`](./docs/FONCTIONNALITES_PAR_PAGE.md)
+- [`apps/api/README.md`](./apps/api/README.md)
+- [`apps/web/README.md`](./apps/web/README.md)
 - [`docs/user-stories/README.md`](./docs/user-stories/README.md)
-- [`SEPARATION_FRONT_BACK.md`](./SEPARATION_FRONT_BACK.md)
-- [`SETUP_COLLAB.md`](./SETUP_COLLAB.md)
+- [`docs/setup/SEPARATION_FRONT_BACK.md`](./docs/setup/SEPARATION_FRONT_BACK.md)
+- [`docs/setup/SETUP_COLLAB.md`](./docs/setup/SETUP_COLLAB.md)
 
 ## Definition d'un projet "pret"
 
@@ -129,3 +146,13 @@ Avant publication, verifier au minimum :
 2. configuration des vraies variables d'environnement
 3. validation manuelle auth / recherche / import / boutique / profil / swipe
 4. generation du build mobile cible si publication Android
+
+## OAuth Google
+
+Le web utilise la page `connexion.html` apres retour OAuth.
+
+Le mobile Expo supporte aussi Google via deep link :
+
+- schema: `supcontentmusic://auth/callback`
+- endpoint backend utilise: `/auth/oauth/google/start`
+- variables requises cote API: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REDIRECT_URI`

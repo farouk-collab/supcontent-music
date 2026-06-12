@@ -3,7 +3,7 @@
 Client mobile Expo/React Native pour SUPCONTENT Music.
 
 ## Fonctionnel (MVP)
-- Auth: register/login/logout
+- Auth: register/login/logout + Google OAuth
 - Recherche media: `/search`
 - Detail media: `/media/:type/:id`
 - Profil: lecture + edition via `/auth/me`
@@ -11,6 +11,18 @@ Client mobile Expo/React Native pour SUPCONTENT Music.
 - Session persistante (access + refresh token)
 
 Le client mobile appelle uniquement l'API backend (`apps/api`) et jamais Spotify directement.
+
+## Google OAuth
+
+Le flux mobile Google repasse par le backend puis revient dans l'app avec le deep link :
+
+- `supcontentmusic://auth/callback`
+
+Variables backend obligatoires :
+
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+- `GOOGLE_REDIRECT_URI`
 
 ## Lancement
 1. Installer les dependances a la racine:

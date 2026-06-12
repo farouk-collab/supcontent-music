@@ -23,6 +23,7 @@ import { requireAuth, AuthedRequest } from "../middleware/requireAuth";
 import { getSpotifyLinkByUserId, upsertSpotifyLink } from "../db/spotifyLinks";
 import { exchangeSpotifyAuthCode, spotifyUserGet } from "../services";
 import { isSupportedImageMime, storeUploadedImage } from "../services/mediaStorage";
+import { buildOauthSuccessRedirect, decodeOauthReturnTo } from "../lib/oauth";
 
 /* =========================
    Router
@@ -278,17 +279,8 @@ router.get("/oauth/github/callback", async (req, res) => {
       return res.status(400).json({ erreur: "State OAuth invalide ou expiré" });
     }
 
-    let returnTo = process.env.FRONTEND_URL || "http://localhost:4173";
-    try {
-      if (encodedPayload) {
-        const decoded = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
-        if (decoded?.returnTo && typeof decoded.returnTo === "string") {
-          returnTo = decoded.returnTo;
-        }
-      }
-    } catch {
-      // fallback to FRONTEND_URL
-    }
+    const fallbackFrontendUrl = process.env.FRONTEND_URL || "http://localhost:4173";
+    const returnTo = decodeOauthReturnTo(encodedPayload, fallbackFrontendUrl);
 
     const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
       method: "POST",
@@ -374,11 +366,13 @@ router.get("/oauth/github/callback", async (req, res) => {
     const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
     await storeRefreshToken({ userId: user.id, tokenHash: hashToken(refresh), expiresAt });
 
-    const redir = new URL("/connexion/connexion.html", returnTo);
-    redir.searchParams.set("oauth", "github");
-    redir.searchParams.set("accessToken", access);
-    redir.searchParams.set("refreshToken", refresh);
-    return res.redirect(redir.toString());
+    return res.redirect(
+      buildOauthSuccessRedirect(returnTo, fallbackFrontendUrl, {
+        oauth: "github",
+        accessToken: access,
+        refreshToken: refresh,
+      })
+    );
   } catch (err: any) {
     console.error("OAuth GitHub error:", err?.message || err);
     return res.status(500).json({ erreur: "Erreur OAuth GitHub" });
@@ -432,15 +426,8 @@ router.get("/oauth/google/callback", async (req, res) => {
       return res.status(400).json({ erreur: "State OAuth invalide ou expire" });
     }
 
-    let returnTo = process.env.FRONTEND_URL || "http://localhost:4173";
-    try {
-      if (encodedPayload) {
-        const decoded = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
-        if (decoded?.returnTo && typeof decoded.returnTo === "string") returnTo = decoded.returnTo;
-      }
-    } catch {
-      // fallback
-    }
+    const fallbackFrontendUrl = process.env.FRONTEND_URL || "http://localhost:4173";
+    const returnTo = decodeOauthReturnTo(encodedPayload, fallbackFrontendUrl);
 
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
@@ -488,11 +475,13 @@ router.get("/oauth/google/callback", async (req, res) => {
     const expiresAt = new Date(Date.now() + 7 * 24 * 3600 * 1000);
     await storeRefreshToken({ userId: user.id, tokenHash: hashToken(refresh), expiresAt });
 
-    const redir = new URL("/connexion/connexion.html", returnTo);
-    redir.searchParams.set("oauth", "google");
-    redir.searchParams.set("accessToken", access);
-    redir.searchParams.set("refreshToken", refresh);
-    return res.redirect(redir.toString());
+    return res.redirect(
+      buildOauthSuccessRedirect(returnTo, fallbackFrontendUrl, {
+        oauth: "google",
+        accessToken: access,
+        refreshToken: refresh,
+      })
+    );
   } catch (err: any) {
     console.error("OAuth Google error:", err?.message || err);
     return res.status(500).json({ erreur: "Erreur OAuth Google" });

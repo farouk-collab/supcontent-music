@@ -67,11 +67,77 @@ export async function ensureCollectionsTables() {
     CREATE TABLE IF NOT EXISTS collection_items (
       collection_id UUID NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
       media_type TEXT NOT NULL
-        CHECK (media_type IN ('track', 'album', 'artist')),
+        CHECK (media_type IN ('track', 'album', 'artist', 'playlist', 'media')),
       media_id TEXT NOT NULL,
+      item_kind TEXT NOT NULL DEFAULT 'catalog'
+        CHECK (item_kind IN ('catalog', 'playlist', 'media')),
+      external_source TEXT NULL,
+      title TEXT NULL,
+      subtitle TEXT NULL,
+      image_url TEXT NULL,
+      source_url TEXT NULL,
+      youtube_url TEXT NULL,
+      spotify_url TEXT NULL,
+      track_count INTEGER NOT NULL DEFAULT 1,
       added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       PRIMARY KEY (collection_id, media_type, media_id)
     )
+  `);
+
+  await pool.query(`ALTER TABLE collection_items ADD COLUMN IF NOT EXISTS item_kind TEXT NOT NULL DEFAULT 'catalog'`);
+  await pool.query(`ALTER TABLE collection_items ADD COLUMN IF NOT EXISTS external_source TEXT NULL`);
+  await pool.query(`ALTER TABLE collection_items ADD COLUMN IF NOT EXISTS title TEXT NULL`);
+  await pool.query(`ALTER TABLE collection_items ADD COLUMN IF NOT EXISTS subtitle TEXT NULL`);
+  await pool.query(`ALTER TABLE collection_items ADD COLUMN IF NOT EXISTS image_url TEXT NULL`);
+  await pool.query(`ALTER TABLE collection_items ADD COLUMN IF NOT EXISTS source_url TEXT NULL`);
+  await pool.query(`ALTER TABLE collection_items ADD COLUMN IF NOT EXISTS youtube_url TEXT NULL`);
+  await pool.query(`ALTER TABLE collection_items ADD COLUMN IF NOT EXISTS spotify_url TEXT NULL`);
+  await pool.query(`ALTER TABLE collection_items ADD COLUMN IF NOT EXISTS track_count INTEGER NOT NULL DEFAULT 1`);
+  await pool.query(`
+    DO $$
+    DECLARE
+      existing_check text;
+    BEGIN
+      SELECT conname
+      INTO existing_check
+      FROM pg_constraint
+      WHERE conrelid = 'collection_items'::regclass
+        AND contype = 'c'
+        AND pg_get_constraintdef(oid) LIKE '%media_type%'
+      LIMIT 1;
+
+      IF existing_check IS NOT NULL AND existing_check <> 'collection_items_media_type_check' THEN
+        EXECUTE format('ALTER TABLE collection_items DROP CONSTRAINT %I', existing_check);
+      END IF;
+
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'collection_items'::regclass
+          AND conname = 'collection_items_media_type_check'
+      ) THEN
+        ALTER TABLE collection_items
+          ADD CONSTRAINT collection_items_media_type_check
+          CHECK (media_type IN ('track', 'album', 'artist', 'playlist', 'media'));
+      END IF;
+    END
+    $$;
+  `);
+  await pool.query(`
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conrelid = 'collection_items'::regclass
+          AND conname = 'collection_items_item_kind_check'
+      ) THEN
+        ALTER TABLE collection_items
+          ADD CONSTRAINT collection_items_item_kind_check
+          CHECK (item_kind IN ('catalog', 'playlist', 'media'));
+      END IF;
+    END
+    $$;
   `);
 
   await pool.query(`

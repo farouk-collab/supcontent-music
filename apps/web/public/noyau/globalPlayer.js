@@ -214,7 +214,7 @@ function getDurationSeconds() {
 function setPlayPauseIcon(playing) {
   if (!playPauseBtn) return;
   const isPlaying = Boolean(playing);
-  playPauseBtn.textContent = isPlaying ? "||" : ">";
+  playPauseBtn.innerHTML = isPlaying ? "&#10074;&#10074;" : "&#9654;";
   playPauseBtn.title = isPlaying ? "Pause" : "Lecture";
   playPauseBtn.setAttribute("aria-label", playPauseBtn.title);
 }
@@ -308,7 +308,7 @@ function setExpanded(on) {
   if (expandedShellEl) expandedShellEl.hidden = !expanded;
   if (backBtn) backBtn.hidden = !expanded;
   if (expandBtn) {
-    expandBtn.textContent = expanded ? "-" : "+";
+    expandBtn.innerHTML = expanded ? "&#8722;" : "&#43;";
     expandBtn.title = expanded ? "Reduire" : "Agrandir";
     expandBtn.setAttribute("aria-label", expandBtn.title);
   }
@@ -325,8 +325,8 @@ function renderMeta(meta) {
     : `<span class="gmp-cover-fallback">${meta?.mode === "video" ? "V" : "A"}</span>`;
 
   root.classList.toggle("audio-only", String(meta?.mode || "audio") === "audio");
-  modeBtn.textContent = meta?.mode === "audio" ? "A" : "V";
-  modeBtn.title = meta?.mode === "audio" ? "Mode audio" : "Mode video";
+  modeBtn.textContent = meta?.mode === "audio" ? "Audio" : "Video";
+  modeBtn.title = meta?.mode === "audio" ? "Basculer en mode video" : "Basculer en mode audio";
   modeBtn.setAttribute("aria-label", modeBtn.title);
   syncMediaDock();
 
@@ -854,7 +854,7 @@ function buildUi() {
         <div class="gmp-stage">
           <div class="gmp-stage-media">
             <div class="gmp-video-stage" id="gmpVideoStage"></div>
-            <button class="btn icon gmp-video-back" type="button" id="gmpBack" aria-label="Retour" title="Retour" hidden><</button>
+            <button class="btn icon gmp-video-back" type="button" id="gmpBack" aria-label="Retour" title="Retour" hidden>&larr;</button>
             <div class="gmp-subtitle-overlay" id="gmpSubtitleOverlay" hidden></div>
           </div>
           <div class="gmp-stage-meta" id="gmpStageMeta"></div>
@@ -883,10 +883,9 @@ function buildUi() {
       </div>
       <div class="gmp-center">
         <div class="gmp-actions">
-          <button class="btn icon" type="button" id="gmpMode" aria-label="Mode video" title="Mode video">V</button>
-          <button class="btn icon" type="button" id="gmpPrev" aria-label="Precedent" title="Precedent"><<</button>
-          <button class="btn icon main" type="button" id="gmpPlayPause" aria-label="Lecture/Pause" title="Lecture/Pause">></button>
-          <button class="btn icon" type="button" id="gmpNext" aria-label="Suivant" title="Suivant">>></button>
+          <button class="btn icon" type="button" id="gmpPrev" aria-label="Precedent" title="Precedent">&laquo;</button>
+          <button class="btn icon main" type="button" id="gmpPlayPause" aria-label="Lecture/Pause" title="Lecture/Pause">&#9654;</button>
+          <button class="btn icon" type="button" id="gmpNext" aria-label="Suivant" title="Suivant">&raquo;</button>
         </div>
         <div class="gmp-progress">
           <small id="gmpCur">0:00</small>
@@ -899,12 +898,13 @@ function buildUi() {
         </button>
       </div>
       <div class="gmp-right">
+        <button class="btn icon gmp-mode-btn" type="button" id="gmpMode" aria-label="Basculer en mode video" title="Basculer en mode video">Audio</button>
         <div class="gmp-volume-box">
           <span class="gmp-volume-label">Vol</span>
           <input id="gmpVol" class="gmp-vol" type="range" min="0" max="1" step="0.01" value="1" />
         </div>
         <button class="btn icon" type="button" id="gmpExpand" aria-label="Agrandir" title="Agrandir">+</button>
-        <button class="btn danger icon" type="button" id="gmpClose" aria-label="Fermer" title="Fermer">x</button>
+        <button class="btn danger icon" type="button" id="gmpClose" aria-label="Fermer" title="Fermer">&times;</button>
       </div>
     </div>
   `;

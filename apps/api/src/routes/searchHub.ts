@@ -1,6 +1,8 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { verifyAccessToken } from "../auth/jwt";
+import { pool } from "../connections";
+import { ensureCollectionsTables, newCollectionId } from "../db/collections";
 import { parseSpotifyPlaylistId, spotifyGetPlaylistTracks } from "../services";
 import {
   deriveTitleFromUrl,
@@ -26,18 +28,25 @@ type ImportedRow = {
 const router = Router();
 const importedRowsStore = new Map<string, ImportedRow[]>();
 
-function sessionKey(req: any) {
+function getAuthenticatedUserId(req: any) {
   const auth = String(req.headers.authorization || "");
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
 
   if (token) {
     try {
       const payload = verifyAccessToken(token);
-      return `user:${payload.sub}`;
+      return String(payload.sub || "");
     } catch {
-      // Ignore invalid token and fall back to guest scope.
+      return "";
     }
   }
+
+  return "";
+}
+
+function sessionKey(req: any) {
+  const userId = getAuthenticatedUserId(req);
+  if (userId) return `user:${userId}`;
 
   const ip = String(req.ip || req.headers["x-forwarded-for"] || "guest");
   const ua = String(req.headers["user-agent"] || "browser");
@@ -74,6 +83,119 @@ function createImportedRow(partial: Partial<ImportedRow>): ImportedRow {
 function duplicateUrl(rows: ImportedRow[], url: string) {
   const target = normalizeUrl(url);
   return rows.find((item) => normalizeUrl(item.url) === target);
+}
+
+function importedCollectionMediaType(item: ImportedRow): "playlist" | "media" {
+  return item.itemType === "media" ? "media" : "playlist";
+}
+
+function importedCollectionItemKind(item: ImportedRow): "playlist" | "media" {
+  return importedCollectionMediaType(item);
+}
+
+function persistentImportedMediaId(item: ImportedRow) {
+  const normalized = normalizeUrl(item.url);
+  return `import-${crypto.createHash("sha1").update(normalized).digest("hex").slice(0, 24)}`;
+}
+
+function importedSubtitle(item: ImportedRow) {
+  if (item.itemType === "playlist") {
+    return `${item.source} · ${Math.max(1, Number(item.tracks || 0))} titres importes`;
+  }
+
+  if (item.mediaType === "video") return `${item.source} · video importee`;
+  if (item.mediaType === "audio") return `${item.source} · audio importe`;
+  return `${item.source} · media importe`;
+}
+
+function externalSourceUrls(item: ImportedRow) {
+  const normalized = normalizeUrl(item.url);
+  const source = String(item.source || "").toLowerCase();
+  const isYoutube = source.includes("youtube");
+  const isSpotify = source.includes("spotify");
+  return {
+    sourceUrl: normalized,
+    youtubeUrl: isYoutube ? normalized : null,
+    spotifyUrl: isSpotify ? normalized : null,
+  };
+}
+
+async function ensureImportsCollectionForUser(userId: string) {
+  await ensureCollectionsTables();
+  const existing = await pool.query<{ id: string }>(
+    `SELECT id
+       FROM collections
+      WHERE user_id = $1 AND code = $2
+      ORDER BY created_at ASC
+      LIMIT 1`,
+    [userId, "imports-recherche"],
+  );
+
+  if (existing.rows[0]?.id) return existing.rows[0].id;
+
+  const created = await pool.query<{ id: string }>(
+    `INSERT INTO collections (id, user_id, label, code)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id`,
+    [newCollectionId(), userId, "Imports recherche", "imports-recherche"],
+  );
+
+  return created.rows[0].id;
+}
+
+async function persistImportedRows(userId: string, rows: ImportedRow[]) {
+  if (!rows.length) return null;
+
+  const collectionId = await ensureImportsCollectionForUser(userId);
+
+  for (const item of rows) {
+    const mediaType = importedCollectionMediaType(item);
+    const mediaId = persistentImportedMediaId(item);
+    const urls = externalSourceUrls(item);
+
+    await pool.query(
+      `INSERT INTO collection_items (
+        collection_id,
+        media_type,
+        media_id,
+        item_kind,
+        external_source,
+        title,
+        subtitle,
+        image_url,
+        source_url,
+        youtube_url,
+        spotify_url,
+        track_count
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, $8, $9, $10, $11)
+      ON CONFLICT (collection_id, media_type, media_id)
+      DO UPDATE SET
+        item_kind = EXCLUDED.item_kind,
+        external_source = EXCLUDED.external_source,
+        title = EXCLUDED.title,
+        subtitle = EXCLUDED.subtitle,
+        source_url = EXCLUDED.source_url,
+        youtube_url = EXCLUDED.youtube_url,
+        spotify_url = EXCLUDED.spotify_url,
+        track_count = EXCLUDED.track_count`,
+      [
+        collectionId,
+        mediaType,
+        mediaId,
+        importedCollectionItemKind(item),
+        item.source,
+        item.title,
+        importedSubtitle(item),
+        urls.sourceUrl,
+        urls.youtubeUrl,
+        urls.spotifyUrl,
+        Math.max(1, Number(item.tracks || 1)),
+      ],
+    );
+  }
+
+  return collectionId;
 }
 
 router.get("/imports", (req, res) => {
@@ -212,10 +334,20 @@ router.post("/imports/merge", (req, res) => {
   return res.status(201).json({ item: merged, items: readRows(req) });
 });
 
-router.post("/imports/sync", (req, res) => {
-  const next = readRows(req).map((item) => ({ ...item, synced: true }));
+router.post("/imports/sync", async (req, res) => {
+  const rows = readRows(req);
+  const userId = getAuthenticatedUserId(req);
+
+  if (!userId) {
+    const next = rows.map((item) => ({ ...item, synced: true }));
+    writeRows(req, next);
+    return res.json({ items: next, persisted: false });
+  }
+
+  const collectionId = await persistImportedRows(userId, rows);
+  const next = rows.map((item) => ({ ...item, synced: true }));
   writeRows(req, next);
-  return res.json({ items: next });
+  return res.json({ items: next, persisted: true, collectionId });
 });
 
 export default router;

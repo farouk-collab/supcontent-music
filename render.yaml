@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: supcontent-api
+    runtime: node
+    plan: free
+    rootDir: .
+    region: frankfurt
+    healthCheckPath: /health
+    buildCommand: npm install && npm run build:api
+    startCommand: npm --workspace apps/api run start
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: REDIS_DISABLED
+        value: "1"
+      - key: ACCESS_TOKEN_TTL
+        value: 15m
+      - key: REFRESH_TOKEN_TTL
+        value: 7d

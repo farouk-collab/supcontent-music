@@ -229,6 +229,71 @@ function toCollectionModel(collection) {
   return { id: String(collection?.id || ""), name: String(collection?.name || "Collection"), description: collection?.status_code ? `Liste statut : ${String(collection.status_code).replaceAll("_", " ")}` : `${rows.length} medias dans cette collection`, rows, duplicates: rows.filter((row) => (counts.get(row.duplicateKey) || 0) > 1), socials: { likes: 80 + rows.length * 17, comments: 10 + rows.length * 3, listeners: Math.max(4, rows.length * 2) }, isEditable: !collection?.status_code };
 }
 
+function toImportedCollectionModels(items) {
+  const safeItems = Array.isArray(items) ? items : [];
+  if (!safeItems.length) return [];
+
+  const collectionId = "imports-search-hub";
+  const rows = safeItems
+    .filter((item) => !item?.synced)
+    .map((item, index) => {
+    const itemType = String(item?.itemType || "playlist") === "media" ? "media" : "playlist";
+    const mediaType = String(item?.mediaType || "") === "video" ? "video" : String(item?.mediaType || "") === "audio" ? "audio" : "";
+    const source = String(item?.source || "Lien externe");
+    const sourceLower = source.toLowerCase();
+    const title = String(item?.title || (itemType === "media" ? "Media importe" : "Playlist importee"));
+    const trackCount = Math.max(1, Number(item?.tracks || 1));
+    const url = String(item?.url || "");
+    const isYoutube = sourceLower.includes("youtube");
+    const isSpotify = sourceLower.includes("spotify");
+    const subtitle = itemType === "media"
+      ? `${source} · ${mediaType === "video" ? "video" : mediaType === "audio" ? "audio" : "media"} importe`
+      : `${source} · ${trackCount} titres importes`;
+    const artist = itemType === "playlist" ? source : source.replace(/^lien\s+/i, "");
+
+    return {
+      id: `import:${String(item?.id || index)}`,
+      media_type: itemType,
+      media_id: String(item?.id || `import-${index}`),
+      collectionId,
+      collectionName: "Imports recherche",
+      title,
+      subtitle,
+      image: "",
+      source,
+      isYoutube,
+      canPlayVideo: isYoutube || mediaType === "video",
+      youtube_url: isYoutube ? url : "",
+      source_url: url,
+      spotify_url: isSpotify ? url : "",
+      duplicateKey: `${title.toLowerCase()}-${sourceLower}`,
+      artist,
+      mood: inferMood(`${title} ${subtitle}`),
+      energy: inferEnergy(`${title} ${subtitle}`),
+      type: itemType,
+      favorite: Boolean(item?.favorite),
+      synced: Boolean(item?.synced),
+      loginRequired: Boolean(item?.loginRequired),
+    };
+    });
+
+  if (!rows.length) return [];
+
+  const counts = new Map();
+  rows.forEach((row) => counts.set(row.duplicateKey, (counts.get(row.duplicateKey) || 0) + 1));
+  const syncedCount = rows.filter((row) => row.synced).length;
+
+  return [{
+    id: collectionId,
+    name: "Imports recherche",
+    description: `${rows.length} imports disponibles · ${syncedCount} synchronises`,
+    rows,
+    duplicates: rows.filter((row) => (counts.get(row.duplicateKey) || 0) > 1),
+    socials: { likes: 24 + rows.length * 4, comments: 6 + rows.length, listeners: Math.max(2, rows.length) },
+    isEditable: false,
+  }];
+}
+
 function getSelectedCollection() { return state.collections.find((collection) => collection.id === state.selectedCollectionId) || state.collections[0] || null; }
 function getAllRows() { return state.collections.flatMap((collection) => collection.rows); }
 function getFavoriteRows() { return getAllRows().filter((row) => state.favorites.has(row.id)); }
@@ -361,6 +426,18 @@ function playMedia(row, forcedMode) {
 
 function openMedia(row) {
   if (!row) return;
+  if (row.youtube_url) {
+    setFeedback(`Ouverture de la source YouTube pour ${row.title}`);
+    window.location.href = `/media/media.html?ext=youtube&url=${encodeURIComponent(row.youtube_url)}`;
+    return;
+  }
+  const directUrl = row.source_url || row.spotify_url;
+  if (directUrl && (row.media_type === "playlist" || row.media_type === "media")) {
+    setFeedback(`Ouverture de la source importee pour ${row.title}`);
+    const opened = window.open(directUrl, "_blank", "noopener,noreferrer");
+    if (!opened) window.location.href = directUrl;
+    return;
+  }
   setFeedback(`Ouverture de la page detail pour ${row.title}`);
   window.location.href = `/media/media.html?type=${encodeURIComponent(row.media_type)}&id=${encodeURIComponent(row.media_id)}`;
 }
@@ -427,16 +504,14 @@ function moveQueueItem(index, direction) {
 }
 
 async function loadCollections() {
-  if (!isLoggedIn()) {
-    state.collections = [];
-    state.selectedCollectionId = "";
-    setFeedback("Connexion requise pour charger /collections/me");
-    renderAll();
-    return;
-  }
   try {
-    const response = await apiFetch("/collections/me?include_items=1");
-    state.collections = (Array.isArray(response?.collections) ? response.collections : []).map(toCollectionModel);
+    const [importsResponse, collectionsResponse] = await Promise.all([
+      apiFetch("/search-hub/imports").catch(() => ({ items: [] })),
+      isLoggedIn() ? apiFetch("/collections/me?include_items=1") : Promise.resolve({ collections: [] }),
+    ]);
+    const importedCollections = toImportedCollectionModels(importsResponse?.items);
+    const backendCollections = (Array.isArray(collectionsResponse?.collections) ? collectionsResponse.collections : []).map(toCollectionModel);
+    state.collections = [...importedCollections, ...backendCollections];
     if (!state.selectedCollectionId || !state.collections.some((collection) => collection.id === state.selectedCollectionId)) state.selectedCollectionId = state.collections[0]?.id || "";
     if (!state.nowPlaying || !state.nowPlaying.media_id) {
       const firstRow = state.collections[0]?.rows?.[0];
@@ -444,7 +519,13 @@ async function loadCollections() {
     }
     if (!state.collections.length) {
       state.selectedCollectionId = "";
-      setFeedback("Aucune collection trouvee sur /collections/me");
+      setFeedback("Aucune collection ou import trouve");
+    } else if (!isLoggedIn() && importedCollections.length) {
+      setFeedback("Imports recherche charges · connecte-toi pour charger aussi /collections/me");
+    } else if (!isLoggedIn()) {
+      setFeedback("Connexion requise pour charger /collections/me");
+    } else if (importedCollections.length) {
+      setFeedback("Bibliotheque synchronisee avec /collections/me et les imports recherche");
     } else {
       setFeedback("Bibliotheque synchronisee avec /collections/me");
     }
@@ -706,7 +787,7 @@ function renderSocial() {
 }
 
 function renderRightsBox() { dom.rightsList.innerHTML = `<div class="library-list-card"><p style="margin:0;">${isLoggedIn() ? "Actions de gestion autorisees" : "Actions de gestion bloquees"}</p><small>${isLoggedIn() ? "Creation, edition et suppression actives sur /collections." : "Connexion requise pour modifier les collections."}</small></div>`; }
-function renderStatusBox() { dom.statusList.innerHTML = `<div class="library-list-card"><p style="margin:0;">backend principal : /collections/me · favoris : localStorage · player persistant</p><small>${escapeHtml(state.feedback)}</small></div>`; }
+function renderStatusBox() { dom.statusList.innerHTML = `<div class="library-list-card"><p style="margin:0;">sources : /collections/me + /search-hub/imports · favoris : localStorage · player persistant</p><small>${escapeHtml(state.feedback)}</small></div>`; }
 
 function renderRecentAndSimilar() {
   dom.recentList.innerHTML = state.recentlyPlayed.length ? state.recentlyPlayed.map((row) => `<button class="library-list-card library-list-button" type="button" data-recent-id="${escapeHtml(row.id)}"><p style="margin:0;font-weight:700;">${escapeHtml(row.title)}</p><small style="display:block;margin-top:6px;color:#9ca3af;">${escapeHtml(row.artist || row.subtitle || "")}</small></button>`).join("") : `<div class="library-list-card"><p style="margin:0;">Aucun historique recent.</p></div>`;

@@ -1,0 +1,17 @@
+{
+  "cleanUrls": false,
+  "rewrites": [
+    { "source": "/connexion", "destination": "/connexion/connexion.html" },
+    { "source": "/auth", "destination": "/connexion/connexion.html" },
+    { "source": "/connexion/connexion", "destination": "/connexion/connexion.html" },
+    { "source": "/", "destination": "/accueil/accueil.html" }
+  ],
+  "headers": [
+    {
+      "source": "/noyau/runtime-config.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
+  ]
+}

@@ -6,8 +6,8 @@ import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const rootDir = path.resolve(__dirname, "..", "apps", "web", "public");
-const configPath = path.resolve(__dirname, "..", "serve.json");
+const webRootDir = path.resolve(__dirname, "..", "public");
+const configPath = path.resolve(webRootDir, "serve.json");
 const port = 4173;
 const runtimeApiBase = String(process.env.SUPCONTENT_API_BASE || "http://localhost:1234").trim();
 
@@ -58,19 +58,13 @@ function normalizePathname(urlPath) {
   }
 }
 
-function isSafeSubpath(base, target) {
-  const rel = path.relative(base, target);
-  return rel && !rel.startsWith("..") && !path.isAbsolute(rel);
-}
-
 async function loadConfig() {
   try {
     const raw = await readFile(configPath, "utf8");
     const parsed = JSON.parse(raw);
-    const cleanHeaders = Array.isArray(parsed?.headers) ? parsed.headers : [];
     return {
       rewrites: Array.isArray(parsed?.rewrites) ? parsed.rewrites : [],
-      headers: cleanHeaders,
+      headers: Array.isArray(parsed?.headers) ? parsed.headers : [],
     };
   } catch {
     return { rewrites: [], headers: [] };
@@ -119,12 +113,12 @@ const server = http.createServer((request, response) => {
   }
 
   const effectivePath = pathname === "/" ? "/index.html" : pathname;
-  const initialTarget = path.resolve(rootDir, `.${effectivePath}`);
+  const initialTarget = path.resolve(webRootDir, `.${effectivePath}`);
 
   let filePath = initialTarget;
   if (!existsSync(filePath) || (existsSync(filePath) && statSync(filePath).isDirectory())) {
     const rewritten = resolveRewrite(pathname, config.rewrites);
-    filePath = path.resolve(rootDir, `.${rewritten}`);
+    filePath = path.resolve(webRootDir, `.${rewritten}`);
   }
 
   if (!existsSync(filePath) || statSync(filePath).isDirectory()) {
@@ -132,7 +126,7 @@ const server = http.createServer((request, response) => {
     return;
   }
 
-  const rel = path.relative(rootDir, filePath);
+  const rel = path.relative(webRootDir, filePath);
   if (rel.startsWith("..") || path.isAbsolute(rel)) {
     sendNotFound(response);
     return;
@@ -143,14 +137,11 @@ const server = http.createServer((request, response) => {
     ...defaultHeaders,
   });
   applyHeaderRules(response, pathname, config.headers);
-
   createReadStream(filePath).pipe(response);
 });
 
 server.on("error", async (error) => {
-  if (error?.code !== "EADDRINUSE") {
-    throw error;
-  }
+  if (error?.code !== "EADDRINUSE") throw error;
 
   const healthy = await existingServerLooksHealthy();
   if (!healthy) {
@@ -159,8 +150,6 @@ server.on("error", async (error) => {
   }
 
   console.log(`supcontent web server already running on http://127.0.0.1:${port} - reusing existing instance`);
-  // Keep this process alive so `npm run dev` stays stable under concurrently.
-  // The active server keeps serving; this process simply acts as a holder.
   for (;;) {
     await sleep(60_000);
   }

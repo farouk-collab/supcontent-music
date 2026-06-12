@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 
-export function AuthScreen({ onLogin, onRegister, loading, errorText }) {
+export function AuthScreen({ onLogin, onRegister, onGoogleLogin, loading, errorText }) {
   const [mode, setMode] = useState("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -77,6 +77,11 @@ export function AuthScreen({ onLogin, onRegister, loading, errorText }) {
       >
         <Text style={styles.submitText}>{loading ? "Please wait..." : mode === "login" ? "Sign in" : "Create account"}</Text>
       </Pressable>
+      {mode === "login" ? (
+        <Pressable style={[styles.googleBtn, loading && styles.submitDisabled]} onPress={onGoogleLogin}>
+          <Text style={styles.googleText}>Continue with Google</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -147,5 +152,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#fff",
     fontWeight: "800",
+  },
+  googleBtn: {
+    marginTop: 10,
+    paddingVertical: 12,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: "#2a3550",
+    backgroundColor: "#0d1424",
+  },
+  googleText: {
+    textAlign: "center",
+    color: "#e6eefc",
+    fontWeight: "700",
   },
 });

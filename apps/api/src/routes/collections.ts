@@ -13,7 +13,8 @@ import {
 
 const router = Router();
 
-const MediaTypeSchema = z.enum(["track", "album", "artist"]);
+const MediaTypeSchema = z.enum(["track", "album", "artist", "playlist", "media"]);
+const CatalogMediaTypeSchema = z.enum(["track", "album", "artist"]);
 const StatusSchema = z.enum(["a_voir", "en_cours", "termine", "abandonne"]);
 
 const CreateCollectionSchema = z.object({
@@ -29,12 +30,30 @@ const PatchCollectionSchema = z.object({
 const AddItemSchema = z.object({
   media_type: MediaTypeSchema,
   media_id: z.string().min(1).max(120),
+  item_kind: z.enum(["catalog", "playlist", "media"]).optional(),
+  external_source: z.string().max(80).optional(),
+  title: z.string().max(160).optional(),
+  subtitle: z.string().max(240).optional(),
+  image_url: z.string().max(500).optional(),
+  source_url: z.string().max(500).optional(),
+  youtube_url: z.string().max(500).optional(),
+  spotify_url: z.string().max(500).optional(),
+  track_count: z.number().int().min(1).max(10000).optional(),
 });
 
 type CollectionItemRow = {
   collection_id: string;
-  media_type: "track" | "album" | "artist";
+  media_type: "track" | "album" | "artist" | "playlist" | "media";
   media_id: string;
+  item_kind: "catalog" | "playlist" | "media";
+  external_source: string | null;
+  title: string | null;
+  subtitle: string | null;
+  image_url: string | null;
+  source_url: string | null;
+  youtube_url: string | null;
+  spotify_url: string | null;
+  track_count: number | null;
   added_at: string;
 };
 
@@ -120,7 +139,7 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
   const ids = collections.map((x) => x.id);
   const itemsRes = await pool.query<CollectionItemRow>(
     `
-      SELECT collection_id, media_type, media_id, added_at
+      SELECT collection_id, media_type, media_id, item_kind, external_source, title, subtitle, image_url, source_url, youtube_url, spotify_url, track_count, added_at
       FROM collection_items
       WHERE collection_id = ANY($1::uuid[])
       ORDER BY added_at DESC
@@ -133,8 +152,9 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
 
   const uniqByMedia = new Map<string, { media_type: "track" | "album" | "artist"; media_id: string }>();
   for (const it of rawItems) {
+    if (!CatalogMediaTypeSchema.safeParse(it.media_type).success) continue;
     uniqByMedia.set(mediaKey(it.media_type, it.media_id), {
-      media_type: it.media_type,
+      media_type: it.media_type as "track" | "album" | "artist",
       media_id: it.media_id,
     });
   }
@@ -219,7 +239,18 @@ router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
       comment_count: 0,
       avg_rating: null,
     };
-    const media = spotifyMap.get(k) || { name: "", subtitle: "", image: "", spotify_url: "" };
+    const media = CatalogMediaTypeSchema.safeParse(it.media_type).success
+      ? (spotifyMap.get(k) || { name: "", subtitle: "", image: "", spotify_url: "" })
+      : {
+          name: String(it.title || it.media_id || ""),
+          subtitle: String(it.subtitle || it.external_source || ""),
+          image: String(it.image_url || ""),
+          spotify_url: String(it.spotify_url || ""),
+          source_url: String(it.source_url || ""),
+          youtube_url: String(it.youtube_url || ""),
+          external_source: String(it.external_source || ""),
+          track_count: Number(it.track_count || 1),
+        };
     const enriched = { ...it, social, media };
     const arr = map.get(it.collection_id) || [];
     arr.push(enriched);
@@ -318,18 +349,45 @@ router.post("/:id/items", requireAuth, async (req: AuthedRequest, res) => {
   if (!col) return res.status(404).json({ erreur: "Liste introuvable" });
 
   const { media_type, media_id } = parsed.data;
+  const itemKind = parsed.data.item_kind || (media_type === "playlist" ? "playlist" : media_type === "media" ? "media" : "catalog");
   await pool.query(
     `
-      INSERT INTO collection_items (collection_id, media_type, media_id)
-      VALUES ($1, $2, $3)
+      INSERT INTO collection_items (
+        collection_id,
+        media_type,
+        media_id,
+        item_kind,
+        external_source,
+        title,
+        subtitle,
+        image_url,
+        source_url,
+        youtube_url,
+        spotify_url,
+        track_count
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       ON CONFLICT DO NOTHING
     `,
-    [id, media_type, media_id]
+    [
+      id,
+      media_type,
+      media_id,
+      itemKind,
+      parsed.data.external_source || null,
+      parsed.data.title || null,
+      parsed.data.subtitle || null,
+      parsed.data.image_url || null,
+      parsed.data.source_url || null,
+      parsed.data.youtube_url || null,
+      parsed.data.spotify_url || null,
+      parsed.data.track_count || 1,
+    ]
   );
 
   const r = await pool.query(
     `
-      SELECT collection_id, media_type, media_id, added_at
+      SELECT collection_id, media_type, media_id, item_kind, external_source, title, subtitle, image_url, source_url, youtube_url, spotify_url, track_count, added_at
       FROM collection_items
       WHERE collection_id = $1 AND media_type = $2 AND media_id = $3
       LIMIT 1
