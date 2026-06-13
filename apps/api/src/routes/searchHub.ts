@@ -28,6 +28,10 @@ type ImportedRow = {
 const router = Router();
 const importedRowsStore = new Map<string, ImportedRow[]>();
 
+router.get("/ping", (_req, res) => {
+  return res.json({ ok: true, service: "search-hub" });
+});
+
 function getAuthenticatedUserId(req: any) {
   const auth = String(req.headers.authorization || "");
   const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";

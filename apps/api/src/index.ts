@@ -175,6 +175,7 @@ const endpointCatalog: EndpointDef[] = [
   { method: "post", path: "/shop/checkout", tag: "Shop", auth: true },
   { method: "delete", path: "/shop/favorites/{productId}", tag: "Shop", auth: true },
   { method: "delete", path: "/shop/cart/items/{cartItemId}", tag: "Shop", auth: true },
+  { method: "get", path: "/search-hub/ping", tag: "SearchHub", summary: "Search hub health check" },
   { method: "get", path: "/search-hub/imports", tag: "SearchHub" },
   { method: "get", path: "/search-hub/import/parse", tag: "SearchHub" },
   { method: "post", path: "/search-hub/imports/playlist", tag: "SearchHub" },
