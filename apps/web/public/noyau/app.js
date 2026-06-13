@@ -1,7 +1,7 @@
 const DEFAULT_API_BASE = (() => {
   const h = String(window.location.hostname || "").toLowerCase();
   if (h === "localhost" || h === "127.0.0.1") return "http://localhost:1234";
-  return "https://supcontent-api.onrender.com";
+  return "https://supcontent-music-api-zivr.onrender.com";
 })();
 
 function readRuntimeApiBase() {
