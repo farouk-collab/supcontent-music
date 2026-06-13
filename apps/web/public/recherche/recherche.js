@@ -1,4 +1,4 @@
-import { apiFetch, toast, resolveMediaUrl, requireLogin } from "/noyau/app.js";
+import { apiFetch, toast, resolveMediaUrl, requireLogin, repairText } from "/noyau/app.js";
 
 const STORAGE_KEY = "supcontent_imported_playlists_v1";
 
@@ -13,8 +13,8 @@ const DEFAULT_NOTIFICATIONS = [
 ];
 
 const spotifySuggestionsBank = [
-  { id: "s1", title: "Timeless", subtitle: "The Weeknd � Titre" },
-  { id: "s2", title: "UTOPIA", subtitle: "Travis Scott � Album" },
+  { id: "s1", title: "Timeless", subtitle: "The Weeknd · Titre" },
+  { id: "s2", title: "UTOPIA", subtitle: "Travis Scott · Album" },
   { id: "s3", title: "Tems", subtitle: "Artiste verifie" },
   { id: "s4", title: "Afrobeats Now", subtitle: "Playlist editoriale" },
   { id: "s5", title: "Metro Boomin", subtitle: "Artiste producteur" },
@@ -22,17 +22,17 @@ const spotifySuggestionsBank = [
 ];
 
 const fallbackSpotifyResults = [
-  { id: "sp-track-1", kind: "tracks", title: "Timeless", subtitle: "The Weeknd � After Midnight", coverLabel: "Single", detail: "Ouvrir detail media", href: "#" },
-  { id: "sp-track-2", kind: "tracks", title: "FE!N", subtitle: "Travis Scott � UTOPIA", coverLabel: "Single", detail: "Ouvrir detail media", href: "#" },
-  { id: "sp-artist-1", kind: "artists", title: "Tems", subtitle: "Artiste � Soul / Afro", coverLabel: "Artist", detail: "Ouvrir profil artiste", href: "#" },
-  { id: "sp-artist-2", kind: "artists", title: "Metro Boomin", subtitle: "Artiste � Producteur", coverLabel: "Artist", detail: "Ouvrir profil artiste", href: "#" },
-  { id: "sp-album-1", kind: "albums", title: "Moon Signals", subtitle: "Tems � Album", coverLabel: "Album", detail: "Ouvrir detail media", href: "#" },
-  { id: "sp-album-2", kind: "albums", title: "UTOPIA", subtitle: "Travis Scott � Album", coverLabel: "Album", detail: "Ouvrir detail media", href: "#" },
+  { id: "sp-track-1", kind: "tracks", title: "Timeless", subtitle: "The Weeknd · After Midnight", coverLabel: "Single", detail: "Ouvrir detail media", href: "#" },
+  { id: "sp-track-2", kind: "tracks", title: "FE!N", subtitle: "Travis Scott · UTOPIA", coverLabel: "Single", detail: "Ouvrir detail media", href: "#" },
+  { id: "sp-artist-1", kind: "artists", title: "Tems", subtitle: "Artiste · Soul / Afro", coverLabel: "Artist", detail: "Ouvrir profil artiste", href: "#" },
+  { id: "sp-artist-2", kind: "artists", title: "Metro Boomin", subtitle: "Artiste · Producteur", coverLabel: "Artist", detail: "Ouvrir profil artiste", href: "#" },
+  { id: "sp-album-1", kind: "albums", title: "Moon Signals", subtitle: "Tems · Album", coverLabel: "Album", detail: "Ouvrir detail media", href: "#" },
+  { id: "sp-album-2", kind: "albums", title: "UTOPIA", subtitle: "Travis Scott · Album", coverLabel: "Album", detail: "Ouvrir detail media", href: "#" },
 ];
 
 const fallbackYoutubeResults = [
-  { id: "yt-track-1", kind: "tracks", title: "Timeless (Live Session)", subtitle: "YouTube Video � The Weeknd", coverLabel: "Video", detail: "Ouvrir detail media", youtubePlayable: true, url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", href: "#" },
-  { id: "yt-track-2", kind: "tracks", title: "Afro Sunset Mix", subtitle: "YouTube Video � DJ Nova", coverLabel: "Video", detail: "Ouvrir detail media", youtubePlayable: true, url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", href: "#" },
+  { id: "yt-track-1", kind: "tracks", title: "Timeless (Live Session)", subtitle: "YouTube Video · The Weeknd", coverLabel: "Video", detail: "Ouvrir detail media", youtubePlayable: true, url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", href: "#" },
+  { id: "yt-track-2", kind: "tracks", title: "Afro Sunset Mix", subtitle: "YouTube Video · DJ Nova", coverLabel: "Video", detail: "Ouvrir detail media", youtubePlayable: true, url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", href: "#" },
   { id: "yt-artist-1", kind: "artists", title: "A COLORS SHOW", subtitle: "Chaine / createur", coverLabel: "Channel", detail: "Ouvrir detail media", youtubePlayable: false, url: "", href: "#" },
   { id: "yt-album-1", kind: "albums", title: "Late Night Pop Essentials", subtitle: "Playlist importee YouTube", coverLabel: "Playlist", detail: "Ouvrir playlist importee", youtubePlayable: true, url: "https://music.youtube.com/playlist?list=PLmock001", href: "#" },
   { id: "yt-album-2", kind: "albums", title: "Rap FR Recharge", subtitle: "Playlist importee YouTube", coverLabel: "Playlist", detail: "Ouvrir playlist importee", youtubePlayable: true, url: "https://music.youtube.com/playlist?list=PLmock002", href: "#" },
@@ -299,7 +299,7 @@ function pickImage(item) {
 function mapApiItem(item) {
   const type = String(item?.type || "track");
   const artists = Array.isArray(item?.artists) ? item.artists.map((artist) => String(artist?.name || "").trim()).filter(Boolean) : [];
-  const subtitle = type === "artist" ? `Artiste${item?.genres?.length ? ` � ${item.genres.slice(0, 2).join(" / ")}` : ""}` : type === "album" ? `${artists.join(", ")} � Album` : `${artists.join(", ")}${item?.album?.name ? ` � ${item.album.name}` : ""}`;
+  const subtitle = type === "artist" ? `Artiste${item?.genres?.length ? ` · ${item.genres.slice(0, 2).join(" / ")}` : ""}` : type === "album" ? `${artists.join(", ")} · Album` : `${artists.join(", ")}${item?.album?.name ? ` · ${item.album.name}` : ""}`;
   return normalizeSearchResult({ id: String(item?.id || crypto.randomUUID()), kind: type === "artist" ? "artists" : type === "album" ? "albums" : "tracks", type, title: String(item?.name || "Media"), subtitle: subtitle || "Resultat Spotify", coverLabel: type === "artist" ? "Artist" : type === "album" ? "Album" : "Single", detail: type === "artist" ? "Ouvrir profil artiste" : "Ouvrir detail media", image: resolveMediaUrl(pickImage(item)), href: mediaHref(type, item?.id), spotifyUrl: String(item?.external_urls?.spotify || ""), youtubePlayable: false, url: "", synced: true }, "spotify");
 }
 
@@ -328,7 +328,7 @@ function getNotificationIcon(type) {
     case "follow": return "+";
     case "comment": return "?";
     case "playlist": return "?";
-    default: return "�";
+    default: return "•";
   }
 }
 
@@ -355,7 +355,7 @@ function getLiveResults() {
     id: playlist.id,
     kind: "albums",
     title: playlist.title,
-    subtitle: `Playlist importee YouTube � ${playlist.tracks} titres`,
+    subtitle: `Playlist importee YouTube · ${playlist.tracks} titres`,
     coverLabel: "Playlist",
     detail: "Ouvrir playlist importee",
     youtubePlayable: true,
@@ -394,7 +394,7 @@ function renderNotifications() {
     <div class="search-stat-card is-pink"><span class="search-stat-label">Non lues</span><strong>${unreadCount}</strong><span>elements</span></div>
     <div class="search-stat-card is-blue"><span class="search-stat-label">Mode</span><strong>${allTestsPassed ? "OK" : "KO"}</strong><span>mock data live</span></div>
   `;
-  refs.notifLast.textContent = `${allTestsPassed ? "Tests de robustesse passes" : "Un test de robustesse a echoue"} � ${state.lastRealtimeEvent}`;
+  refs.notifLast.textContent = `${allTestsPassed ? "Tests de robustesse passes" : "Un test de robustesse a echoue"} · ${state.lastRealtimeEvent}`;
   refs.notifList.innerHTML = safeNotifications.map((item) => `
     <button class="search-notif-item ${item.read ? "" : "is-unread"}" type="button" data-notif-id="${String(item.id)}">
       <div class="search-notif-icon">${getNotificationIcon(item.type)}</div>
@@ -469,7 +469,7 @@ function renderResults() {
             <span class="search-import-badge ${item.energy === "high" ? "is-spotify" : "is-youtube"}">${escapeHtml(item.mood)}</span>
             <span class="search-import-badge ${item.canPlayVideo ? "is-youtube" : "is-spotify"}">${escapeHtml(item.energy)}</span>
           </div>
-          ${state.inlinePlayerId === item.id ? '<div class="search-inline-player">Player YouTube inline simule � visible seulement si le player global est dispo.</div>' : ""}
+          ${state.inlinePlayerId === item.id ? '<div class="search-inline-player">Player YouTube inline simule · visible seulement si le player global est dispo.</div>' : ""}
         </div>
       </div>
     </article>
@@ -530,11 +530,7 @@ function renderAll() {
 }
 
 function cleanBrokenString(value) {
-  return String(value || "")
-    .replaceAll("ï¿½", "-")
-    .replaceAll("�", "-")
-    .replaceAll("Â·", "·")
-    .replaceAll("Ã", "A");
+  return repairText(value);
 }
 
 function normalizeSearchText() {
@@ -575,7 +571,7 @@ function pushMockNotification() {
   ]);
   const nextItem = pool[Math.floor(Math.random() * pool.length)] ?? sanitizeNotification(undefined);
   state.notifications = [nextItem, ...sanitizeNotifications(state.notifications)];
-  state.lastRealtimeEvent = `${nextItem.user} � ${nextItem.text}`;
+  state.lastRealtimeEvent = `${nextItem.user} · ${nextItem.text}`;
   state.notificationsOpen = true;
   renderNotifications();
 }
@@ -595,7 +591,7 @@ function startRealtimeNotifications() {
     }
     const nextItem = sanitizeNotification(simulatedRealtime[index], index);
     state.notifications = [nextItem, ...sanitizeNotifications(state.notifications)];
-    state.lastRealtimeEvent = `${nextItem.user} � ${nextItem.text}`;
+    state.lastRealtimeEvent = `${nextItem.user} · ${nextItem.text}`;
     index += 1;
     renderNotifications();
   }, 5000);

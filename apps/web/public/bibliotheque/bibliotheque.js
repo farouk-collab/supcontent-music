@@ -1,4 +1,4 @@
-import { apiFetch, escapeHtml, isLoggedIn, requireLogin, resolveMediaUrl, toast } from "/noyau/app.js";
+import { apiFetch, escapeHtml, isLoggedIn, requireLogin, resolveMediaUrl, toast, repairText } from "/noyau/app.js";
 
 const FAVORITES_STORAGE_KEY = "supcontent-library-favorites-v5";
 const VIEW_STORAGE_KEY = "supcontent-library-view-v5";
@@ -92,6 +92,31 @@ const state = {
 };
 
 let librarySyncTimer = null;
+
+function normalizeLibraryText() {
+  const containers = [
+    dom.collectionHero,
+    dom.mainContent,
+    dom.collectionsList,
+    dom.queueList,
+    dom.recommendationsList,
+    dom.socialList,
+    dom.recentList,
+    dom.similarList,
+    dom.notificationsList,
+    dom.footerCurrent,
+  ].filter(Boolean);
+
+  containers.forEach((container) => {
+    const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+    let node = walker.nextNode();
+    while (node) {
+      const nextValue = repairText(node.nodeValue || "");
+      if (nextValue !== node.nodeValue) node.nodeValue = nextValue;
+      node = walker.nextNode();
+    }
+  });
+}
 
 function sanitizeNotification(item, fallbackIndex = 0) {
   if (!item || typeof item !== "object") return { id: `fallback-${fallbackIndex}`, type: "system", user: "Systeme", text: "Notification indisponible", time: "Maintenant", read: true };
@@ -874,6 +899,7 @@ function renderRecentAndSimilar() {
 
 function renderAll() {
   renderAuthBadge(); renderNotifications(); renderViewButtons(); renderCollectionsList(); renderAutoCollections(); renderCollectionHero(); renderMainContent(); renderStats(); renderPlayer(); renderQueue(); renderRecommendations(); renderSocial(); renderRightsBox(); renderStatusBox(); renderRecentAndSimilar();
+  normalizeLibraryText();
 }
 
 function bindEvents() {

@@ -317,6 +317,28 @@ export function escapeHtml(s = "") {
     .replaceAll("'", "&#039;");
 }
 
+export function repairText(value = "") {
+  let current = String(value ?? "");
+  const suspiciousPattern = /[ÃÂâð]|ï¿½|�/;
+
+  for (let index = 0; index < 2; index += 1) {
+    if (!suspiciousPattern.test(current)) break;
+    try {
+      const decoded = decodeURIComponent(escape(current));
+      if (!decoded || decoded === current) break;
+      current = decoded;
+    } catch {
+      break;
+    }
+  }
+
+  return current
+    .replaceAll("ï¿½", "·")
+    .replaceAll("�", "·")
+    .replaceAll("Abonn?s", "Abonnés")
+    .replaceAll("A l'instant", "À l'instant");
+}
+
 export function resolveMediaUrl(url = "") {
   const s = String(url || "").trim();
   if (!s) return "";
