@@ -50,6 +50,21 @@ const APP_THEME_PRESETS = {
     muted: "#9fb0d0",
     text: "#eaf0ff",
     border: "rgba(255,255,255,.08)",
+    pageStart: "#070a14",
+    pageEnd: "#0b1020",
+    surface: "rgba(17,26,51,.82)",
+    surfaceStrong: "rgba(11,16,32,.92)",
+    surfaceSoft: "rgba(255,255,255,.05)",
+    surfaceElevated: "rgba(255,255,255,.08)",
+    textSoft: "#c7d3ee",
+    textFaint: "#8ea2c9",
+    textInverse: "#04130d",
+    inputBg: "rgba(0,0,0,.24)",
+    inputBorder: "rgba(255,255,255,.10)",
+    inputPlaceholder: "#71717a",
+    danger: "#f87171",
+    dangerSoft: "rgba(239,68,68,.14)",
+    successSoft: "rgba(16,185,129,.14)",
   },
   Clair: {
     theme: "light",
@@ -58,6 +73,21 @@ const APP_THEME_PRESETS = {
     muted: "#6D7285",
     text: "#171C2B",
     border: "rgba(23,28,43,.10)",
+    pageStart: "#f6f1eb",
+    pageEnd: "#ede6de",
+    surface: "rgba(252,248,242,.90)",
+    surfaceStrong: "rgba(255,255,255,.96)",
+    surfaceSoft: "rgba(255,255,255,.58)",
+    surfaceElevated: "rgba(255,255,255,.74)",
+    textSoft: "#4f5871",
+    textFaint: "#7d8598",
+    textInverse: "#ffffff",
+    inputBg: "rgba(255,255,255,.74)",
+    inputBorder: "rgba(23,28,43,.10)",
+    inputPlaceholder: "#8b93a7",
+    danger: "#dc2626",
+    dangerSoft: "rgba(239,68,68,.12)",
+    successSoft: "rgba(16,185,129,.10)",
   },
 };
 
@@ -125,6 +155,21 @@ export function applyAppPreferences(preferences = {}) {
   root.style.setProperty("--muted", theme.muted);
   root.style.setProperty("--text", theme.text);
   root.style.setProperty("--border", theme.border);
+  root.style.setProperty("--page-start", theme.pageStart);
+  root.style.setProperty("--page-end", theme.pageEnd);
+  root.style.setProperty("--surface", theme.surface);
+  root.style.setProperty("--surface-strong", theme.surfaceStrong);
+  root.style.setProperty("--surface-soft", theme.surfaceSoft);
+  root.style.setProperty("--surface-elevated", theme.surfaceElevated);
+  root.style.setProperty("--text-soft", theme.textSoft);
+  root.style.setProperty("--text-faint", theme.textFaint);
+  root.style.setProperty("--text-inverse", theme.textInverse);
+  root.style.setProperty("--input-bg", theme.inputBg);
+  root.style.setProperty("--input-border", theme.inputBorder);
+  root.style.setProperty("--input-placeholder", theme.inputPlaceholder);
+  root.style.setProperty("--danger", theme.danger);
+  root.style.setProperty("--danger-soft", theme.dangerSoft);
+  root.style.setProperty("--success-soft", theme.successSoft);
   root.style.setProperty("--accent", accent.accent);
   root.style.setProperty("--accent2", accent.accent2);
   root.style.setProperty("--accent-contrast", accent.contrast);

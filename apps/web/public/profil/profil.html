@@ -9,11 +9,11 @@
   <style>
     .profile-preview-page{
       min-height:100vh;
-      color:#fff;
+      color:var(--text);
       background:
-        radial-gradient(circle at top, rgba(34,197,94,.14), transparent 18%),
-        radial-gradient(circle at right, rgba(168,85,247,.12), transparent 22%),
-        linear-gradient(180deg, #050505, #0d0d0d);
+        radial-gradient(circle at top, rgba(var(--accent2-rgb),.14), transparent 18%),
+        radial-gradient(circle at right, rgba(var(--accent-rgb),.12), transparent 22%),
+        linear-gradient(180deg, var(--page-start), var(--page-end));
     }
     .profile-shell{
       width:min(1240px, calc(100% - 24px));
@@ -21,8 +21,8 @@
       padding:24px 0 120px;
     }
     .profile-card{
-      border:1px solid rgba(255,255,255,.1);
-      background:rgba(255,255,255,.05);
+      border:1px solid var(--border);
+      background:var(--surface-soft);
       backdrop-filter:blur(18px);
       border-radius:32px;
       box-shadow:0 24px 80px rgba(0,0,0,.28);
@@ -36,9 +36,9 @@
       margin-bottom:24px;
     }
     .profile-header p,
-    .profile-muted{ color:#a1a1aa; }
+    .profile-muted{ color:var(--text-faint); }
     .profile-kicker{
-      color:#86efac;
+      color:var(--accent2);
       font-size:12px;
       letter-spacing:.25em;
       text-transform:uppercase;
@@ -60,9 +60,9 @@
     .icon-circle,
     .pill-btn,
     .tiny-btn{
-      border:1px solid rgba(255,255,255,.1);
-      background:rgba(255,255,255,.08);
-      color:#fff;
+      border:1px solid var(--border);
+      background:var(--surface-elevated);
+      color:var(--text);
       border-radius:999px;
       cursor:pointer;
     }
@@ -80,8 +80,8 @@
       font-weight:700;
     }
     .pill-btn--primary{
-      background:#4ade80;
-      color:#000;
+      background:var(--accent2);
+      color:var(--accent-contrast);
       border-color:transparent;
     }
     .notif-btn{
@@ -99,11 +99,11 @@
       border-radius:999px;
       display:grid;
       place-items:center;
-      background:#d946ef;
-      color:#fff;
+      background:var(--accent);
+      color:var(--accent-contrast);
       font-size:11px;
       font-weight:800;
-      box-shadow:0 10px 20px rgba(217,70,239,.28);
+      box-shadow:0 10px 20px rgba(var(--accent-rgb),.28);
     }
     .notif-panel{
       position:absolute;
@@ -113,8 +113,8 @@
       z-index:30;
       border-radius:24px;
       overflow:hidden;
-      border:1px solid rgba(255,255,255,.1);
-      background:rgba(10,10,10,.96);
+      border:1px solid var(--border);
+      background:var(--surface-strong);
       box-shadow:0 30px 80px rgba(0,0,0,.45);
     }
     .notif-head,
@@ -122,7 +122,7 @@
       padding:16px;
     }
     .notif-head{
-      border-bottom:1px solid rgba(255,255,255,.08);
+      border-bottom:1px solid var(--border);
       display:flex;
       align-items:center;
       justify-content:space-between;
@@ -133,17 +133,17 @@
       text-align:left;
       display:flex;
       gap:12px;
-      border:1px solid rgba(255,255,255,.06);
-      background:rgba(255,255,255,.03);
-      color:#fff;
+      border:1px solid var(--border);
+      background:var(--surface);
+      color:var(--text);
       border-radius:20px;
       padding:14px;
       margin-bottom:10px;
       cursor:pointer;
     }
     .notif-item.is-unread{
-      background:rgba(217,70,239,.1);
-      border-color:rgba(217,70,239,.2);
+      background:rgba(var(--accent-rgb),.1);
+      border-color:rgba(var(--accent-rgb),.2);
     }
     .notif-icon{
       width:40px;
@@ -151,7 +151,7 @@
       display:grid;
       place-items:center;
       border-radius:999px;
-      background:rgba(255,255,255,.08);
+      background:var(--surface-elevated);
       flex:none;
     }
     .profile-hero{
@@ -163,7 +163,7 @@
       position:relative;
       background:
         radial-gradient(circle at top, rgba(255,255,255,.12), transparent 30%),
-        linear-gradient(135deg, rgba(34,197,94,.25), rgba(168,85,247,.22), rgba(244,63,94,.18));
+        linear-gradient(135deg, rgba(var(--accent2-rgb),.25), rgba(var(--accent-rgb),.22), rgba(var(--accent2-rgb),.12));
     }
     .profile-cover-overlay{
       position:absolute;
@@ -205,8 +205,8 @@
       width:96px;
       height:96px;
       border-radius:28px;
-      border:4px solid #050505;
-      background:rgba(255,255,255,.09);
+      border:4px solid var(--page-start);
+      background:var(--surface-elevated);
       display:grid;
       place-items:center;
       font-size:32px;
@@ -230,14 +230,14 @@
       font-size:34px;
     }
     .verified-dot{
-      color:#86efac;
+      color:var(--accent2);
     }
     .meta-row{
       display:flex;
       gap:14px;
       flex-wrap:wrap;
       margin-top:10px;
-      color:#d4d4d8;
+      color:var(--text-soft);
       font-size:14px;
     }
     .meta-chip,
@@ -247,9 +247,9 @@
       gap:8px;
       padding:10px 14px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.05);
-      color:#e4e4e7;
+      border:1px solid var(--border);
+      background:var(--surface);
+      color:var(--text-soft);
       text-decoration:none;
     }
     .birthday-chip{
@@ -258,15 +258,15 @@
       gap:8px;
       padding:9px 12px;
       border-radius:999px;
-      background:#4ade80;
-      color:#000;
+      background:var(--accent2);
+      color:var(--accent-contrast);
       font-size:12px;
       font-weight:800;
     }
     .profile-bio{
       margin:14px 0 0;
       max-width:860px;
-      color:#d4d4d8;
+      color:var(--text-soft);
       line-height:1.6;
     }
     .social-row{
@@ -299,7 +299,7 @@
     }
     .stat-card{
       border-radius:22px;
-      background:rgba(0,0,0,.22);
+      background:var(--surface);
       padding:16px;
     }
     .stat-card p{ margin:0; }
@@ -309,8 +309,8 @@
       font-size:30px;
     }
     .soft-card{
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(0,0,0,.2);
+      border:1px solid var(--border);
+      background:var(--surface);
       border-radius:24px;
       padding:16px;
       margin-top:18px;
@@ -324,9 +324,9 @@
     .person-pill{
       border-radius:999px;
       padding:9px 14px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.05);
-      color:#e4e4e7;
+      border:1px solid var(--border);
+      background:var(--surface);
+      color:var(--text-soft);
       text-decoration:none;
     }
     .tab-row{
@@ -345,8 +345,8 @@
       padding:18px;
       border-radius:28px;
       background:
-        linear-gradient(135deg, rgba(34,197,94,.16), rgba(168,85,247,.18), rgba(244,63,94,.12));
-      border:1px solid rgba(255,255,255,.08);
+        linear-gradient(135deg, rgba(var(--accent2-rgb),.16), rgba(var(--accent-rgb),.18), rgba(var(--accent2-rgb),.12));
+      border:1px solid var(--border);
       margin-top:18px;
     }
     .highlights-row{
@@ -358,8 +358,8 @@
     .highlight-pill{
       padding:10px 14px;
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.05);
+      border:1px solid var(--border);
+      background:var(--surface);
     }
     .content-list{
       display:grid;
@@ -368,8 +368,8 @@
     }
     .content-card{
       border-radius:24px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(0,0,0,.22);
+      border:1px solid var(--border);
+      background:var(--surface);
       padding:16px;
     }
     .content-top{
@@ -387,19 +387,19 @@
     }
     .small-badge{
       border-radius:999px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(255,255,255,.05);
-      color:#d4d4d8;
+      border:1px solid var(--border);
+      background:var(--surface);
+      color:var(--text-soft);
       padding:8px 12px;
       font-size:12px;
     }
     .empty-block{
       border-radius:24px;
-      border:1px solid rgba(255,255,255,.08);
-      background:rgba(0,0,0,.2);
+      border:1px solid var(--border);
+      background:var(--surface);
       padding:34px 18px;
       text-align:center;
-      color:#a1a1aa;
+      color:var(--text-faint);
       margin-top:18px;
     }
     .summary-stack{
@@ -418,7 +418,7 @@
       justify-content:flex-start;
     }
     .feedback-line{
-      color:#d4d4d8;
+      color:var(--text-soft);
       line-height:1.55;
       margin:12px 0 0;
     }
@@ -442,9 +442,9 @@
     .modal-card{
       width:min(100%, 720px);
       border-radius:32px;
-      border:1px solid rgba(255,255,255,.1);
-      background:rgba(10,10,10,.98);
-      color:#fff;
+      border:1px solid var(--border);
+      background:var(--surface-strong);
+      color:var(--text);
       padding:22px;
       box-shadow:0 24px 80px rgba(0,0,0,.42);
     }
@@ -465,16 +465,16 @@
     }
     .field label{
       font-size:14px;
-      color:#d4d4d8;
+      color:var(--text-soft);
     }
     .field input,
     .field textarea,
     .field select{
       width:100%;
       border-radius:20px;
-      border:1px solid rgba(255,255,255,.1);
-      background:rgba(255,255,255,.06);
-      color:#fff;
+      border:1px solid var(--input-border);
+      background:var(--input-bg);
+      color:var(--text);
       padding:14px 16px;
       outline:none;
     }
@@ -606,12 +606,12 @@
         </div>
 
         <div class="soft-card">
-          <p class="profile-kicker" style="margin-bottom:10px;color:#a1a1aa">Abonn?s</p>
+          <p class="profile-kicker" style="margin-bottom:10px;color:var(--text-faint)">Abonn?s</p>
           <div id="followersList" class="person-cloud"></div>
         </div>
 
         <div class="soft-card">
-          <p class="profile-kicker" style="margin-bottom:10px;color:#a1a1aa">Abonnements</p>
+          <p class="profile-kicker" style="margin-bottom:10px;color:var(--text-faint)">Abonnements</p>
           <div id="followingList" class="person-cloud"></div>
         </div>
       </aside>
@@ -650,7 +650,7 @@
           </div>
 
           <div class="soft-card">
-            <p class="profile-kicker" style="margin-bottom:10px;color:#a1a1aa">Cache & uploads</p>
+            <p class="profile-kicker" style="margin-bottom:10px;color:var(--text-faint)">Cache & uploads</p>
             <div class="stats-grid">
               <div class="stat-card">
                 <p>Posts en cache</p>
@@ -664,7 +664,7 @@
           </div>
 
           <div class="soft-card">
-            <p class="profile-kicker" style="margin-bottom:10px;color:#a1a1aa">Actions profil</p>
+            <p class="profile-kicker" style="margin-bottom:10px;color:var(--text-faint)">Actions profil</p>
             <div class="action-list">
               <button id="refreshBtn" class="pill-btn" type="button">Rafraichir</button>
               <button id="logoutBtn" class="pill-btn" type="button">Deconnexion (local)</button>
@@ -673,7 +673,7 @@
           </div>
 
           <div class="soft-card">
-            <div class="profile-kicker" style="margin-bottom:10px;color:#86efac">Etat visuel / technique</div>
+            <div class="profile-kicker" style="margin-bottom:10px;color:var(--accent2)">Etat visuel / technique</div>
             <p id="feedbackText" class="feedback-line">Profil pret - donnees mises en cache</p>
           </div>
         </div>

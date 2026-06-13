@@ -273,7 +273,7 @@ function renderNotifications() {
         <div class="chat-notif-icon">${escapeHtml(getNotificationIcon(item.type))}</div>
         <div style="min-width:0;flex:1;">
           <div style="font-size:14px;line-height:1.45;"><strong>${escapeHtml(item.user)}</strong> ${escapeHtml(item.text)}</div>
-          <div style="color:#a1a1aa;font-size:12px;margin-top:6px;">${escapeHtml(item.time)}</div>
+          <div style="color:var(--text-faint);font-size:12px;margin-top:6px;">${escapeHtml(item.time)}</div>
         </div>
       </div>
     </button>
@@ -336,14 +336,14 @@ function renderThreadList() {
       <div class="chat-thread-top" style="justify-content:space-between;align-items:flex-start;">
         <div>
           <div style="font-weight:700;font-size:16px;">${escapeHtml(thread.name)}</div>
-          <div style="margin-top:4px;color:#a1a1aa;font-size:12px;">${escapeHtml(thread.status)}</div>
+          <div style="margin-top:4px;color:var(--text-faint);font-size:12px;">${escapeHtml(thread.status)}</div>
         </div>
         <span class="chat-panel-badge">${escapeHtml(String(thread.compatibility))}%</span>
       </div>
-      <div style="margin-top:12px;color:#a1a1aa;font-size:14px;line-height:1.45;">${escapeHtml(thread.lastMessage)}</div>
+      <div style="margin-top:12px;color:var(--text-faint);font-size:14px;line-height:1.45;">${escapeHtml(thread.lastMessage)}</div>
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;font-size:12px;">
-        <span style="color:#a1a1aa;">${escapeHtml(thread.sharedTrack.title)}</span>
-        ${thread.unread > 0 ? `<span style="min-width:24px;height:24px;border-radius:999px;display:grid;place-items:center;padding:0 6px;background:#d946ef;color:#fff;font-weight:800;">${escapeHtml(String(thread.unread))}</span>` : ""}
+        <span style="color:var(--text-faint);">${escapeHtml(thread.sharedTrack.title)}</span>
+        ${thread.unread > 0 ? `<span style="min-width:24px;height:24px;border-radius:999px;display:grid;place-items:center;padding:0 6px;background:var(--accent);color:var(--accent-contrast);font-weight:800;">${escapeHtml(String(thread.unread))}</span>` : ""}
       </div>
     </button>
   `).join("");
@@ -399,7 +399,7 @@ function renderMain() {
             <div class="chat-media-icon">SON</div>
             <div style="min-width:0;flex:1;">
               <div style="font-weight:700;">${escapeHtml(message.track.title)}</div>
-              <div style="color:#a1a1aa;font-size:13px;">${escapeHtml(message.track.artist)} · ${escapeHtml(message.track.source)}</div>
+              <div style="color:var(--text-faint);font-size:13px;">${escapeHtml(message.track.artist)} · ${escapeHtml(message.track.source)}</div>
             </div>
             <span class="chat-panel-badge">${escapeHtml(message.track.duration)}</span>
           </div>
@@ -418,7 +418,7 @@ function renderMain() {
             <div class="chat-media-icon">FILE</div>
             <div style="min-width:0;flex:1;">
               <div style="font-weight:700;">${escapeHtml(message.file.name)}</div>
-              <div style="color:#a1a1aa;font-size:13px;">${escapeHtml(message.file.format)} · ${escapeHtml(message.file.size)}</div>
+              <div style="color:var(--text-faint);font-size:13px;">${escapeHtml(message.file.format)} · ${escapeHtml(message.file.size)}</div>
             </div>
           </div>
         </div>
@@ -429,7 +429,7 @@ function renderMain() {
             <div class="chat-media-icon">VOX</div>
             <div style="min-width:0;flex:1;">
               <div style="font-weight:700;">Note vocale</div>
-              <div style="color:#a1a1aa;font-size:13px;">${escapeHtml(message.voice.duration)} · ${escapeHtml(message.voice.waveform)}</div>
+              <div style="color:var(--text-faint);font-size:13px;">${escapeHtml(message.voice.duration)} · ${escapeHtml(message.voice.waveform)}</div>
             </div>
           </div>
         </div>
@@ -440,7 +440,7 @@ function renderMain() {
             <div class="chat-media-icon">CALL</div>
             <div style="min-width:0;flex:1;">
               <div style="font-weight:700;">Appel ${escapeHtml(message.call.mode)}</div>
-              <div style="color:#a1a1aa;font-size:13px;">${escapeHtml(message.call.status)}</div>
+              <div style="color:var(--text-faint);font-size:13px;">${escapeHtml(message.call.status)}</div>
             </div>
           </div>
         </div>
@@ -480,7 +480,7 @@ function renderMain() {
 function renderInvites() {
   if (!refs.invitesBox) return;
   if (!state.invites.length) {
-    refs.invitesBox.innerHTML = `<div style="color:#a1a1aa;font-size:14px;line-height:1.6;">Aucune invitation en attente.</div>`;
+    refs.invitesBox.innerHTML = `<div style="color:var(--text-faint);font-size:14px;line-height:1.6;">Aucune invitation en attente.</div>`;
     return;
   }
   refs.invitesBox.innerHTML = state.invites.map((item) => `
@@ -488,11 +488,11 @@ function renderInvites() {
       <div class="chat-invite-top" style="justify-content:space-between;align-items:flex-start;">
         <div>
           <div style="font-weight:700;font-size:16px;">${escapeHtml(item.name)}</div>
-          <div style="margin-top:4px;color:#a1a1aa;font-size:12px;">@${escapeHtml(item.username || "user")}</div>
+          <div style="margin-top:4px;color:var(--text-faint);font-size:12px;">@${escapeHtml(item.username || "user")}</div>
         </div>
         <span class="chat-panel-badge">${item.canChatDirect ? "Chat" : "Invite"}</span>
       </div>
-      <div style="margin-top:12px;color:#a1a1aa;font-size:14px;line-height:1.45;">${escapeHtml(item.message || "Invitation de discussion apres swipe.")}</div>
+      <div style="margin-top:12px;color:var(--text-faint);font-size:14px;line-height:1.45;">${escapeHtml(item.message || "Invitation de discussion apres swipe.")}</div>
     </button>
   `).join("");
 

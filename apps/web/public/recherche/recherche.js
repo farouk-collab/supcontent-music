@@ -56,6 +56,11 @@ const state = {
   searchValue: "",
   activeSource: "spotify",
   activeType: "tracks",
+  activeMood: "all",
+  activeEnergy: "all",
+  videoOnly: false,
+  importFavoritesOnly: false,
+  syncedOnly: false,
   favoritesOnly: false,
   inlinePlayerId: null,
   suggestionsSeed: 0,
@@ -83,8 +88,12 @@ const refs = {
   searchClearBtn: document.querySelector("#searchClearBtn"),
   sourceButtons: Array.from(document.querySelectorAll("[data-source]")),
   typeButtons: Array.from(document.querySelectorAll("[data-type]")),
+  moodButtons: Array.from(document.querySelectorAll("[data-mood]")),
+  energyButtons: Array.from(document.querySelectorAll("[data-energy]")),
+  optionButtons: Array.from(document.querySelectorAll("[data-option]")),
   lastValue: document.querySelector("#searchLastValue"),
   currentSource: document.querySelector("#searchCurrentSource"),
+  activeFiltersCount: document.querySelector("#searchActiveFiltersCount"),
   suggestionsSection: document.querySelector("#searchSuggestionsSection"),
   suggestionsGrid: document.querySelector("#searchSuggestionsGrid"),
   refreshSuggestionsBtn: document.querySelector("#searchRefreshSuggestionsBtn"),
@@ -204,6 +213,73 @@ function externalYouTubeHref(url) {
   return `/media/media.html?ext=youtube&url=${encodeURIComponent(safeUrl)}`;
 }
 
+function inferMood(text) {
+  const value = String(text || "").toLowerCase();
+  if (value.includes("night") || value.includes("weeknd") || value.includes("midnight") || value.includes("after")) return "night";
+  if (value.includes("sunset") || value.includes("afro") || value.includes("tems") || value.includes("soul")) return "sunset";
+  if (value.includes("workout") || value.includes("drill") || value.includes("trap") || value.includes("rap")) return "workout";
+  return "chill";
+}
+
+function inferEnergy(text) {
+  const value = String(text || "").toLowerCase();
+  if (value.includes("workout") || value.includes("drill") || value.includes("trap") || value.includes("live")) return "high";
+  if (value.includes("sunset") || value.includes("soul") || value.includes("calm") || value.includes("chill")) return "low";
+  return "medium";
+}
+
+function normalizeSearchResult(item, source = state.activeSource) {
+  const title = String(item?.title || "Media");
+  const subtitle = String(item?.subtitle || "");
+  const fullText = `${title} ${subtitle} ${source}`;
+  return {
+    ...item,
+    source,
+    mood: item?.mood || inferMood(fullText),
+    energy: item?.energy || inferEnergy(fullText),
+    canPlayVideo: Boolean(item?.youtubePlayable || item?.mediaType === "video"),
+    favorite: Boolean(item?.favorite),
+    synced: item?.synced !== false,
+  };
+}
+
+function normalizePlaylistRow(row) {
+  const title = String(row?.title || "Import");
+  const subtitle = `${String(row?.source || "")} ${row?.itemType === "media" ? String(row?.mediaType || "") : "playlist"} ${Number(row?.tracks || 0)} titres`;
+  return {
+    ...row,
+    mood: row?.mood || inferMood(`${title} ${subtitle}`),
+    energy: row?.energy || inferEnergy(`${title} ${subtitle}`),
+    canPlayVideo: row?.itemType === "media" ? row?.mediaType === "video" : String(row?.source || "").toLowerCase().includes("youtube"),
+  };
+}
+
+function countActiveFilters() {
+  return [
+    state.activeMood !== "all",
+    state.activeEnergy !== "all",
+    state.videoOnly,
+    state.importFavoritesOnly,
+    state.syncedOnly,
+  ].filter(Boolean).length;
+}
+
+function matchesAdvancedResultFilters(item) {
+  if (state.activeMood !== "all" && item.mood !== state.activeMood) return false;
+  if (state.activeEnergy !== "all" && item.energy !== state.activeEnergy) return false;
+  if (state.videoOnly && !item.canPlayVideo) return false;
+  return true;
+}
+
+function matchesAdvancedPlaylistFilters(item) {
+  if (state.importFavoritesOnly && !item.favorite) return false;
+  if (state.syncedOnly && !item.synced) return false;
+  if (state.activeMood !== "all" && item.mood !== state.activeMood) return false;
+  if (state.activeEnergy !== "all" && item.energy !== state.activeEnergy) return false;
+  if (state.videoOnly && !item.canPlayVideo) return false;
+  return true;
+}
+
 function playYouTubeInline(url, title = "YouTube", subtitle = "") {
   const player = window.supcontentPlayer;
   if (!player?.playYouTube || !url) return false;
@@ -224,7 +300,7 @@ function mapApiItem(item) {
   const type = String(item?.type || "track");
   const artists = Array.isArray(item?.artists) ? item.artists.map((artist) => String(artist?.name || "").trim()).filter(Boolean) : [];
   const subtitle = type === "artist" ? `Artiste${item?.genres?.length ? ` � ${item.genres.slice(0, 2).join(" / ")}` : ""}` : type === "album" ? `${artists.join(", ")} � Album` : `${artists.join(", ")}${item?.album?.name ? ` � ${item.album.name}` : ""}`;
-  return { id: String(item?.id || crypto.randomUUID()), kind: type === "artist" ? "artists" : type === "album" ? "albums" : "tracks", type, title: String(item?.name || "Media"), subtitle: subtitle || "Resultat Spotify", coverLabel: type === "artist" ? "Artist" : type === "album" ? "Album" : "Single", detail: type === "artist" ? "Ouvrir profil artiste" : "Ouvrir detail media", image: resolveMediaUrl(pickImage(item)), href: mediaHref(type, item?.id), spotifyUrl: String(item?.external_urls?.spotify || ""), youtubePlayable: false, url: "" };
+  return normalizeSearchResult({ id: String(item?.id || crypto.randomUUID()), kind: type === "artist" ? "artists" : type === "album" ? "albums" : "tracks", type, title: String(item?.name || "Media"), subtitle: subtitle || "Resultat Spotify", coverLabel: type === "artist" ? "Artist" : type === "album" ? "Album" : "Single", detail: type === "artist" ? "Ouvrir profil artiste" : "Ouvrir detail media", image: resolveMediaUrl(pickImage(item)), href: mediaHref(type, item?.id), spotifyUrl: String(item?.external_urls?.spotify || ""), youtubePlayable: false, url: "", synced: true }, "spotify");
 }
 
 function pickRandomTerms(count = 2) {
@@ -257,8 +333,8 @@ function getNotificationIcon(type) {
 }
 
 function storageRows() {
-  if (state.importedPlaylists.length || state.hasPersistedPlaylists) return state.importedPlaylists;
-  return fallbackImportedPlaylists;
+  if (state.importedPlaylists.length || state.hasPersistedPlaylists) return state.importedPlaylists.map(normalizePlaylistRow);
+  return fallbackImportedPlaylists.map(normalizePlaylistRow);
 }
 
 function getVisibleSuggestions() {
@@ -270,12 +346,12 @@ function getVisibleSuggestions() {
 
 function getLiveResults() {
   if (state.activeSource === "spotify") {
-    if (state.spotifyResultsLive.length) return state.spotifyResultsLive;
-    return fallbackSpotifyResults.filter((item) => item.kind === state.activeType);
+    const base = state.spotifyResultsLive.length ? state.spotifyResultsLive : fallbackSpotifyResults.map((item) => normalizeSearchResult(item, "spotify"));
+    return base.filter((item) => item.kind === state.activeType).filter(matchesAdvancedResultFilters);
   }
 
   const query = state.searchValue.trim().toLowerCase();
-  const importedYoutube = storageRows().filter((playlist) => playlist.source.toLowerCase() === "youtube" && playlist.itemType !== "media").map((playlist) => ({
+  const importedYoutube = storageRows().filter((playlist) => playlist.source.toLowerCase() === "youtube" && playlist.itemType !== "media").map((playlist) => normalizeSearchResult({
     id: playlist.id,
     kind: "albums",
     title: playlist.title,
@@ -286,16 +362,19 @@ function getLiveResults() {
     image: "",
     url: playlist.url || "",
     href: playlist.url ? externalYouTubeHref(playlist.url) : "#",
-  }));
+    favorite: playlist.favorite,
+    synced: playlist.synced,
+    canPlayVideo: true,
+  }, "youtube"));
 
-  const base = importedYoutube.length ? importedYoutube : fallbackYoutubeResults;
+  const base = importedYoutube.length ? importedYoutube : fallbackYoutubeResults.map((item) => normalizeSearchResult(item, "youtube"));
   const typed = base.filter((item) => item.kind === state.activeType);
-  if (!query) return typed;
-  return typed.filter((item) => item.title.toLowerCase().includes(query) || item.subtitle.toLowerCase().includes(query));
+  const searched = !query ? typed : typed.filter((item) => item.title.toLowerCase().includes(query) || item.subtitle.toLowerCase().includes(query));
+  return searched.filter(matchesAdvancedResultFilters);
 }
 
 function getFilteredPlaylists() {
-  return storageRows().filter((playlist) => (state.favoritesOnly ? playlist.favorite : true));
+  return storageRows().filter((playlist) => (state.favoritesOnly ? playlist.favorite : true)).filter(matchesAdvancedPlaylistFilters);
 }
 
 function renderNotifications() {
@@ -330,8 +409,17 @@ function renderSearchControls() {
   refs.searchClearBtn.hidden = !state.searchValue;
   refs.lastValue.textContent = state.lastSearch;
   refs.currentSource.textContent = state.activeSource;
+  if (refs.activeFiltersCount) refs.activeFiltersCount.textContent = String(countActiveFilters());
   refs.sourceButtons.forEach((button) => button.classList.toggle("is-active-source", button.getAttribute("data-source") === state.activeSource));
   refs.typeButtons.forEach((button) => button.classList.toggle("is-active-type", button.getAttribute("data-type") === state.activeType));
+  refs.moodButtons.forEach((button) => button.classList.toggle("is-active", button.getAttribute("data-mood") === state.activeMood));
+  refs.energyButtons.forEach((button) => button.classList.toggle("is-active", button.getAttribute("data-energy") === state.activeEnergy));
+  refs.optionButtons.forEach((button) => {
+    const option = button.getAttribute("data-option");
+    const active = option === "video" ? state.videoOnly : option === "favorites" ? state.importFavoritesOnly : option === "synced" ? state.syncedOnly : false;
+    button.classList.toggle("is-active", active);
+    button.classList.toggle("is-accent", active && option !== "video");
+  });
 }
 
 function renderSuggestions() {
@@ -378,6 +466,8 @@ function renderResults() {
             <a class="search-pill-btn is-primary" href="${escapeHtml(item.href || "#")}">Detail</a>
             ${item.spotifyUrl ? `<a class="search-pill-btn" href="${escapeHtml(item.spotifyUrl)}" target="_blank" rel="noopener noreferrer">Spotify</a>` : ""}
             ${item.youtubePlayable ? `<button class="search-pill-btn" type="button" data-inline-player="${escapeHtml(item.id)}">${state.inlinePlayerId === item.id ? "Masquer le player" : "Lecture YouTube inline"}</button>` : ""}
+            <span class="search-import-badge ${item.energy === "high" ? "is-spotify" : "is-youtube"}">${escapeHtml(item.mood)}</span>
+            <span class="search-import-badge ${item.canPlayVideo ? "is-youtube" : "is-spotify"}">${escapeHtml(item.energy)}</span>
           </div>
           ${state.inlinePlayerId === item.id ? '<div class="search-inline-player">Player YouTube inline simule � visible seulement si le player global est dispo.</div>' : ""}
         </div>
@@ -415,6 +505,8 @@ function renderPlaylists() {
         <span class="search-playlist-tag ${playlist.synced ? "is-green" : "is-amber"}">${playlist.synced ? "Synchronisee" : "Non synchronisee"}</span>
         <span class="search-playlist-tag is-neutral">${playlist.itemType === "media" ? (playlist.mediaType === "audio" ? "MP3" : "MP4") : "Playlist"}</span>
         <span class="search-playlist-tag is-neutral">${playlist.loginRequired ? "requireLogin()" : "Libre"}</span>
+        <span class="search-playlist-tag is-neutral">${escapeHtml(playlist.mood)}</span>
+        <span class="search-playlist-tag is-neutral">${escapeHtml(playlist.energy)}</span>
       </div>
       <div class="search-playlist-actions">
         <button class="search-pill-btn is-primary" type="button" data-open-playlist="${escapeHtml(playlist.id)}">${playlist.itemType === "media" ? "Lire" : "Ouvrir"}</button>
@@ -751,8 +843,8 @@ function renderImportLaunchState(title, subtitle) {
       <div class="search-import-audio-row">
         <div class="search-import-audio-icon">&#9835;</div>
         <div style="flex:1;">
-          <div style="font-size:16px;font-weight:700;color:#fff;">${escapeHtml(title)}</div>
-          <div style="font-size:12px;color:#a1a1aa;margin-top:4px;">${escapeHtml(subtitle)}</div>
+          <div style="font-size:16px;font-weight:700;color:var(--text);">${escapeHtml(title)}</div>
+          <div style="font-size:12px;color:var(--text-faint);margin-top:4px;">${escapeHtml(subtitle)}</div>
         </div>
       </div>
       <div class="search-import-helper">
@@ -768,30 +860,14 @@ function renderImportLaunchState(title, subtitle) {
 
 function renderSpotifyImportPlayer(data) {
   if (!refs.importPlayer) return;
-  refs.importPlayer.style.display = "block";
-
-  let src = "";
   let label = "";
-  let frameHeight = data.type === "spotify-track" ? 80 : 400;
 
-  if (data.type === "spotify-track") {
-    src = `https://open.spotify.com/embed/track/${data.id}`;
-    label = "Titre";
-  } else if (data.type === "spotify-playlist") {
-    src = `https://open.spotify.com/embed/playlist/${data.id}`;
-    label = "Playlist";
-  } else {
-    src = `https://open.spotify.com/embed/album/${data.id}`;
-    label = "Album";
-  }
+  if (data.type === "spotify-track") label = "Titre";
+  else if (data.type === "spotify-playlist") label = "Playlist";
+  else label = "Album";
 
-  refs.importPlayer.innerHTML = `
-    <iframe src="${src}" style="height:${frameHeight}px;" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
-    <div class="search-import-helper">
-      <p>Spotify bloque en general la lecture automatique avec son. Clique sur le bouton play dans le lecteur Spotify.</p>
-    </div>
-    ${getImportInfoBar("Spotify", label)}
-  `;
+  renderImportLaunchState(`Spotify ${label.toLowerCase()} pret`, "Le lecteur Spotify est maintenant porte par la barre du bas pour rester disponible entre les pages.");
+  refs.importPlayer.insertAdjacentHTML("beforeend", getImportInfoBar("Spotify", label));
 }
 
 async function loadEmbeddedImportLink(urlOverride = "") {
@@ -844,6 +920,12 @@ async function loadEmbeddedImportLink(urlOverride = "") {
   }
 
   if (data.source === "Spotify") {
+    window.supcontentPlayer?.playSpotify?.({
+      url,
+      title: deriveTitleFromUrl(url, data.type === "spotify-playlist" ? "Playlist Spotify" : data.type === "spotify-album" ? "Album Spotify" : "Titre Spotify"),
+      subtitle: data.type === "spotify-playlist" ? "Spotify playlist" : data.type === "spotify-album" ? "Spotify album" : "Spotify track",
+      mode: "audio",
+    });
     renderSpotifyImportPlayer(data);
   } else {
     showImportPlayerError("Type de media non gere.");
@@ -1095,6 +1177,24 @@ function bindEvents() {
     state.inlinePlayerId = null;
     renderAll();
     if (state.activeSource === "spotify" && state.searchValue.trim()) await fetchSearchResults();
+  }));
+
+  refs.moodButtons.forEach((button) => button.addEventListener("click", () => {
+    state.activeMood = button.getAttribute("data-mood") || "all";
+    renderAll();
+  }));
+
+  refs.energyButtons.forEach((button) => button.addEventListener("click", () => {
+    state.activeEnergy = button.getAttribute("data-energy") || "all";
+    renderAll();
+  }));
+
+  refs.optionButtons.forEach((button) => button.addEventListener("click", () => {
+    const option = button.getAttribute("data-option");
+    if (option === "video") state.videoOnly = !state.videoOnly;
+    if (option === "favorites") state.importFavoritesOnly = !state.importFavoritesOnly;
+    if (option === "synced") state.syncedOnly = !state.syncedOnly;
+    renderAll();
   }));
 
   refs.refreshSuggestionsBtn?.addEventListener("click", async () => {

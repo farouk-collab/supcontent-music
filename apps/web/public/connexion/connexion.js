@@ -10,7 +10,8 @@ const INITIAL_AUTH_STATE = {
 const FEATURE_CARDS = [
   { id: "f1", title: "Connexion email", text: "Connexion classique avec email et mot de passe.", icon: "@" },
   { id: "f2", title: "OAuth Google", text: "Connexion rapide avec ton compte Google.", icon: "G" },
-  { id: "f3", title: "Reset password", text: "Mot de passe oublie avec lien de reinitialisation.", icon: "K" },
+  { id: "f3", title: "OAuth GitHub", text: "Connexion rapide avec ton compte GitHub.", icon: "GH" },
+  { id: "f4", title: "Reset password", text: "Mot de passe oublie avec lien de reinitialisation.", icon: "K" },
 ];
 
 const state = {
@@ -36,6 +37,7 @@ const dom = {
   helperText: document.querySelector("#authHelperText"),
   submitButton: document.querySelector("#authSubmitButton"),
   googleButton: document.querySelector("#authGoogleButton"),
+  githubButton: document.querySelector("#authGithubButton"),
   diagnosticButton: document.querySelector("#authDiagnosticButton"),
   logoutButton: document.querySelector("#authLogoutButton"),
   statusHead: document.querySelector("#authStatusHead"),
@@ -48,10 +50,10 @@ const dom = {
 
 function runLoginTests() {
   const cases = [
-    { check: () => FEATURE_CARDS.length === 3 },
+    { check: () => FEATURE_CARDS.length === 4 },
     { check: () => INITIAL_AUTH_STATE.isConnected === false },
     { check: () => FEATURE_CARDS.some((item) => item.title.includes("Google")) },
-    { check: () => FEATURE_CARDS[1].icon === "G" },
+    { check: () => FEATURE_CARDS.some((item) => item.title.includes("GitHub")) },
   ];
   return cases.map((test) => ({ passed: test.check() }));
 }
@@ -106,6 +108,7 @@ function renderForm() {
   if (dom.registerNameRow) dom.registerNameRow.hidden = true;
   if (dom.passwordRow) dom.passwordRow.hidden = isForgot;
   if (dom.googleButton) dom.googleButton.hidden = !isLogin;
+  if (dom.githubButton) dom.githubButton.hidden = !isLogin;
 
   if (dom.nameInput) dom.nameInput.value = "";
   if (dom.emailInput) {
@@ -305,6 +308,12 @@ function handleGoogleLogin() {
   window.location.href = `${API_BASE}/auth/oauth/google/start?returnTo=${encodeURIComponent(returnTo)}`;
 }
 
+function handleGithubLogin() {
+  const returnTo = `${window.location.origin}${window.location.pathname}${window.location.search || ""}`;
+  setFeedback("Redirection vers GitHub...");
+  window.location.href = `${API_BASE}/auth/oauth/github/start?returnTo=${encodeURIComponent(returnTo)}`;
+}
+
 function refreshDiagnostic() {
   updateAuthStateFromTokens();
   setFeedback(state.authState.isConnected ? "Diagnostic session OK" : "Aucune session a diagnostiquer");
@@ -344,6 +353,7 @@ function bindEvents() {
   });
 
   dom.googleButton?.addEventListener("click", handleGoogleLogin);
+  dom.githubButton?.addEventListener("click", handleGithubLogin);
   dom.diagnosticButton?.addEventListener("click", refreshDiagnostic);
   dom.logoutButton?.addEventListener("click", () => {
     handleLogout().catch((err) => toast(err?.message || "Erreur logout", "Erreur"));
@@ -355,7 +365,7 @@ function normalizeBrokenText() {
   if (brandIcon) brandIcon.innerHTML = "&#9835;";
 
   const subtitle = document.querySelector(".auth-subtitle");
-  if (subtitle) subtitle.innerHTML = "Page d&eacute;di&eacute;e strictement &agrave; la connexion : login, inscription, mot de passe oubli&eacute; et OAuth Google.";
+  if (subtitle) subtitle.innerHTML = "Page d&eacute;di&eacute;e strictement &agrave; la connexion : login, inscription, mot de passe oubli&eacute; et OAuth Google/GitHub.";
 
   const rowIcons = Array.from(document.querySelectorAll(".auth-row-icon"));
   if (rowIcons[0]) rowIcons[0].innerHTML = "&#128100;";

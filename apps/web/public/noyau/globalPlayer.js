@@ -219,6 +219,30 @@ function setPlayPauseIcon(playing) {
   playPauseBtn.setAttribute("aria-label", playPauseBtn.title);
 }
 
+function spotifyParams(rawUrl) {
+  try {
+    const u = new URL(String(rawUrl || ""));
+    const host = String(u.hostname || "").toLowerCase();
+    if (!host.includes("spotify.com")) return { kind: "", id: "", embedUrl: "" };
+
+    const segments = String(u.pathname || "").split("/").filter(Boolean);
+    const typeIndex = segments.findIndex((segment) => ["track", "playlist", "album"].includes(String(segment || "").toLowerCase()));
+    if (typeIndex === -1) return { kind: "", id: "", embedUrl: "" };
+
+    const kind = String(segments[typeIndex] || "").toLowerCase();
+    const id = String(segments[typeIndex + 1] || "").trim();
+    if (!id) return { kind: "", id: "", embedUrl: "" };
+
+    return {
+      kind,
+      id,
+      embedUrl: `https://open.spotify.com/embed/${kind}/${id}`,
+    };
+  } catch {
+    return { kind: "", id: "", embedUrl: "" };
+  }
+}
+
 function findActiveLyric() {
   const lyrics = Array.isArray(current?.lyrics) ? current.lyrics : [];
   if (!lyrics.length) return { activeLine: null, nearby: [] };
@@ -341,6 +365,17 @@ function renderMeta(meta) {
   renderLyrics();
 }
 
+function syncControlAvailability() {
+  const isSpotify = current?.provider === "spotify";
+  if (prevBtn) prevBtn.disabled = isSpotify;
+  if (nextBtn) nextBtn.disabled = isSpotify;
+  if (seekEl) seekEl.disabled = isSpotify;
+  if (waveformBtn) waveformBtn.disabled = isSpotify;
+  if (modeBtn) modeBtn.disabled = isSpotify;
+  if (lyricsToggleBtn) lyricsToggleBtn.disabled = isSpotify || !current?.lyrics?.length;
+  if (subtitleToggleBtn) subtitleToggleBtn.disabled = isSpotify || !current?.lyrics?.length;
+}
+
 function destroyEngines() {
   if (fileMediaEl) {
     fileMediaEl.pause();
@@ -359,6 +394,8 @@ function destroyEngines() {
 
   const ytHost = hostEl?.querySelector("#sc-global-yt-host");
   if (ytHost) ytHost.remove();
+  const spotifyHost = hostEl?.querySelector("#sc-global-spotify-host");
+  if (spotifyHost) spotifyHost.remove();
 
   if (hostEl && fileMediaEl && fileMediaEl.parentElement !== hostEl) {
     hostEl.appendChild(fileMediaEl);
@@ -386,10 +423,15 @@ function snapshot() {
       // ignore
     }
   }
+  if (next.provider === "spotify") {
+    next.time = 0;
+    next.duration = 0;
+  }
 
   current = next;
   setPlayPauseIcon(next.playing);
   updateTimeline();
+  syncControlAvailability();
   writeState(next);
 }
 
@@ -484,15 +526,28 @@ function playFile(state) {
   return true;
 }
 
+function playSpotify(state) {
+  const embedUrl = String(state.embedUrl || spotifyParams(state.url).embedUrl || "").trim();
+  if (!embedUrl || !hostEl) return false;
+
+  hostEl.innerHTML = `<iframe id="sc-global-spotify-host" src="${escapeHtml(embedUrl)}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" style="position:absolute;inset:0;width:100%;height:100%;border:0;"></iframe>`;
+  startSnapshotLoop();
+  return true;
+}
+
 function start(state) {
   if (!root) buildUi();
 
   const yt = state.provider === "youtube" ? youtubeParams(state.url) : { listId: "", videoId: "" };
+  const spotify = state.provider === "spotify" ? spotifyParams(state.url) : { kind: "", id: "", embedUrl: "" };
 
   current = {
-    provider: state.provider === "youtube" ? "youtube" : "file",
+    provider: state.provider === "youtube" ? "youtube" : state.provider === "spotify" ? "spotify" : "file",
     url: String(state.url || "").trim(),
     listId: yt.listId || "",
+    spotifyKind: spotify.kind || "",
+    spotifyId: spotify.id || "",
+    embedUrl: String(state.embedUrl || spotify.embedUrl || ""),
     title: String(state.title || "Lecture"),
     subtitle: String(state.subtitle || ""),
     cover: String(state.cover || ""),
@@ -519,17 +574,27 @@ function start(state) {
     playYouTube(current).then((ok) => {
       if (!ok) stop();
     });
+  } else if (current.provider === "spotify") {
+    if (!playSpotify(current)) stop();
   } else if (!playFile(current)) {
     stop();
   }
 
   setPlayPauseIcon(current.playing);
   updateTimeline();
+  syncControlAvailability();
   writeState(current);
 }
 
 function togglePlayPause() {
   if (!current) return;
+
+  if (current.provider === "spotify") {
+    const spotifyFrame = hostEl?.querySelector("#sc-global-spotify-host");
+    if (spotifyFrame) spotifyFrame.scrollIntoView({ block: "nearest", inline: "nearest" });
+    snapshot();
+    return;
+  }
 
   if (current.provider === "file" && fileMediaEl) {
     if (fileMediaEl.paused) fileMediaEl.play().catch(() => {});
@@ -548,6 +613,12 @@ function togglePlayPause() {
 
 function resumePlayback() {
   if (!current) return;
+
+  if (current.provider === "spotify") {
+    if (!hostEl?.querySelector("#sc-global-spotify-host")) playSpotify(current);
+    snapshot();
+    return;
+  }
 
   if (current.provider === "file" && fileMediaEl) {
     fileMediaEl.play().catch(() => {});
@@ -970,6 +1041,9 @@ export function initGlobalPlayer() {
   window.supcontentPlayer = {
     playYouTube({ url, title = "YouTube", subtitle = "", cover = "", mode = "audio", lyrics = [] }) {
       start({ provider: "youtube", url, title, subtitle, cover, mode, lyrics, playing: true });
+    },
+    playSpotify({ url, title = "Spotify", subtitle = "", cover = "", mode = "audio" }) {
+      start({ provider: "spotify", url, title, subtitle, cover, mode, playing: true });
     },
     playMedia({ url, title = "Media", subtitle = "", cover = "", mode = "video", lyrics = [] }) {
       start({ provider: "file", url, title, subtitle, cover, mode, lyrics, playing: true });

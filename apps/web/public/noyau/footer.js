@@ -57,6 +57,182 @@ function ensureThemeBridgeStyles() {
   const style = document.createElement("style");
   style.id = "supcontent-theme-bridge-style";
   style.textContent = `
+    :root{
+      --theme-page-bg:
+        radial-gradient(circle at top, rgba(var(--accent2-rgb),.16), transparent 20%),
+        radial-gradient(circle at right, rgba(var(--accent-rgb),.14), transparent 22%),
+        linear-gradient(180deg, var(--page-start), var(--page-end));
+      --theme-surface: var(--surface);
+      --theme-surface-strong: var(--surface-strong);
+      --theme-surface-soft: var(--surface-soft);
+    }
+
+    body.profile-preview-page,
+    body.edit-profile-page,
+    body.connexion-page,
+    body.settings-preview-page,
+    body.shop-page,
+    body.live-page,
+    body.chat-redesign-page,
+    body.library-page,
+    body.search-page,
+    body.user-search-page,
+    body.home-page,
+    body.swipe-page{
+      background: var(--theme-page-bg) !important;
+      color: var(--text) !important;
+    }
+
+    .profile-card,
+    .edit-header,
+    .edit-panel,
+    .edit-side-panel,
+    .auth-panel,
+    .auth-side,
+    .auth-feature,
+    .auth-card,
+    .auth-status,
+    .auth-test,
+    .shop-panel,
+    .live-panel,
+    .chat-panel,
+    .library-panel,
+    .search-panel,
+    .search-section,
+    .search-results-card,
+    .search-import-card,
+    .search-playlists-card,
+    .user-search-card,
+    .user-search-hero,
+    .user-search-feed,
+    .user-search-results,
+    .shop-header,
+    .shop-card,
+    .shop-side-card,
+    .live-header,
+    .live-side-card,
+    .live-center-card,
+    .live-hero-card,
+    .chat-redesign-header,
+    .chat-redesign-sidebar,
+    .chat-redesign-main,
+    .chat-redesign-context,
+    .chat-notif-panel,
+    .chat-hero-card,
+    .library-header,
+    .library-col,
+    .library-main,
+    .library-side,
+    .library-lower,
+    .library-hero-card,
+    .search-header,
+    .profile-header,
+    .home-topbar,
+    .home-stories-card,
+    .home-feed-card,
+    .home-carousel-card,
+    .home-hero-card,
+    .home-news-card,
+    .swipe-header,
+    .swipe-tabs,
+    .swipe-panel,
+    .swipe-stage,
+    .swipe-summary{
+      background: var(--theme-surface) !important;
+      border-color: var(--border) !important;
+      color: var(--text) !important;
+    }
+
+    .stat-card,
+    .soft-card,
+    .content-card,
+    .auth-row,
+    .search-search-bar,
+    .search-mini-card,
+    .search-suggestion,
+    .search-result-item,
+    .search-empty-state,
+    .search-playlist-card,
+    .user-search-feedback,
+    .result-card,
+    .feed-card,
+    .empty-box,
+    .counter-pill,
+    .library-notif-card,
+    .library-list-card,
+    .library-media-card,
+    .library-stat-card,
+    .library-box,
+    .library-player-card,
+    .library-footer-player,
+    .shop-preview-visual,
+    .shop-preview-panel,
+    .shop-product-card,
+    .shop-creator-card,
+    .shop-cart-item,
+    .shop-empty,
+    .shop-field-inline,
+    .live-room-btn,
+    .live-schedule-item,
+    .live-note,
+    .live-mini-card,
+    .live-action-link,
+    .live-overlay-item,
+    .live-chat-item,
+    .chat-notif-item,
+    .chat-thread-card,
+    .chat-invite-card,
+    .chat-bubble-row:not(.is-me) .chat-bubble-card,
+    .chat-media-card,
+    .chat-context-card,
+    .chat-compose-row,
+    .search-import-input-card,
+    .search-import-player,
+    .search-import-audio-row,
+    .search-import-helper,
+    .search-import-info{
+      background: var(--theme-surface-soft) !important;
+      border-color: var(--border) !important;
+      color: var(--text) !important;
+    }
+
+    .chat-action-btn,
+    .chat-send-btn,
+    .chat-context-play,
+    .live-btn.is-primary,
+    .search-status-btn.is-primary,
+    .search-inline-btn.is-primary{
+      background: linear-gradient(135deg, var(--accent2), var(--accent)) !important;
+      border-color: transparent !important;
+      color: var(--accent-contrast, var(--text-inverse)) !important;
+    }
+
+    .chat-redesign-subtitle,
+    .chat-thread-status,
+    .chat-thread-preview,
+    .chat-thread-track,
+    .chat-context-copy,
+    .chat-context-sub,
+    .chat-empty-copy,
+    .search-import-card p,
+    .search-result-sub,
+    .search-playlist-sub,
+    .live-subtitle,
+    .live-room-sub,
+    .live-note,
+    .live-mini-card,
+    .live-mini-card p{
+      color: var(--text-faint) !important;
+    }
+
+    .chat-brand-icon,
+    .live-brand-icon,
+    .search-result-cover,
+    .search-suggestion-cover{
+      background: linear-gradient(135deg, rgba(var(--accent2-rgb),.34), rgba(39,39,42,.9), rgba(var(--accent-rgb),.26)) !important;
+      color: var(--text) !important;
+    }
+
     :root:not([data-app-theme="light"]) body.profile-preview-page,
     :root:not([data-app-theme="light"]) body.edit-profile-page,
     :root:not([data-app-theme="light"]) body.connexion-page,

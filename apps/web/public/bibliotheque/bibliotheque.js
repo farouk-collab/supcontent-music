@@ -211,6 +211,67 @@ function formatProgress(duration, progress) {
   return hours > 0 ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}` : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+function toSafeCount(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function formatRating(value) {
+  if (!Number.isFinite(Number(value))) return "n/a";
+  return Number(value).toFixed(1);
+}
+
+function buildCollectionStats(rows, duplicates) {
+  const safeRows = Array.isArray(rows) ? rows : [];
+  const safeDuplicates = Array.isArray(duplicates) ? duplicates : [];
+  const totals = safeRows.reduce((accumulator, row) => {
+    const trackCount = Math.max(1, toSafeCount(row?.track_count, 1));
+    const reviews = Math.max(0, toSafeCount(row?.social?.review_count));
+    const likes = Math.max(0, toSafeCount(row?.social?.like_count));
+    const comments = Math.max(0, toSafeCount(row?.social?.comment_count));
+    const rating = row?.social?.avg_rating == null ? null : Number(row.social.avg_rating);
+
+    accumulator.trackCount += trackCount;
+    accumulator.favoriteCount += row?.favorite ? 1 : 0;
+    accumulator.youtubeCount += row?.isYoutube ? 1 : 0;
+    accumulator.spotifyCount += String(row?.source || "").toLowerCase().includes("spotify") ? 1 : 0;
+    accumulator.videoCount += row?.canPlayVideo ? 1 : 0;
+    accumulator.playlistCount += row?.media_type === "playlist" ? 1 : 0;
+    accumulator.catalogCount += row?.media_type === "track" || row?.media_type === "album" || row?.media_type === "artist" ? 1 : 0;
+    accumulator.syncedCount += row?.synced ? 1 : 0;
+    accumulator.loginRequiredCount += row?.loginRequired ? 1 : 0;
+    accumulator.reviews += reviews;
+    accumulator.likes += likes;
+    accumulator.comments += comments;
+    if (rating != null && Number.isFinite(rating)) {
+      accumulator.ratedItems += 1;
+      accumulator.ratingTotal += rating;
+    }
+    return accumulator;
+  }, {
+    mediaCount: safeRows.length,
+    trackCount: 0,
+    favoriteCount: 0,
+    youtubeCount: 0,
+    spotifyCount: 0,
+    videoCount: 0,
+    playlistCount: 0,
+    catalogCount: 0,
+    syncedCount: 0,
+    loginRequiredCount: 0,
+    reviews: 0,
+    likes: 0,
+    comments: 0,
+    ratedItems: 0,
+    ratingTotal: 0,
+  });
+
+  totals.duplicateCount = safeDuplicates.length;
+  totals.avgRating = totals.ratedItems ? totals.ratingTotal / totals.ratedItems : null;
+  totals.engagementCount = totals.reviews + totals.likes + totals.comments;
+  return totals;
+}
+
 function toCollectionModel(collection) {
   const items = Array.isArray(collection?.items) ? collection.items : [];
   const rows = items.map((item) => {
@@ -222,11 +283,14 @@ function toCollectionModel(collection) {
     const title = String(item?.media?.name || mediaId || "Sans titre");
     const subtitle = String(item?.media?.subtitle || "");
     const artist = subtitle.split("·")[0]?.trim() || title;
-    return { id: mediaKey(mediaType, mediaId), media_type: mediaType, media_id: mediaId, collectionId: String(collection?.id || ""), collectionName: String(collection?.name || "Collection"), title, subtitle, image: resolveMediaUrl(item?.media?.image || ""), source: youtubeUrl ? "YouTube" : "Spotify", isYoutube: Boolean(youtubeUrl), canPlayVideo: Boolean(youtubeUrl || sourceUrl.toLowerCase().includes("youtube") || spotifyUrl.toLowerCase().includes("youtube")), youtube_url: youtubeUrl, source_url: sourceUrl, spotify_url: spotifyUrl, duplicateKey: `${title.toLowerCase()}-${artist.toLowerCase()}`, artist, mood: inferMood(`${title} ${subtitle} ${collection?.name || ""}`), energy: inferEnergy(`${title} ${subtitle}`), type: mediaType };
+    const fallbackSource = String(item?.external_source || (youtubeUrl ? "YouTube" : spotifyUrl ? "Spotify" : "Media"));
+    return { id: mediaKey(mediaType, mediaId), media_type: mediaType, media_id: mediaId, collectionId: String(collection?.id || ""), collectionName: String(collection?.name || "Collection"), title, subtitle, image: resolveMediaUrl(item?.media?.image || ""), source: fallbackSource, isYoutube: Boolean(youtubeUrl), canPlayVideo: Boolean(youtubeUrl || sourceUrl.toLowerCase().includes("youtube") || spotifyUrl.toLowerCase().includes("youtube")), youtube_url: youtubeUrl, source_url: sourceUrl, spotify_url: spotifyUrl, duplicateKey: `${title.toLowerCase()}-${artist.toLowerCase()}`, artist, mood: inferMood(`${title} ${subtitle} ${collection?.name || ""}`), energy: inferEnergy(`${title} ${subtitle}`), type: mediaType, track_count: Math.max(1, toSafeCount(item?.track_count, 1)), social: item?.social || null, favorite: false, synced: true, loginRequired: false };
   });
   const counts = new Map();
   rows.forEach((row) => counts.set(row.duplicateKey, (counts.get(row.duplicateKey) || 0) + 1));
-  return { id: String(collection?.id || ""), name: String(collection?.name || "Collection"), description: collection?.status_code ? `Liste statut : ${String(collection.status_code).replaceAll("_", " ")}` : `${rows.length} medias dans cette collection`, rows, duplicates: rows.filter((row) => (counts.get(row.duplicateKey) || 0) > 1), socials: { likes: 80 + rows.length * 17, comments: 10 + rows.length * 3, listeners: Math.max(4, rows.length * 2) }, isEditable: !collection?.status_code };
+  const duplicates = rows.filter((row) => (counts.get(row.duplicateKey) || 0) > 1);
+  const stats = buildCollectionStats(rows, duplicates);
+  return { id: String(collection?.id || ""), name: String(collection?.name || "Collection"), description: collection?.status_code ? `Liste statut : ${String(collection.status_code).replaceAll("_", " ")}` : `${stats.mediaCount} medias · ${stats.trackCount} titres cumules`, rows, duplicates, socials: { likes: stats.likes, comments: stats.comments, reviews: stats.reviews, avgRating: stats.avgRating }, stats, isEditable: !collection?.status_code };
 }
 
 function toImportedCollectionModels(items) {
@@ -271,9 +335,11 @@ function toImportedCollectionModels(items) {
       mood: inferMood(`${title} ${subtitle}`),
       energy: inferEnergy(`${title} ${subtitle}`),
       type: itemType,
+      track_count: trackCount,
       favorite: Boolean(item?.favorite),
       synced: Boolean(item?.synced),
       loginRequired: Boolean(item?.loginRequired),
+      social: null,
     };
     });
 
@@ -281,15 +347,17 @@ function toImportedCollectionModels(items) {
 
   const counts = new Map();
   rows.forEach((row) => counts.set(row.duplicateKey, (counts.get(row.duplicateKey) || 0) + 1));
-  const syncedCount = rows.filter((row) => row.synced).length;
+  const duplicates = rows.filter((row) => (counts.get(row.duplicateKey) || 0) > 1);
+  const stats = buildCollectionStats(rows, duplicates);
 
   return [{
     id: collectionId,
     name: "Imports recherche",
-    description: `${rows.length} imports disponibles · ${syncedCount} synchronises`,
+    description: `${stats.mediaCount} imports disponibles · ${stats.trackCount} titres detectes`,
     rows,
-    duplicates: rows.filter((row) => (counts.get(row.duplicateKey) || 0) > 1),
-    socials: { likes: 24 + rows.length * 4, comments: 6 + rows.length, listeners: Math.max(2, rows.length) },
+    duplicates,
+    socials: { likes: stats.likes, comments: stats.comments, reviews: stats.reviews, avgRating: stats.avgRating },
+    stats,
     isEditable: false,
   }];
 }
@@ -299,6 +367,10 @@ function getAllRows() { return state.collections.flatMap((collection) => collect
 function getFavoriteRows() { return getAllRows().filter((row) => state.favorites.has(row.id)); }
 function getVisibleRows() { const base = state.viewMode === "favorites" ? getFavoriteRows() : (getSelectedCollection()?.rows || []); return state.favoritesOnly && state.viewMode !== "favorites" ? base.filter((row) => state.favorites.has(row.id)) : base; }
 function getDuplicateRows() { return getSelectedCollection()?.duplicates || []; }
+function getLibraryStats() {
+  const rows = getAllRows().map((row) => ({ ...row, favorite: state.favorites.has(row.id) || row.favorite }));
+  return buildCollectionStats(rows, state.collections.flatMap((collection) => collection.duplicates || []));
+}
 function getUnreadCount() { return sanitizeNotifications(state.notifications).filter((item) => !item.read).length; }
 function getNotificationIcon(type) { if (type === "playlist") return "♫"; if (type === "comment") return "◌"; if (type === "community") return "✦"; return "•"; }
 function getPlayerVisualMode() { return state.playerMode === "video" && state.nowPlaying?.canPlayVideo ? "video" : "audio"; }
@@ -690,7 +762,7 @@ function renderAutoCollections() {
 
 function renderCollectionsList() {
   if (!state.collections.length) { dom.collectionsList.innerHTML = `<div class="library-empty">Aucune collection disponible pour le moment.</div>`; return; }
-  dom.collectionsList.innerHTML = state.collections.map((collection) => `<button class="library-list-card library-list-button ${collection.id === state.selectedCollectionId ? "is-active" : ""}" type="button" data-collection-id="${escapeHtml(collection.id)}"><div class="library-hero-top"><div><p style="margin:0;font-weight:700;">${escapeHtml(collection.name)}</p><p style="margin:6px 0 0;color:#9ca3af;font-size:14px;">${escapeHtml(collection.description)}</p></div><span class="library-badge">${collection.rows.length} medias</span></div><div class="library-badge-row" style="margin-top:12px;"><span class="library-badge">${collection.socials.likes} likes</span><span class="library-badge">${collection.socials.comments} commentaires</span><span class="library-badge">${collection.socials.listeners} ecoutent</span></div></button>`).join("");
+  dom.collectionsList.innerHTML = state.collections.map((collection) => `<button class="library-list-card library-list-button ${collection.id === state.selectedCollectionId ? "is-active" : ""}" type="button" data-collection-id="${escapeHtml(collection.id)}"><div class="library-hero-top"><div><p style="margin:0;font-weight:700;">${escapeHtml(collection.name)}</p><p style="margin:6px 0 0;color:#9ca3af;font-size:14px;">${escapeHtml(collection.description)}</p></div><span class="library-badge">${collection.stats.mediaCount} medias</span></div><div class="library-badge-row" style="margin-top:12px;"><span class="library-badge">${collection.stats.trackCount} titres</span><span class="library-badge">${collection.socials.likes} likes</span><span class="library-badge">${collection.socials.reviews} avis</span>${collection.socials.avgRating != null ? `<span class="library-badge">note ${formatRating(collection.socials.avgRating)}/5</span>` : ""}</div></button>`).join("");
   dom.collectionsList.querySelectorAll("[data-collection-id]").forEach((button) => button.addEventListener("click", () => { state.selectedCollectionId = String(button.getAttribute("data-collection-id") || ""); renderAll(); }));
 }
 
@@ -703,7 +775,7 @@ function renderCollectionHero() {
   const selected = getSelectedCollection();
   const favoriteRows = getFavoriteRows();
   if (state.viewMode === "favorites") dom.collectionHero.innerHTML = `<p class="library-kicker" style="color:#f0fdf4;">Favoris</p><h2>Mes favoris</h2><p>${favoriteRows.length} elements stockes en localStorage pour un acces rapide.</p><div class="library-badge-row" style="margin-top:14px;"><span class="library-badge">${favoriteRows.length} elements</span><span class="library-badge">vue rapide</span></div>`;
-  else if (selected) dom.collectionHero.innerHTML = `<p class="library-kicker" style="color:#f0fdf4;">Collection ouverte</p><h2>${escapeHtml(selected.name)}</h2><p>${escapeHtml(selected.description)}</p><div class="library-badge-row" style="margin-top:14px;"><span class="library-badge">${selected.socials.likes} likes</span><span class="library-badge">${selected.socials.comments} commentaires</span><span class="library-badge">${selected.socials.listeners} ecoutent</span></div>`;
+  else if (selected) dom.collectionHero.innerHTML = `<p class="library-kicker" style="color:#f0fdf4;">Collection ouverte</p><h2>${escapeHtml(selected.name)}</h2><p>${escapeHtml(selected.description)}</p><div class="library-badge-row" style="margin-top:14px;"><span class="library-badge">${selected.stats.playlistCount} playlists</span><span class="library-badge">${selected.socials.likes} likes</span><span class="library-badge">${selected.socials.comments} commentaires</span>${selected.socials.avgRating != null ? `<span class="library-badge">note ${formatRating(selected.socials.avgRating)}/5</span>` : ""}</div>`;
   else dom.collectionHero.innerHTML = `<p class="library-kicker" style="color:#f0fdf4;">Bibliotheque</p><h2>Aucune collection chargee</h2><p>Connecte-toi puis recharge la bibliotheque pour commencer.</p>`;
   const editable = Boolean(selected?.isEditable) && state.viewMode === "collections";
   dom.addMediaButton.disabled = !editable;
@@ -729,7 +801,10 @@ function renderMainContent() {
   dom.mainContent.querySelectorAll("[data-remove-id]").forEach((button) => button.addEventListener("click", () => removeMediaFromCollection(getAllRows().find((item) => item.id === String(button.getAttribute("data-remove-id") || ""))).catch((error) => toast(error?.message || "Erreur", "Erreur"))));
 }
 
-function renderStats() { dom.statsGrid.innerHTML = `<div class="library-stat-card"><p>Collections</p><strong>${state.collections.length}</strong></div><div class="library-stat-card"><p>Favoris</p><strong>${state.favorites.size}</strong></div><div class="library-stat-card"><p>Doublons detectes</p><strong>${getDuplicateRows().length}</strong></div>`; }
+function renderStats() {
+  const stats = getLibraryStats();
+  dom.statsGrid.innerHTML = `<div class="library-stat-card"><p>Collections</p><strong>${state.collections.length}</strong></div><div class="library-stat-card"><p>Medias</p><strong>${stats.mediaCount}</strong></div><div class="library-stat-card"><p>Titres cumules</p><strong>${stats.trackCount}</strong></div><div class="library-stat-card"><p>Favoris</p><strong>${stats.favoriteCount}</strong></div><div class="library-stat-card"><p>Doublons detectes</p><strong>${stats.duplicateCount}</strong></div><div class="library-stat-card"><p>Engagement social</p><strong>${stats.engagementCount}</strong></div>`;
+}
 
 function renderPlayer() {
   const current = state.nowPlaying || defaultPlayerState();
@@ -783,7 +858,7 @@ function renderRecommendations() {
 
 function renderSocial() {
   const selected = getSelectedCollection();
-  dom.socialList.innerHTML = `<div class="library-list-card"><p style="margin:0;">❤ Liker la collection</p><small>${selected ? `${selected.socials.likes} likes actuellement` : "Collection requise"}</small></div><div class="library-list-card"><p style="margin:0;">💬 Commenter</p><small>Discussion sociale autour de la collection</small></div><div class="library-list-card"><p style="margin:0;">📤 Partager</p><small>Tes amis ecoutent surtout Night Drive et Afro Sunset cette semaine.</small></div>`;
+  dom.socialList.innerHTML = `<div class="library-list-card"><p style="margin:0;">❤ Liker la collection</p><small>${selected ? `${selected.socials.likes} likes actuellement` : "Collection requise"}</small></div><div class="library-list-card"><p style="margin:0;">💬 Commenter</p><small>${selected ? `${selected.socials.comments} commentaires et ${selected.socials.reviews} avis deja recenses` : "Discussion sociale autour de la collection"}</small></div><div class="library-list-card"><p style="margin:0;">📤 Partager</p><small>${selected ? `${selected.stats.youtubeCount} sources YouTube, ${selected.stats.spotifyCount} sources Spotify` : "Partage de collection indisponible sans selection"}</small></div>`;
 }
 
 function renderRightsBox() { dom.rightsList.innerHTML = `<div class="library-list-card"><p style="margin:0;">${isLoggedIn() ? "Actions de gestion autorisees" : "Actions de gestion bloquees"}</p><small>${isLoggedIn() ? "Creation, edition et suppression actives sur /collections." : "Connexion requise pour modifier les collections."}</small></div>`; }

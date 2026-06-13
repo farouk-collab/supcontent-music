@@ -404,7 +404,7 @@ function makeTile(item) {
     imageEl.decoding = "async";
     cover.appendChild(imageEl);
   } else {
-    cover.style.background = "linear-gradient(135deg, rgba(139,92,246,.55), rgba(34,197,94,.35))";
+    cover.style.background = "linear-gradient(135deg, rgba(var(--accent-rgb),.55), rgba(var(--accent2-rgb),.35))";
   }
 
   const meta = document.createElement("div");
