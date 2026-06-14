@@ -8,6 +8,7 @@ import { ShopScreen } from "./src/screens/ShopScreen";
 import { createApiClient, ApiError } from "./src/api/client";
 import { clearSession, loadSession, saveSession } from "./src/storage/session";
 import { API_BASE_URL } from "./src/config";
+import { extractGoogleOAuthTokens } from "./src/oauth.mjs";
 
 const GOOGLE_MOBILE_REDIRECT_URI = "supcontentmusic://auth/callback";
 
@@ -32,20 +33,22 @@ export default function App() {
   const [authError, setAuthError] = useState("");
   const [route, setRoute] = useState({ name: "shop", params: null });
 
+  const persistSession = useCallback(async (next) => {
+    setSession(next);
+    await saveSession(next);
+  }, []);
+
   const hydrateOauthSession = useCallback(
     async (url) => {
       if (!url) return false;
       try {
-        const parsed = new URL(url);
-        const accessToken = parsed.searchParams.get("accessToken");
-        const refreshToken = parsed.searchParams.get("refreshToken");
-        const provider = parsed.searchParams.get("oauth");
-        if (!accessToken || !refreshToken || provider !== "google") return false;
+        const tokens = extractGoogleOAuthTokens(url);
+        if (!tokens) return false;
 
-        const data = await api.me(accessToken);
+        const data = await api.me(tokens.accessToken);
         await persistSession({
-          accessToken,
-          refreshToken,
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken,
           user: data.user || null,
         });
         setAuthError("");
@@ -62,11 +65,6 @@ export default function App() {
 
   const navigate = useCallback((name, params = null) => {
     setRoute((current) => ({ name, params, previous: current.name }));
-  }, []);
-
-  const persistSession = useCallback(async (next) => {
-    setSession(next);
-    await saveSession(next);
   }, []);
 
   const logout = useCallback(async () => {

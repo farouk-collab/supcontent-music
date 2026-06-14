@@ -1361,8 +1361,10 @@ export function initializeRuntimeServices() {
     try {
       await ensureUsersTable();
       await ensureRefreshTokensTable();
+      await ensureFollowTables();
+      await ensureChatTables();
     } catch (err) {
-      console.error("Auth tables init failed (non-blocking):", (err as any)?.message || err);
+      console.error("Core tables init failed (non-blocking):", (err as any)?.message || err);
     }
 
     ensureCollectionsTables().catch((err) => {
@@ -1371,10 +1373,6 @@ export function initializeRuntimeServices() {
 
     ensureSocialTables().catch((err) => {
       console.error("Social tables init failed (non-blocking):", err?.message || err);
-    });
-
-    ensureFollowTables().catch((err) => {
-      console.error("Follow tables init failed (non-blocking):", err?.message || err);
     });
 
     ensureSpotifyLinksTable().catch((err) => {
@@ -1387,9 +1385,6 @@ export function initializeRuntimeServices() {
 
     ensureProfilePostsTable().catch((err) => {
       console.error("Profile posts table init failed (non-blocking):", err?.message || err);
-    });
-    ensureChatTables().catch((err) => {
-      console.error("Chat tables init failed (non-blocking):", err?.message || err);
     });
     ensureLiveTables().catch((err) => {
       console.error("Live tables init failed (non-blocking):", err?.message || err);
