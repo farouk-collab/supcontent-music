@@ -43,8 +43,6 @@
     .live-btn:hover{background:rgba(255,255,255,.12);}
     .live-btn.is-primary{background:linear-gradient(135deg, var(--accent2), var(--accent));border-color:transparent;color:var(--accent-contrast);}
     .live-btn.is-emerald{background:var(--accent2);border-color:var(--accent2);color:var(--accent-contrast, #04130d);}
-    .live-btn.is-danger{background:rgba(239,68,68,.18);border-color:rgba(248,113,113,.3);color:#fca5a5;}
-    .live-btn.is-danger:hover{background:rgba(239,68,68,.28);}
     .live-stage{position:relative;margin-top:18px;min-height:540px;border-radius:30px;border:1px solid rgba(255,255,255,.1);overflow:hidden;background:linear-gradient(135deg, rgba(var(--accent2-rgb),.22), rgba(0,0,0,.88), rgba(var(--accent-rgb),.18));box-shadow:inset 0 1px 0 rgba(255,255,255,.04),0 24px 60px rgba(0,0,0,.24);transition:min-height .25s ease;}
     .live-stage.is-expanded{min-height:720px;}
     .live-stage::before{content:"";position:absolute;inset:0;background:radial-gradient(circle at top left, rgba(255,255,255,.12), transparent 24%),linear-gradient(180deg, rgba(255,255,255,.02), transparent 40%);pointer-events:none;}
@@ -72,22 +70,6 @@
     .live-mini-card svg{width:18px;height:18px;display:block;color:#f5f5f5;}
     .live-actions-grid{margin-top:16px;display:grid;gap:10px;}
     .live-action-link{width:100%;border:1px solid rgba(255,255,255,.1);background:rgba(0,0,0,.2);color:#d4d4d8;border-radius:20px;padding:14px 16px;font-size:14px;text-align:left;cursor:pointer;}
-    /* Go Live button */
-    .live-go-btn{width:100%;margin-top:14px;padding:13px 18px;border-radius:24px;border:none;background:linear-gradient(135deg,var(--accent2),var(--accent));color:var(--accent-contrast);font-size:15px;font-weight:800;cursor:pointer;letter-spacing:.01em;transition:.18s ease;}
-    .live-go-btn:hover{opacity:.88;}
-    /* Modal */
-    .live-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.72);display:grid;place-items:center;padding:16px;backdrop-filter:blur(6px);}
-    .live-modal-card{width:100%;max-width:460px;border:1px solid rgba(255,255,255,.12);background:#0d1829;border-radius:32px;padding:28px 28px 24px;box-shadow:0 40px 80px rgba(0,0,0,.5);}
-    .live-modal-title{margin:0 0 22px;font-size:22px;font-weight:800;letter-spacing:-.02em;}
-    .live-modal-field{margin-bottom:16px;}
-    .live-modal-label{display:block;font-size:13px;color:var(--text-faint);margin-bottom:8px;font-weight:600;}
-    .live-modal-input{width:100%;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.06);color:#fff;border-radius:16px;padding:12px 14px;font-size:14px;outline:none;box-sizing:border-box;}
-    .live-modal-input:focus{border-color:rgba(var(--accent2-rgb),.5);}
-    .live-modal-radio-group{display:flex;gap:12px;}
-    .live-modal-radio{display:flex;align-items:center;gap:8px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);border-radius:14px;padding:10px 16px;cursor:pointer;font-size:14px;font-weight:600;color:#d4d4d8;}
-    .live-modal-radio:has(input:checked){border-color:rgba(var(--accent2-rgb),.5);background:rgba(var(--accent2-rgb),.12);color:#fff;}
-    .live-modal-radio input{accent-color:var(--accent2);}
-    .live-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:24px;}
     @media (max-width:1200px){.live-grid{grid-template-columns:1fr;}.live-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
     @media (max-width:760px){.live-header{flex-direction:column;padding:16px;border-radius:24px;}.live-feedback{min-width:0;width:100%;}.live-side-card,.live-center-card{border-radius:24px;padding:16px;}.live-stage{min-height:500px;border-radius:24px;}.live-stage.is-expanded{min-height:680px;}.live-overlay-comments{width:calc(100% - 32px);top:84px;}.live-mini-grid{grid-template-columns:1fr;}.live-stage-bottom{align-items:flex-start;}.live-bottom-actions{justify-content:flex-start;}}
   </style>
@@ -109,11 +91,11 @@
 
     <div class="live-grid">
       <aside class="live-side-card">
+        <div id="rooms"></div>
         <div class="live-row">
           <h2>Rooms en direct</h2>
-          <span id="liveRoomsCount" class="live-badge is-live">0 live</span>
+          <span id="liveRoomsCount" class="live-badge is-live">3 live</span>
         </div>
-        <button id="liveGoLiveBtn" class="live-go-btn" type="button">+ Lancer un live</button>
         <div id="liveRoomsList" class="live-list"></div>
       </aside>
 
@@ -122,16 +104,15 @@
           <div class="live-stage-head">
             <div>
               <div class="live-row" style="justify-content:flex-start;gap:8px;">
-                <h2 id="liveActiveTitle">—</h2>
-                <span id="liveVerifiedBadge" class="live-badge is-soft" hidden>Verifie</span>
+                <h2 id="liveActiveTitle">Afro Night Session</h2>
+                <span id="liveVerifiedBadge" class="live-badge is-soft">Verifie</span>
               </div>
-              <div id="liveActiveMeta" class="live-room-sub"></div>
+              <div id="liveActiveMeta" class="live-room-sub">Ayo.wav - Live DJ Set</div>
               <div id="liveActiveTags" class="live-tag-row"></div>
             </div>
             <div class="live-stage-actions">
               <button id="liveJoinBtn" class="live-btn is-primary" type="button">Rejoindre</button>
               <button id="liveFollowBtn" class="live-btn" type="button">Suivre l'host</button>
-              <button id="liveEndBtn" class="live-btn is-danger" type="button" hidden>Terminer le live</button>
             </div>
           </div>
 
@@ -139,15 +120,15 @@
             <div class="live-stage-media">
               <div>
                 <div id="liveStageVisual" aria-hidden="true"></div>
-                <p id="liveStageType">Selectionne une room</p>
+                <p id="liveStageType">Live video en cours</p>
               </div>
             </div>
 
             <div class="live-stage-top">
               <div class="live-top-pills">
                 <span class="live-badge is-live">live</span>
-                <span id="liveAudiencePill" class="live-badge is-soft"></span>
-                <span id="liveTrackPill" class="live-badge is-soft"></span>
+                <span id="liveAudiencePill" class="live-badge is-soft">1.8k viewers</span>
+                <span id="liveTrackPill" class="live-badge is-soft">Afro Sunset - Live Edit</span>
               </div>
             </div>
 
@@ -156,12 +137,12 @@
             <div class="live-stage-bottom">
               <div>
                 <div class="live-room-sub">Host principal</div>
-                <div id="liveHostName" class="live-room-title" style="font-size:24px;"></div>
-                <div id="liveCaption" class="live-caption" hidden></div>
+                <div id="liveHostName" class="live-room-title" style="font-size:24px;">Ayo.wav</div>
+                <div id="liveCaption" class="live-caption">Bienvenue dans la room, on monte en energie dans 20 secondes.</div>
               </div>
               <div class="live-bottom-actions">
                 <button id="liveLikeBtn" class="live-btn" type="button">Liker</button>
-                <button id="liveGiftBtn" class="live-btn" type="button">Cadeau</button>
+                <button id="liveGiftBtn" class="live-btn" type="button">Envoyer un cadeau</button>
                 <button id="liveCaptionBtn" class="live-btn is-emerald" type="button">Sous-titres</button>
                 <button id="liveChatToggleBtn" class="live-btn" type="button">Chat</button>
                 <button id="liveExpandBtn" class="live-btn" type="button">Agrandir</button>
@@ -170,7 +151,10 @@
 
             <div id="liveChatPanel" class="live-chat-panel" hidden>
               <div class="live-row" style="align-items:center;">
-                <div class="live-room-title" style="font-size:16px;">Chat du live</div>
+                <div>
+                  <div class="live-room-title" style="font-size:16px;">Chat du live</div>
+                  <div class="live-room-sub">Quand le live est agrandi, le chat apparait en bas.</div>
+                </div>
                 <button id="liveCloseChatBtn" class="live-btn" type="button">Fermer</button>
               </div>
               <div id="liveChatList" class="live-chat-list"></div>
@@ -217,49 +201,15 @@
           <h2>Actions live</h2>
           <div class="live-actions-grid">
             <button id="liveShareBtn" class="live-action-link" type="button">Partager la room</button>
-            <button id="liveReminderBtn" class="live-action-link" type="button">Ajouter aux rappels</button>
-            <button id="liveTrackBtn" class="live-action-link" type="button">Ouvrir la track jouée</button>
+            <button id="liveReminderBtn" class="live-action-link" type="button">Ajouter aux rappels live</button>
+            <button id="liveTrackBtn" class="live-action-link" type="button">Ouvrir la track jouee</button>
           </div>
         </section>
       </aside>
     </div>
   </div>
 
-  <!-- Modal Go Live -->
-  <div id="liveModal" class="live-modal-backdrop" hidden>
-    <div class="live-modal-card" role="dialog" aria-modal="true" aria-labelledby="liveModalHeading">
-      <h2 id="liveModalHeading" class="live-modal-title">Lancer un live</h2>
-      <div class="live-modal-field">
-        <label class="live-modal-label" for="liveModalTitle">Titre de ta room</label>
-        <input id="liveModalTitle" class="live-modal-input" type="text" placeholder="ex: Afro Night Session" maxlength="80" />
-      </div>
-      <div class="live-modal-field">
-        <label class="live-modal-label" for="liveModalCategory">Catégorie</label>
-        <select id="liveModalCategory" class="live-modal-input">
-          <option value="Live DJ Set">Live DJ Set</option>
-          <option value="Studio Room">Studio Room</option>
-          <option value="Open Mic">Open Mic</option>
-          <option value="Beatmaking">Beatmaking</option>
-          <option value="Autre">Autre</option>
-        </select>
-      </div>
-      <div class="live-modal-field">
-        <label class="live-modal-label">Type</label>
-        <div class="live-modal-radio-group">
-          <label class="live-modal-radio"><input type="radio" name="liveModalType" value="audio" checked /> Audio</label>
-          <label class="live-modal-radio"><input type="radio" name="liveModalType" value="video" /> Vidéo</label>
-        </div>
-      </div>
-      <div class="live-modal-actions">
-        <button id="liveModalCancel" class="live-btn" type="button">Annuler</button>
-        <button id="liveModalSubmit" class="live-go-btn" type="button" style="width:auto;margin:0;padding:12px 24px;">Lancer</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Hidden for JS compatibility -->
   <div id="liveValidation" hidden></div>
-
   <div id="toast" class="toast"></div>
   <script type="module" src="/radio-artiste/radio-artiste.js"></script>
   <script type="module" src="/noyau/footer.js"></script>
