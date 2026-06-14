@@ -4,8 +4,10 @@ import { requireAuth, type AuthedRequest } from "../middleware/requireAuth";
 
 const router = Router();
 
-function requireAdmin(req: AuthedRequest, res: any, next: any) {
-  if (!req.user || req.user.role !== "admin") {
+async function requireAdmin(req: AuthedRequest, res: any, next: any) {
+  if (!req.user) return res.status(403).json({ erreur: "Non authentifié" });
+  const r = await pool.query("SELECT role FROM users WHERE id = $1 LIMIT 1", [req.user.id]);
+  if (r.rows[0]?.role !== "admin") {
     return res.status(403).json({ erreur: "Accès réservé aux administrateurs" });
   }
   next();
