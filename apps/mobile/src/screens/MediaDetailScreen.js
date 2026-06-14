@@ -41,8 +41,24 @@ function Stars({ value, onSelect, size = 22 }) {
   );
 }
 
-function ReviewCard({ review, currentUserId, onVote, onDelete }) {
+function ReviewCard({ review, currentUserId, onVote, onDelete, onCreateComment, onDeleteComment, onVoteComment }) {
+  const [showCommentForm, setShowCommentForm] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const isOwn = review.user_id === currentUserId;
+  const comments = Array.isArray(review.comments) ? review.comments : [];
+
+  async function submitComment() {
+    if (!commentText.trim() || !onCreateComment) return;
+    setSubmitting(true);
+    try {
+      await onCreateComment(review.id, commentText.trim());
+      setCommentText("");
+      setShowCommentForm(false);
+    } catch {}
+    setSubmitting(false);
+  }
+
   return (
     <View style={s.reviewCard}>
       <View style={s.reviewHeader}>
@@ -57,17 +73,73 @@ function ReviewCard({ review, currentUserId, onVote, onDelete }) {
         <Pressable style={s.voteBtn} onPress={() => onVote(review.id, "down")}>
           <Text style={s.voteBtnText}>👎 {review.dislikes_count || 0}</Text>
         </Pressable>
+        {currentUserId && (
+          <Pressable style={s.voteBtn} onPress={() => setShowCommentForm((v) => !v)}>
+            <Text style={s.voteBtnText}>💬 {comments.length}</Text>
+          </Pressable>
+        )}
         {isOwn && (
           <Pressable style={[s.voteBtn, s.deleteBtnStyle]} onPress={() => onDelete(review.id)}>
             <Text style={s.voteBtnText}>Suppr.</Text>
           </Pressable>
         )}
       </View>
+
+      {comments.length > 0 && (
+        <View style={s.commentsBlock}>
+          {comments.map((c) => (
+            <View key={c.id} style={s.commentItem}>
+              <View style={s.commentHeader}>
+                <Text style={s.commentAuthor}>{c.display_name || "Utilisateur"}</Text>
+                {c.user_id === currentUserId && onDeleteComment ? (
+                  <Pressable onPress={() => onDeleteComment(c.id)}>
+                    <Text style={s.commentDelete}>✕</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              <Text style={s.commentBody}>{c.body || c.content}</Text>
+              <View style={s.commentFooter}>
+                <Pressable onPress={() => onVoteComment && onVoteComment(c.id, "up")}>
+                  <Text style={s.commentVote}>👍 {c.likes_count || 0}</Text>
+                </Pressable>
+                <Pressable onPress={() => onVoteComment && onVoteComment(c.id, "down")}>
+                  <Text style={s.commentVote}>👎 {c.dislikes_count || 0}</Text>
+                </Pressable>
+              </View>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {showCommentForm && (
+        <View style={s.commentForm}>
+          <TextInput
+            style={s.commentInput}
+            value={commentText}
+            onChangeText={setCommentText}
+            placeholder="Votre commentaire..."
+            placeholderTextColor="#546a8f"
+            multiline
+          />
+          <View style={{ flexDirection: "row", gap: 8, marginTop: 8 }}>
+            <Pressable style={[s.voteBtn, { flex: 1 }]} onPress={() => setShowCommentForm(false)}>
+              <Text style={[s.voteBtnText, { textAlign: "center" }]}>Annuler</Text>
+            </Pressable>
+            <Pressable
+              style={[s.voteBtn, { flex: 1, backgroundColor: "#3f83ff", borderColor: "#3f83ff" }, (!commentText.trim() || submitting) && { opacity: 0.5 }]}
+              onPress={submitComment}
+              disabled={!commentText.trim() || submitting}
+            >
+              <Text style={[s.voteBtnText, { textAlign: "center" }]}>{submitting ? "..." : "Envoyer"}</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
 
-export function MediaDetailScreen({ mediaType, mediaId, onLoad, onLoadReviews, onCreateReview, onDeleteReview, onVoteReview, onAddToStatus, session }) {
+export function MediaDetailScreen({ mediaType, mediaId, onLoad, onLoadReviews, onCreateReview, onDeleteReview, onVoteReview, onCreateReviewComment, onDeleteComment, onVoteComment, onAddToStatus, session }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [data, setData] = useState(null);
@@ -248,6 +320,9 @@ export function MediaDetailScreen({ mediaType, mediaId, onLoad, onLoadReviews, o
                   currentUserId={session?.user?.id}
                   onVote={handleVote}
                   onDelete={handleDelete}
+                  onCreateComment={onCreateReviewComment ? (reviewId, body) => onCreateReviewComment(reviewId, body).then(loadReviews) : null}
+                  onDeleteComment={onDeleteComment ? (commentId) => onDeleteComment(commentId).then(loadReviews) : null}
+                  onVoteComment={onVoteComment ? (commentId, vote) => onVoteComment(commentId, vote).then(loadReviews) : null}
                 />
               ))
             )}
@@ -362,4 +437,14 @@ const s = StyleSheet.create({
   modalBtnText: { textAlign: "center", color: "#fff", fontWeight: "800" },
   statusBtn: { backgroundColor: "#132035", borderWidth: 1, borderColor: "#2a4470", borderRadius: 10, paddingVertical: 12, marginTop: 8 },
   statusBtnText: { textAlign: "center", color: "#c8deff", fontWeight: "700" },
+  commentsBlock: { marginTop: 10, borderTopWidth: 1, borderTopColor: "#1a2a45", paddingTop: 8 },
+  commentItem: { marginBottom: 6, backgroundColor: "#060e1d", borderRadius: 8, padding: 8 },
+  commentHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 3 },
+  commentAuthor: { color: "#7a9fd4", fontWeight: "800", fontSize: 12 },
+  commentDelete: { color: "#6b2535", fontSize: 12, paddingHorizontal: 6, paddingVertical: 2 },
+  commentBody: { color: "#8ea8d0", fontSize: 13, lineHeight: 17 },
+  commentFooter: { flexDirection: "row", gap: 12, marginTop: 5 },
+  commentVote: { color: "#546a8f", fontSize: 11 },
+  commentForm: { marginTop: 8, borderTopWidth: 1, borderTopColor: "#1a2a45", paddingTop: 8 },
+  commentInput: { borderWidth: 1, borderColor: "#2a3550", borderRadius: 8, backgroundColor: "#0a1020", color: "#f0f5ff", paddingHorizontal: 10, paddingVertical: 8, fontSize: 13 },
 });

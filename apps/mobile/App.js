@@ -203,6 +203,15 @@ export default function App() {
   const voteReview = useCallback(async (reviewId, vote) =>
     callAuthed((token) => api.voteReview(token, reviewId, vote)), [api, callAuthed]);
 
+  const createReviewComment = useCallback(async (reviewId, body) =>
+    callAuthed((token) => api.createReviewComment(token, reviewId, body)), [api, callAuthed]);
+
+  const deleteComment = useCallback(async (commentId) =>
+    callAuthed((token) => api.deleteComment(token, commentId)), [api, callAuthed]);
+
+  const voteComment = useCallback(async (commentId, vote) =>
+    callAuthed((token) => api.voteComment(token, commentId, vote)), [api, callAuthed]);
+
   // Add to status collection
   const addToStatus = useCallback(async (status, mediaType, mediaId) =>
     callAuthed((token) => api.addToStatus(token, status, mediaType, mediaId)), [api, callAuthed]);
@@ -304,6 +313,9 @@ export default function App() {
             onCreateReview={createReview}
             onDeleteReview={deleteReview}
             onVoteReview={voteReview}
+            onCreateReviewComment={createReviewComment}
+            onDeleteComment={deleteComment}
+            onVoteComment={voteComment}
             onAddToStatus={addToStatus}
             session={session}
           />

@@ -263,6 +263,26 @@ export function createApiClient() {
         body: JSON.stringify({ vote }),
       }),
 
+    createReviewComment: (accessToken, reviewId, body) =>
+      request(`/social/reviews/${encodeURIComponent(reviewId)}/comments`, {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ body }),
+      }),
+
+    deleteComment: (accessToken, commentId) =>
+      request(`/social/comments/${encodeURIComponent(commentId)}`, {
+        method: "DELETE",
+        headers: authHeaders(accessToken),
+      }),
+
+    voteComment: (accessToken, commentId, vote) =>
+      request(`/social/comments/${encodeURIComponent(commentId)}/vote`, {
+        method: "POST",
+        headers: authHeaders(accessToken, { "Content-Type": "application/json" }),
+        body: JSON.stringify({ vote }),
+      }),
+
     // Follows
     followUser: (accessToken, userId) =>
       request(`/follows/${encodeURIComponent(userId)}`, {
