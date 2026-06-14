@@ -13,10 +13,9 @@ config.resolver.nodeModulesPaths = [
   path.resolve(monorepoRoot, "node_modules"),
 ];
 
-// Tell Metro to resolve symlinks/junctions to their real path so that
-// apps/mobile/node_modules/react-native (junction) and
-// node_modules/react-native (original) are treated as ONE module,
-// not two separate instances.
-config.resolver.unstable_enableSymlinks = true;
+// Required: prevents Metro from finding react-native from two paths
+// (the junction in apps/mobile/node_modules AND root/node_modules),
+// which would create two module instances and break the app.
+config.resolver.disableHierarchicalLookup = true;
 
 module.exports = config;
