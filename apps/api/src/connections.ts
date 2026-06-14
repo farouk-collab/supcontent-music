@@ -1,7 +1,49 @@
-import { Pool } from "pg";
+import { Pool, type PoolConfig } from "pg";
 import Redis from "ioredis";
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+function buildPoolConfig(): PoolConfig {
+  const rawConnectionString = String(process.env.DATABASE_URL || "").trim();
+  if (!rawConnectionString) return {};
+
+  let connectionString = rawConnectionString;
+  let ssl: PoolConfig["ssl"] | undefined;
+
+  try {
+    const parsed = new URL(rawConnectionString);
+    const sslMode = String(parsed.searchParams.get("sslmode") || "").toLowerCase();
+    const host = String(parsed.hostname || "").toLowerCase();
+    const hostedPg =
+      host.endsWith(".supabase.co") ||
+      host.includes(".pooler.supabase.com") ||
+      host.includes(".neon.tech");
+
+    if (sslMode) {
+      ssl =
+        sslMode === "disable"
+          ? false
+          : hostedPg
+            ? { rejectUnauthorized: false }
+            : { rejectUnauthorized: sslMode === "verify-full" };
+    } else if (hostedPg) {
+      ssl = { rejectUnauthorized: false };
+    }
+
+    // node-postgres re-parses sslmode from the URL and can override the explicit ssl object.
+    // Strip SSL query flags from the connection string once we've derived the intended behavior.
+    parsed.searchParams.delete("sslmode");
+    parsed.searchParams.delete("sslcert");
+    parsed.searchParams.delete("sslkey");
+    parsed.searchParams.delete("sslrootcert");
+    parsed.searchParams.delete("sslcrl");
+    connectionString = parsed.toString();
+  } catch {
+    // Fall back to the raw connection string if URL parsing fails.
+  }
+
+  return ssl === undefined ? { connectionString } : { connectionString, ssl };
+}
+
+export const pool = new Pool(buildPoolConfig());
 
 function createNoopRedis() {
   return {
