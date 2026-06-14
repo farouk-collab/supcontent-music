@@ -73,19 +73,11 @@ function normalizeThread(thread, index = 0) {
 }
 
 function loadPersistedState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? JSON.parse(raw) : {};
-    const threads = Array.isArray(parsed?.threads) ? parsed.threads.map(normalizeThread) : clone(BASE_THREADS).map(normalizeThread);
-    return {
-      threads,
-      selectedThreadId: "",
-      notifications: sanitizeNotifications(parsed?.notifications || DEFAULT_NOTIFICATIONS),
-    };
-  } catch {
-    const threads = clone(BASE_THREADS).map(normalizeThread);
-    return { threads, selectedThreadId: "", notifications: sanitizeNotifications(DEFAULT_NOTIFICATIONS) };
-  }
+  return {
+    threads: clone(BASE_THREADS).map(normalizeThread),
+    selectedThreadId: "",
+    notifications: sanitizeNotifications(DEFAULT_NOTIFICATIONS),
+  };
 }
 
 const persisted = loadPersistedState();
@@ -135,18 +127,8 @@ const refs = {
 };
 
 function persistState() {
-  try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({
-        threads: state.threads,
-        selectedThreadId: state.selectedThreadId,
-        notifications: state.notifications,
-      })
-    );
-  } catch {
-    // ignore
-  }
+  // Intentionally does not persist threads or notifications — they are per-user
+  // and must always come from the API to prevent data leaks across accounts.
 }
 
 function selectedThread() {
