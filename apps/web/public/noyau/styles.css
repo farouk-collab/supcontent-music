@@ -2447,8 +2447,8 @@ button.btn[data-car-prev], button.btn[data-car-next]{
   display: grid;
   place-items: center;
   font-weight: 700;
-  background: #2563eb;
-  color: #fff;
+  background: var(--accent2);
+  color: var(--accent-contrast, #04130d);
 }
 
 .swipe-cover{
@@ -3122,8 +3122,8 @@ button.btn[data-car-prev], button.btn[data-car-next]{
   width: 34px;
   height: 34px;
   border-radius: 999px;
-  background: #2563eb;
-  color: #fff;
+  background: var(--accent2);
+  color: var(--accent-contrast, #04130d);
   display: grid;
   place-items: center;
   font-weight: 800;
