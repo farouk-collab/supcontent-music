@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Linking,
   Modal,
   Pressable,
   ScrollView,
@@ -222,6 +223,14 @@ export function MediaDetailScreen({ mediaType, mediaId, onLoad, onLoadReviews, o
               </Pressable>
             )}
           </View>
+          {data?.external_urls?.spotify ? (
+            <Pressable
+              style={s.spotifyBtn}
+              onPress={() => Linking.openURL(data.external_urls.spotify)}
+            >
+              <Text style={s.spotifyBtnText}>▶ Ouvrir dans Spotify</Text>
+            </Pressable>
+          ) : null}
 
           {statusSuccess ? <Text style={s.success}>{statusSuccess}</Text> : null}
 
@@ -320,7 +329,15 @@ const s = StyleSheet.create({
   statBox: { flex: 1, backgroundColor: "#0d1e36", borderRadius: 10, padding: 10, alignItems: "center" },
   statNum: { color: "#77c3ff", fontWeight: "900", fontSize: 20 },
   statLabel: { color: "#7a95c5", fontSize: 11, marginTop: 2 },
-  actionsRow: { flexDirection: "row", gap: 10, paddingHorizontal: 16, marginBottom: 4 },
+  actionsRow: { flexDirection: "row", gap: 10, paddingHorizontal: 16, marginBottom: 10 },
+  spotifyBtn: {
+    marginHorizontal: 16,
+    marginBottom: 4,
+    backgroundColor: "#1DB954",
+    borderRadius: 10,
+    paddingVertical: 11,
+  },
+  spotifyBtnText: { textAlign: "center", color: "#fff", fontWeight: "800", fontSize: 14 },
   actionBtn: { flex: 1, backgroundColor: "#1e3356", borderRadius: 10, paddingVertical: 11, borderWidth: 1, borderColor: "#2a4470" },
   actionBtnPrimary: { backgroundColor: "#3f83ff", borderColor: "#3f83ff" },
   actionBtnText: { textAlign: "center", color: "#fff", fontWeight: "800" },

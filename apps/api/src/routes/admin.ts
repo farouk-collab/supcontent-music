@@ -27,7 +27,9 @@ async function ensureReportsTables() {
   `);
 }
 
-ensureReportsTables().catch((e) => console.error("Reports table init failed:", e?.message));
+setTimeout(() => {
+  ensureReportsTables().catch((e) => console.error("Reports table init failed:", e?.message));
+}, 3000);
 
 // Any user can report a review
 router.post("/reviews/:reviewId/report", requireAuth, async (req: AuthedRequest, res) => {

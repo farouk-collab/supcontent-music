@@ -13,7 +13,7 @@ import {
 const TYPES = ["track", "album", "artist"];
 
 export function SearchScreen({ onSearch, onOpenDetail }) {
-  const [q, setQ] = useState("daft punk");
+  const [q, setQ] = useState("");
   const [type, setType] = useState("artist");
   const [loading, setLoading] = useState(false);
   const [errorText, setErrorText] = useState("");
@@ -37,13 +37,15 @@ export function SearchScreen({ onSearch, onOpenDetail }) {
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.heading}>Search</Text>
+      <Text style={styles.heading}>Recherche</Text>
       <TextInput
         value={q}
         onChangeText={setQ}
-        placeholder="Search artists, tracks, albums"
+        placeholder="Artistes, titres, albums..."
         placeholderTextColor="#6c7a96"
         style={styles.input}
+        returnKeyType="search"
+        onSubmitEditing={submit}
       />
 
       <View style={styles.typesRow}>
@@ -62,7 +64,7 @@ export function SearchScreen({ onSearch, onOpenDetail }) {
         onPress={submit}
         style={[styles.searchBtn, (!canSearch || loading) && styles.searchBtnDisabled]}
       >
-        <Text style={styles.searchBtnText}>Run Search</Text>
+        <Text style={styles.searchBtnText}>Rechercher</Text>
       </Pressable>
 
       {loading ? <ActivityIndicator style={{ marginTop: 10 }} color="#77c3ff" /> : null}
@@ -89,7 +91,7 @@ export function SearchScreen({ onSearch, onOpenDetail }) {
           </Pressable>
         )}
         ListEmptyComponent={
-          !loading ? <Text style={styles.empty}>No results yet. Start a search.</Text> : null
+          !loading ? <Text style={styles.empty}>Aucun résultat. Lancez une recherche.</Text> : null
         }
       />
     </View>

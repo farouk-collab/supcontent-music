@@ -267,7 +267,11 @@ export default function App() {
 
       <View style={styles.content}>
         {route.name === "feed" ? (
-          <FeedScreen onLoadFeed={loadFeed} onOpenDetail={(type, id) => navigate("detail", { type, id })} />
+          <FeedScreen
+            onLoadFeed={loadFeed}
+            onOpenDetail={(type, id) => navigate("detail", { type, id })}
+            onDiscover={searchMedia}
+          />
         ) : null}
 
         {route.name === "search" ? (
