@@ -79,12 +79,12 @@ function loadPersistedState() {
     const threads = Array.isArray(parsed?.threads) ? parsed.threads.map(normalizeThread) : clone(BASE_THREADS).map(normalizeThread);
     return {
       threads,
-      selectedThreadId: String(parsed?.selectedThreadId || threads[0]?.id || ""),
+      selectedThreadId: "",
       notifications: sanitizeNotifications(parsed?.notifications || DEFAULT_NOTIFICATIONS),
     };
   } catch {
     const threads = clone(BASE_THREADS).map(normalizeThread);
-    return { threads, selectedThreadId: threads[0]?.id || "", notifications: sanitizeNotifications(DEFAULT_NOTIFICATIONS) };
+    return { threads, selectedThreadId: "", notifications: sanitizeNotifications(DEFAULT_NOTIFICATIONS) };
   }
 }
 
@@ -93,7 +93,7 @@ const state = {
   notificationsOpen: false,
   notifications: persisted.notifications,
   threads: persisted.threads,
-  selectedThreadId: persisted.selectedThreadId || persisted.threads[0]?.id || "",
+  selectedThreadId: "",
   feedback: "Chargement des discussions...",
   invites: [],
   remoteMode: false,
@@ -150,7 +150,8 @@ function persistState() {
 }
 
 function selectedThread() {
-  return state.threads.find((thread) => thread.id === state.selectedThreadId) || state.threads[0] || null;
+  if (!state.selectedThreadId) return null;
+  return state.threads.find((thread) => thread.id === state.selectedThreadId) || null;
 }
 
 function updateFeedback(text) {
@@ -841,8 +842,8 @@ async function loadRealMatchesAndInvites() {
       state.threads = remoteThreads.map((item) => mapRemoteThread(item, currentMessagesById.get(String(item?.id || "")) || []));
       syncNotificationsFromThreads(state.threads);
       applyQueryThreadTarget();
-      if (!state.threads.some((thread) => thread.id === state.selectedThreadId)) {
-        state.selectedThreadId = state.threads[0]?.id || "";
+      if (state.selectedThreadId && !state.threads.some((thread) => thread.id === state.selectedThreadId)) {
+        state.selectedThreadId = "";
       }
     } else {
       state.remoteMode = false;
@@ -891,8 +892,8 @@ async function loadRealMatchesAndInvites() {
       ? `Conversations enrichies depuis ${state.remoteMode ? "le backend chat" : "les matchs et invitations"}`
       : "Aucun match ni invitation a synchroniser pour le moment";
 
-    if (!state.threads.some((thread) => thread.id === state.selectedThreadId)) {
-      state.selectedThreadId = state.threads[0]?.id || "";
+    if (state.selectedThreadId && !state.threads.some((thread) => thread.id === state.selectedThreadId)) {
+      state.selectedThreadId = "";
     }
     await loadNotificationsFromApi();
     persistState();
@@ -913,7 +914,7 @@ async function pollChatState() {
   if (currentThreadId) {
     state.selectedThreadId = state.threads.some((thread) => thread.id === currentThreadId)
       ? currentThreadId
-      : state.threads[0]?.id || "";
+      : "";
   }
   if (state.selectedThreadId) {
     await loadThreadMessages(state.selectedThreadId).catch(() => {});
@@ -1032,7 +1033,7 @@ function bindEvents() {
 
 async function main() {
   state.threads = state.threads.map(normalizeThread);
-  if (!state.selectedThreadId) state.selectedThreadId = state.threads[0]?.id || "";
+  // No auto-select: user clicks a conversation to open it
   applyQueryThreadTarget();
   render();
   bindEvents();
