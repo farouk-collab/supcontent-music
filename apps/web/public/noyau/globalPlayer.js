@@ -472,11 +472,8 @@ async function playYouTube(state) {
     events: {
       onReady: () => {
         const targetVolume = Math.round(Math.max(0, Math.min(1, Number(volEl?.value || 1))) * 100);
-        try {
-          ytPlayer?.setVolume?.(targetVolume);
-        } catch {
-          // ignore
-        }
+        try { ytPlayer?.setVolume?.(targetVolume); } catch { /* ignore */ }
+        try { ytPlayer?.unMute?.(); } catch { /* ignore */ }
 
         if (listId && !videoId && ytPlayer?.loadPlaylist) {
           try {
@@ -486,21 +483,24 @@ async function playYouTube(state) {
               index: 0,
               startSeconds: Math.max(0, Math.floor(Number(state.time || 0))),
             });
-          } catch {
-            // ignore
-          }
+          } catch { /* ignore */ }
         }
 
         if (state.playing) {
-          try {
-            ytPlayer?.playVideo?.();
-          } catch {
-            // ignore
-          }
+          try { ytPlayer?.playVideo?.(); } catch { /* ignore */ }
         }
         snapshot();
       },
-      onStateChange: () => snapshot(),
+      onStateChange: (event) => {
+        // Re-assert volume/unmute when playback starts (state 1=playing, 3=buffering)
+        // because some browsers auto-mute embedded players on first load.
+        if (event?.data === 1 || event?.data === 3) {
+          const vol = Math.round(Math.max(0, Math.min(1, Number(volEl?.value || 1))) * 100);
+          try { ytPlayer?.unMute?.(); } catch { /* ignore */ }
+          try { ytPlayer?.setVolume?.(vol); } catch { /* ignore */ }
+        }
+        snapshot();
+      },
     },
   });
 

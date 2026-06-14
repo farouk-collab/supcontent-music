@@ -883,13 +883,14 @@ async function loadEmbeddedImportLink(urlOverride = "") {
     return;
   }
 
-  let data = null;
-  try {
-    const response = await apiFetch(`/search-hub/import/parse?url=${encodeURIComponent(url)}`);
-    data = response?.item || null;
-  } catch (error) {
-    data = parseEmbeddedMediaLink(url);
-    if (!data) {
+  // Parse locally first (no fetch) to keep the user-gesture context alive.
+  // This matters because browsers block YouTube autoplay when called outside a gesture.
+  let data = parseEmbeddedMediaLink(url);
+  if (!data) {
+    try {
+      const response = await apiFetch(`/search-hub/import/parse?url=${encodeURIComponent(url)}`);
+      data = response?.item || null;
+    } catch (error) {
       showImportPlayerError(error?.message || "Lien non reconnu. Utilise YouTube ou Spotify.");
       return;
     }
