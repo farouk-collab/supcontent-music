@@ -696,8 +696,18 @@ async function submitGoLive() {
     toast(`Live lancé : ${title}`, "Live");
     render();
   } catch (error) {
-    setFeedback(error?.message || "Impossible de lancer le live");
-    toast(error?.message || "Erreur lors du lancement", "Erreur");
+    closeGoLiveModal();
+    const msg = error?.message || "Impossible de lancer le live";
+    const isAuthError = error?.status === 401 || msg.toLowerCase().includes("token") || msg.toLowerCase().includes("connect");
+    if (isAuthError) {
+      toast("Connecte-toi d'abord pour lancer un live.", "Connexion requise");
+      window.setTimeout(() => {
+        window.location.href = `/connexion/connexion.html?next=${encodeURIComponent(window.location.pathname)}`;
+      }, 800);
+    } else {
+      setFeedback(msg);
+      toast(msg, "Erreur");
+    }
   } finally {
     if (refs.modalSubmit) {
       refs.modalSubmit.textContent = "Lancer";
