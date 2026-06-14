@@ -1,7 +1,7 @@
 import { getLanguage, t } from "/noyau/i18n.js";
 
 const PAGE_TITLES = {
-  accueil: "home",
+  // accueil excluded: home page has its own rich header (.home-topbar)
   recherche: "search",
   swipe: "swipe",
   chat: "chat",
