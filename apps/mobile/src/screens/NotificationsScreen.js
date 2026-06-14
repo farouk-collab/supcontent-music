@@ -65,6 +65,11 @@ export function NotificationsScreen({ onLoadNotifications, onFollowUser, onNavig
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    const id = setInterval(() => { load(false); }, 30000);
+    return () => clearInterval(id);
+  }, [load]);
+
   async function handleFollow(userId) {
     try {
       await onFollowUser(userId);
