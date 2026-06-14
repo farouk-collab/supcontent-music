@@ -501,6 +501,14 @@ async function playYouTube(state) {
         }
         snapshot();
       },
+      onError: (event) => {
+        // 101 / 150 = embedding disabled by video owner → open on YouTube directly
+        if (event?.data === 101 || event?.data === 150 || event?.data === 100) {
+          const ytUrl = String(state.url || "").trim();
+          if (ytUrl) window.open(ytUrl, "_blank", "noopener,noreferrer");
+          stop();
+        }
+      },
     },
   });
 
