@@ -1,15 +1,7 @@
 import { getLanguage, t } from "/noyau/i18n.js";
 
-const PAGE_TITLES = {
-  // accueil excluded: home page has its own rich header (.home-topbar)
-  recherche: "search",
-  swipe: "swipe",
-  chat: "chat",
-  biblio: "library",
-  profil: "profile",
-  live: "live",
-  boutique: "shop",
-};
+// All pages have their own native headers — shell header disabled everywhere
+const PAGE_TITLES = {};
 
 const PAGE_DESCRIPTIONS = {
   fr: {
