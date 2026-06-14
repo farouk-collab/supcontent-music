@@ -195,6 +195,59 @@ router.get("/rooms", async (req, res) => {
   });
 });
 
+router.post("/rooms", requireAuth, async (req: AuthedRequest, res) => {
+  const userId = String(req.user?.id || "");
+  const title = String(req.body?.title || "").trim();
+  const category = String(req.body?.category || "Live").trim();
+  const liveType = ["audio", "video"].includes(String(req.body?.live_type || "")) ? String(req.body.live_type) : "audio";
+
+  if (!title) return res.status(400).json({ erreur: "titre_requis" });
+
+  const userRes = await pool.query(`SELECT display_name, username FROM users WHERE id = $1 LIMIT 1`, [userId]);
+  const user = userRes.rows[0];
+  if (!user) return res.status(404).json({ erreur: "utilisateur_introuvable" });
+
+  const hostName = String(user.display_name || user.username || "Host");
+  const hostUsername = String(user.username || "host");
+  const roomId = randomUUID();
+  const slug = `${hostUsername.toLowerCase().replace(/[^a-z0-9]/g, "-")}-${Date.now()}`;
+
+  await pool.query(
+    `
+      INSERT INTO live_rooms (id, slug, title, host_user_id, host_name, host_username, host_verified, category, live_type, track_title, tags, cover_gradient, base_listeners_count, base_likes_count, is_live, scheduled_for, captions_text, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, false, $7, $8, '', '[]'::jsonb, 'emerald-fuchsia', 0, 0, true, null, null, NOW())
+    `,
+    [roomId, slug, title, userId, hostName, hostUsername, category, liveType]
+  );
+
+  await pool.query(
+    `
+      INSERT INTO live_room_memberships (room_id, user_id, joined, last_seen_at)
+      VALUES ($1, $2, TRUE, NOW())
+      ON CONFLICT (room_id, user_id) DO UPDATE SET joined = TRUE, last_seen_at = NOW()
+    `,
+    [roomId, userId]
+  );
+
+  const data = await readRooms(userId);
+  const room = data.rooms.find((r) => r.id === roomId) || null;
+  return res.status(201).json({ ok: true, room });
+});
+
+router.delete("/rooms/:roomId", requireAuth, async (req: AuthedRequest, res) => {
+  const roomId = String(req.params.roomId || "");
+  const userId = String(req.user?.id || "");
+  if (!isUuid(roomId)) return res.status(400).json({ erreur: "room_id_invalide" });
+
+  const roomRes = await pool.query(`SELECT id, title, host_user_id FROM live_rooms WHERE id = $1 LIMIT 1`, [roomId]);
+  const room = roomRes.rows[0];
+  if (!room) return res.status(404).json({ erreur: "room_introuvable" });
+  if (String(room.host_user_id || "") !== userId) return res.status(403).json({ erreur: "non_autorise" });
+
+  await pool.query(`DELETE FROM live_rooms WHERE id = $1`, [roomId]);
+  return res.json({ ok: true, room_id: roomId, ended: true });
+});
+
 router.post("/rooms/:roomId/join", requireAuth, async (req: AuthedRequest, res) => {
   const roomId = String(req.params.roomId || "");
   const userId = String(req.user?.id || "");

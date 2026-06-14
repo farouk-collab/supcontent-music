@@ -1,4 +1,14 @@
-import { apiFetch, escapeHtml, requireLogin, toast } from "/noyau/app.js";
+import { apiFetch, escapeHtml, requireLogin, toast, getTokens } from "/noyau/app.js";
+
+function getCurrentUserId() {
+  const { accessToken } = getTokens();
+  if (!accessToken) return null;
+  try {
+    return JSON.parse(atob(accessToken.split(".")[1]))?.sub || null;
+  } catch {
+    return null;
+  }
+}
 
 const FALLBACK_LIVE_ROOMS = [
   {
@@ -121,6 +131,13 @@ const refs = {
   feedback: document.querySelector("#liveFeedback"),
   roomsCount: document.querySelector("#liveRoomsCount"),
   roomsList: document.querySelector("#liveRoomsList"),
+  goLiveBtn: document.querySelector("#liveGoLiveBtn"),
+  modal: document.querySelector("#liveModal"),
+  modalTitle: document.querySelector("#liveModalTitle"),
+  modalCategory: document.querySelector("#liveModalCategory"),
+  modalCancel: document.querySelector("#liveModalCancel"),
+  modalSubmit: document.querySelector("#liveModalSubmit"),
+  endBtn: document.querySelector("#liveEndBtn"),
   scheduledList: document.querySelector("#liveScheduledList"),
   activeTitle: document.querySelector("#liveActiveTitle"),
   activeMeta: document.querySelector("#liveActiveMeta"),
@@ -336,6 +353,9 @@ function renderActiveRoom() {
   refs.joinBtn.textContent = membership.joined ? "Dans la room" : "Rejoindre";
   refs.followBtn.textContent = membership.is_following_host ? "Suivi" : "Suivre l'host";
   refs.followBtn.classList.toggle("is-emerald", Boolean(membership.is_following_host));
+  const isMyRoom = room.host_user_id && room.host_user_id === getCurrentUserId();
+  refs.endBtn.hidden = !isMyRoom;
+  refs.joinBtn.hidden = Boolean(isMyRoom);
   refs.audiencePill.textContent = `${formatAudience(room.listeners)} viewers`;
   refs.trackPill.textContent = room.track || "Track en cours";
   refs.hostName.textContent = room.host;
@@ -639,6 +659,70 @@ async function cycleCameraView() {
   setFeedback(`Vue changee : ${next}`);
 }
 
+function openGoLiveModal() {
+  if (!requireLogin()) return;
+  if (refs.modalTitle) refs.modalTitle.value = "";
+  if (refs.modal) refs.modal.hidden = false;
+  refs.modalTitle?.focus();
+}
+
+function closeGoLiveModal() {
+  if (refs.modal) refs.modal.hidden = true;
+}
+
+async function submitGoLive() {
+  const title = String(refs.modalTitle?.value || "").trim();
+  if (!title) {
+    refs.modalTitle?.focus();
+    return;
+  }
+  const category = String(refs.modalCategory?.value || "Live DJ Set");
+  const liveType = document.querySelector("input[name='liveModalType']:checked")?.value || "audio";
+
+  refs.modalSubmit.textContent = "Lancement...";
+  refs.modalSubmit.disabled = true;
+
+  try {
+    const data = await apiFetch("/live/rooms", {
+      method: "POST",
+      body: JSON.stringify({ title, category, live_type: liveType }),
+    });
+    if (!data?.room) throw new Error("Room non creee");
+    closeGoLiveModal();
+    state.rooms = [data.room, ...state.rooms.filter((r) => r.id !== data.room.id)];
+    state.usingFallback = false;
+    state.activeRoomId = data.room.id;
+    setFeedback(`Ton live "${title}" est en direct !`);
+    toast(`Live lancé : ${title}`, "Live");
+    render();
+  } catch (error) {
+    setFeedback(error?.message || "Impossible de lancer le live");
+    toast(error?.message || "Erreur lors du lancement", "Erreur");
+  } finally {
+    if (refs.modalSubmit) {
+      refs.modalSubmit.textContent = "Lancer";
+      refs.modalSubmit.disabled = false;
+    }
+  }
+}
+
+async function endLive() {
+  const room = activeRoom();
+  if (!room) return;
+  if (!confirm(`Terminer le live "${room.title}" ?`)) return;
+
+  try {
+    await apiFetch(`/live/rooms/${encodeURIComponent(room.id)}`, { method: "DELETE" });
+    state.rooms = state.rooms.filter((r) => r.id !== room.id);
+    state.activeRoomId = state.rooms[0]?.id || "";
+    setFeedback("Ton live est terminé.");
+    toast("Live terminé", "Live");
+    render();
+  } catch (error) {
+    setFeedback(error?.message || "Impossible de terminer le live");
+  }
+}
+
 function bindEvents() {
   refs.roomsList.addEventListener("click", (event) => {
     const button = event.target.closest("[data-room-id]");
@@ -646,6 +730,13 @@ function bindEvents() {
     switchRoom(button.getAttribute("data-room-id"));
   });
 
+  refs.goLiveBtn?.addEventListener("click", openGoLiveModal);
+  refs.modalCancel?.addEventListener("click", closeGoLiveModal);
+  refs.modalSubmit?.addEventListener("click", submitGoLive);
+  refs.modalTitle?.addEventListener("keydown", (e) => { if (e.key === "Enter") submitGoLive(); });
+  refs.modal?.addEventListener("click", (e) => { if (e.target === refs.modal) closeGoLiveModal(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeGoLiveModal(); });
+  refs.endBtn?.addEventListener("click", endLive);
   refs.joinBtn.addEventListener("click", joinRoom);
   refs.followBtn.addEventListener("click", toggleFollowHost);
   refs.likeBtn.addEventListener("click", toggleLikeLive);
