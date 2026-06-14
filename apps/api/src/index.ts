@@ -13,6 +13,8 @@ import { pool, redis } from "./connections";
 import { ensureCollectionsTables } from "./db/collections";
 import { ensureSocialTables } from "./db/social";
 import { ensureFollowTables } from "./db/follows";
+import { ensureUsersTable } from "./db/users";
+import { ensureRefreshTokensTable } from "./db/refreshTokens";
 import { ensureSpotifyLinksTable, getSpotifyLinkByUserId, upsertSpotifyLink } from "./db/spotifyLinks";
 import { ensurePasswordResetTable } from "./db/passwordResets";
 import { ensureProfilePostsTable } from "./db/profilePosts";
@@ -1355,38 +1357,47 @@ export function initializeRuntimeServices() {
   const skipInit = ["1", "true", "yes", "on"].includes(String(process.env.SUPCONTENT_SKIP_INIT || "").trim().toLowerCase());
   if (skipInit) return;
 
-  ensureCollectionsTables().catch((err) => {
-    console.error("Collections tables init failed (non-blocking):", err?.message || err);
-  });
+  void (async () => {
+    try {
+      await ensureUsersTable();
+      await ensureRefreshTokensTable();
+    } catch (err) {
+      console.error("Auth tables init failed (non-blocking):", (err as any)?.message || err);
+    }
 
-  ensureSocialTables().catch((err) => {
-    console.error("Social tables init failed (non-blocking):", err?.message || err);
-  });
+    ensureCollectionsTables().catch((err) => {
+      console.error("Collections tables init failed (non-blocking):", err?.message || err);
+    });
 
-  ensureFollowTables().catch((err) => {
-    console.error("Follow tables init failed (non-blocking):", err?.message || err);
-  });
+    ensureSocialTables().catch((err) => {
+      console.error("Social tables init failed (non-blocking):", err?.message || err);
+    });
 
-  ensureSpotifyLinksTable().catch((err) => {
-    console.error("Spotify links table init failed (non-blocking):", err?.message || err);
-  });
+    ensureFollowTables().catch((err) => {
+      console.error("Follow tables init failed (non-blocking):", err?.message || err);
+    });
 
-  ensurePasswordResetTable().catch((err) => {
-    console.error("Password reset table init failed (non-blocking):", err?.message || err);
-  });
+    ensureSpotifyLinksTable().catch((err) => {
+      console.error("Spotify links table init failed (non-blocking):", err?.message || err);
+    });
 
-  ensureProfilePostsTable().catch((err) => {
-    console.error("Profile posts table init failed (non-blocking):", err?.message || err);
-  });
-  ensureChatTables().catch((err) => {
-    console.error("Chat tables init failed (non-blocking):", err?.message || err);
-  });
-  ensureLiveTables().catch((err) => {
-    console.error("Live tables init failed (non-blocking):", err?.message || err);
-  });
-  ensureShopTables().catch((err) => {
-    console.error("Shop tables init failed (non-blocking):", err?.message || err);
-  });
+    ensurePasswordResetTable().catch((err) => {
+      console.error("Password reset table init failed (non-blocking):", err?.message || err);
+    });
+
+    ensureProfilePostsTable().catch((err) => {
+      console.error("Profile posts table init failed (non-blocking):", err?.message || err);
+    });
+    ensureChatTables().catch((err) => {
+      console.error("Chat tables init failed (non-blocking):", err?.message || err);
+    });
+    ensureLiveTables().catch((err) => {
+      console.error("Live tables init failed (non-blocking):", err?.message || err);
+    });
+    ensureShopTables().catch((err) => {
+      console.error("Shop tables init failed (non-blocking):", err?.message || err);
+    });
+  })();
 }
 
 export function startServer(port = process.env.PORT || 1234) {

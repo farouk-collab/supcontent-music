@@ -26,6 +26,40 @@ const PUBLIC_COLS = `
   location, gender, birth_date::text AS birth_date, role, created_at
 `;
 
+export async function ensureUsersTable() {
+  await pool.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      username TEXT NULL,
+      avatar_url TEXT NULL,
+      cover_url TEXT NULL,
+      bio TEXT NULL,
+      website TEXT NULL,
+      location TEXT NULL,
+      gender TEXT NULL,
+      birth_date DATE NULL,
+      role TEXT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_email_unique
+    ON users (LOWER(email))
+  `);
+
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username_unique
+    ON users (LOWER(username))
+    WHERE username IS NOT NULL
+  `);
+}
+
 /** Utilisé pour login (on a besoin de password_hash) */
 export async function findUserByEmail(email: string): Promise<DbUser | null> {
   const r = await pool.query<DbUser>(
