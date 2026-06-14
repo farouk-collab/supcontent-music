@@ -908,10 +908,12 @@ async function loadEmbeddedImportLink(urlOverride = "") {
     window.supcontentPlayer?.playYouTube?.({
       url,
       title: deriveTitleFromUrl(url, data.type === "youtube-playlist" ? "Playlist YouTube" : "Video YouTube"),
-      subtitle: data.type === "youtube-playlist" ? "Lecture audio -> clique sur la waveform pour la video" : "YouTube audio",
-      mode: "audio",
+      subtitle: data.type === "youtube-playlist" ? "Playlist YouTube" : "Video YouTube",
+      mode: "video",
     });
-    renderImportLaunchState("Lecture YouTube lancee", "Mode audio dans la barre du bas.");
+    // Open expanded view so the user can see and interact with the YouTube player
+    setTimeout(() => window.supcontentPlayer?.expand?.(), 600);
+    renderImportLaunchState("Lecture YouTube lancee", "Le lecteur s'ouvre en bas — clique sur ▶ YouTube pour demarrer.");
     return;
   }
 
