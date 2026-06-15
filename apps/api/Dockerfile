@@ -4,6 +4,9 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY apps/api/package.json apps/api/package.json
+COPY apps/mobile/package.json apps/mobile/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY scripts/postinstall.mjs scripts/postinstall.mjs
 
 RUN npm ci
 

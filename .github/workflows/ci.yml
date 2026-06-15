@@ -28,5 +28,8 @@ jobs:
       - name: Build workspaces
         run: npm run build
 
+      - name: Build mobile export
+        run: npm run build:mobile
+
       - name: Run automated tests
         run: npm run test

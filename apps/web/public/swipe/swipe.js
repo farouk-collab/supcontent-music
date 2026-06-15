@@ -758,16 +758,8 @@ async function performSwipe(direction) {
   }, ...state.history];
 
   if (!isAuthedSwipeUser()) {
-    if ((direction === "like" || direction === "superlike") && state.viewMode !== "music" && currentCard.mockReciprocalLike) {
-      pushLocalMatch(currentCard, direction);
-    }
-    if (direction === "pass") state.passedIds = [...state.passedIds, currentCard.id];
-    if (direction === "like") state.likedIds = [...state.likedIds, currentCard.id];
-    if (direction === "superlike") state.superLikedIds = [...state.superLikedIds, currentCard.id];
-    persistState();
-    setActionFeedback(direction);
-    renderTabs();
-    renderMatchModal();
+    state.actionLock = false;
+    toast("Connecte-toi pour utiliser les swipes.", "Connexion requise");
     return;
   }
 
@@ -786,7 +778,7 @@ async function performSwipe(direction) {
         method: "POST",
         body: JSON.stringify({ direction, message: direction === "superlike" ? "Super like envoye" : "" }),
       });
-      if ((direction === "like" || direction === "superlike") && (res?.can_chat_direct || currentCard.mockReciprocalLike)) {
+      if ((direction === "like" || direction === "superlike") && res?.can_chat_direct) {
         const match = {
           matchId: String(res?.match?.id || `match-${currentCard.id}`),
           profileId: String(currentCard.id),
@@ -880,74 +872,7 @@ function reloadQueue() {
 
 async function loadProfiles() {
   if (!isAuthedSwipeUser()) {
-    state.profiles = [
-      {
-        id: "mock-profile-1",
-        name: "Nina.beats",
-        age: 23,
-        city: "Paris",
-        vibe: "Rap / R&B / Night drive",
-        genreGroup: "rap",
-        compatibility: 94,
-        createdRank: 1,
-        recentTasteBoost: 92,
-        topArtists: ["The Weeknd", "Travis Scott", "SZA"],
-        playlists: ["Late Night Energy", "Purple Lights"],
-        bio: "Je cherche quelqu'un qui peut noter un album track par track sans sauter l'intro.",
-        status: "Ecoute actuellement Timeless",
-        mockReciprocalLike: false,
-        gender: "female",
-        heightCm: 168,
-        race: "black",
-        distanceKm: 8,
-        cardType: "profile",
-        raw: null,
-      },
-      {
-        id: "mock-profile-2",
-        name: "Ayo.wav",
-        age: 22,
-        city: "Lome",
-        vibe: "Afro / Amapiano / Sunset",
-        genreGroup: "afro",
-        compatibility: 91,
-        createdRank: 2,
-        recentTasteBoost: 97,
-        topArtists: ["Tems", "Rema", "Asake"],
-        playlists: ["Afro Sunset", "Beach Bounce"],
-        bio: "Je veux decouvrir des gens qui vivent la musique comme une ambiance entiere.",
-        status: "En boucle sur DND",
-        mockReciprocalLike: true,
-        gender: "male",
-        heightCm: 176,
-        race: "black",
-        distanceKm: 15,
-        cardType: "profile",
-        raw: null,
-      },
-      {
-        id: "mock-profile-3",
-        name: "Luna.mix",
-        age: 24,
-        city: "Lyon",
-        vibe: "Pop / Electro / Soft nights",
-        genreGroup: "pop",
-        compatibility: 87,
-        createdRank: 3,
-        recentTasteBoost: 86,
-        topArtists: ["Dua Lipa", "Billie Eilish", "Charli XCX"],
-        playlists: ["Neon Pop", "3AM Feelings"],
-        bio: "Je swipe surtout selon les gouts musicaux. Le reste vient apres.",
-        status: "A partage une playlist aujourd'hui",
-        mockReciprocalLike: false,
-        gender: "female",
-        heightCm: 164,
-        race: "white",
-        distanceKm: 27,
-        cardType: "profile",
-        raw: null,
-      },
-    ];
+    state.profiles = [];
     return;
   }
   const data = await apiFetch("/follows/swipe/profiles?limit=20");
@@ -1151,54 +1076,7 @@ async function bootstrap() {
       state.likesYou = [];
       state.matches = [];
     } else {
-      if (!state.profiles.length) {
-        state.profiles = [
-          {
-            id: "mock-profile-1",
-            name: "Nina.beats",
-            age: 23,
-            city: "Paris",
-            vibe: "Rap / R&B / Night drive",
-            genreGroup: "rap",
-            compatibility: 94,
-            createdRank: 1,
-            recentTasteBoost: 92,
-            topArtists: ["The Weeknd", "Travis Scott", "SZA"],
-            playlists: ["Late Night Energy", "Purple Lights"],
-            bio: "Je cherche quelqu'un qui peut noter un album track par track sans sauter l'intro.",
-            status: "Ecoute actuellement Timeless",
-            mockReciprocalLike: false,
-            gender: "female",
-            heightCm: 168,
-            race: "black",
-            distanceKm: 8,
-            cardType: "profile",
-            raw: null,
-          },
-          {
-            id: "mock-profile-2",
-            name: "Ayo.wav",
-            age: 22,
-            city: "Lome",
-            vibe: "Afro / Amapiano / Sunset",
-            genreGroup: "afro",
-            compatibility: 91,
-            createdRank: 2,
-            recentTasteBoost: 97,
-            topArtists: ["Tems", "Rema", "Asake"],
-            playlists: ["Afro Sunset", "Beach Bounce"],
-            bio: "Je veux decouvrir des gens qui vivent la musique comme une ambiance entiere.",
-            status: "En boucle sur DND",
-            mockReciprocalLike: true,
-            gender: "male",
-            heightCm: 176,
-            race: "black",
-            distanceKm: 15,
-            cardType: "profile",
-            raw: null,
-          },
-        ];
-      }
+      state.profiles = [];
       if (!state.likesYou.length) state.likesYou = fallbackLikesYouProfiles;
     }
   }

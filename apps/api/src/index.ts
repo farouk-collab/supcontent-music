@@ -49,6 +49,15 @@ import { AuthedRequest, requireAuth } from "./middleware/requireAuth";
 export function createApp() {
   const app = express();
   app.set("trust proxy", 1);
+  const configuredOrigins = String(process.env.CORS_ORIGINS || process.env.FRONTEND_URL || "")
+    .split(",")
+    .map((value) => value.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+  const developmentOrigins = ["http://localhost:4173", "http://127.0.0.1:4173"];
+  const allowedOrigins = new Set([
+    ...configuredOrigins,
+    ...(process.env.NODE_ENV === "production" ? [] : developmentOrigins),
+  ]);
 
   app.use(
     helmet({
@@ -70,7 +79,16 @@ export function createApp() {
       },
     })
   );
-  app.use(cors({ origin: true, credentials: true }));
+  app.use(cors({
+    credentials: true,
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.has(origin.replace(/\/+$/, ""))) {
+        callback(null, true);
+        return;
+      }
+      callback(new Error("Origine CORS non autorisée"));
+    },
+  }));
   app.use(express.json());
   app.use(cookieParser());
   app.use(morgan("dev"));

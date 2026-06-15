@@ -2,16 +2,6 @@ import { apiFetch, toast, resolveMediaUrl, requireLogin, repairText } from "/noy
 
 const STORAGE_KEY = "supcontent_imported_playlists_v1";
 
-const DEFAULT_NOTIFICATIONS = [
-  { id: 1, type: "release", user: "Nina.beats", text: "a partage une nouvelle sortie : Timeless - The Weeknd", time: "Il y a 2 min", read: false },
-  { id: 2, type: "community", user: "Ayo.wav", text: "a aime ta playlist Afro Sunset", time: "Il y a 8 min", read: false },
-  { id: 3, type: "follow", user: "Luna.mix", text: "a commence a te suivre", time: "Il y a 21 min", read: false },
-  { id: 4, type: "comment", user: "Melo", text: 'a commente ton post : "grosse ambiance ce son"', time: "Il y a 1 h", read: true },
-  { id: 5, type: "playlist", user: "DJ Nova", text: "a ajoute ton morceau a la playlist Midnight Drive", time: "Il y a 2 h", read: true },
-  { id: 6, type: "release", user: "Kez.fm", text: "a publie un extrait exclusif dans ses stories", time: "Il y a 3 h", read: true },
-  { id: 7, type: "community", user: "SoundWave", text: 'a reposte ta review "Night Drive Energy"', time: "Hier", read: true },
-];
-
 const spotifySuggestionsBank = [
   { id: "s1", title: "Timeless", subtitle: "The Weeknd · Titre" },
   { id: "s2", title: "UTOPIA", subtitle: "Travis Scott · Album" },
@@ -21,38 +11,13 @@ const spotifySuggestionsBank = [
   { id: "s6", title: "Aya Nakamura", subtitle: "Artiste pop / afro" },
 ];
 
-const fallbackSpotifyResults = [
-  { id: "sp-track-1", kind: "tracks", title: "Timeless", subtitle: "The Weeknd · After Midnight", coverLabel: "Single", detail: "Ouvrir detail media", href: "#" },
-  { id: "sp-track-2", kind: "tracks", title: "FE!N", subtitle: "Travis Scott · UTOPIA", coverLabel: "Single", detail: "Ouvrir detail media", href: "#" },
-  { id: "sp-artist-1", kind: "artists", title: "Tems", subtitle: "Artiste · Soul / Afro", coverLabel: "Artist", detail: "Ouvrir profil artiste", href: "#" },
-  { id: "sp-artist-2", kind: "artists", title: "Metro Boomin", subtitle: "Artiste · Producteur", coverLabel: "Artist", detail: "Ouvrir profil artiste", href: "#" },
-  { id: "sp-album-1", kind: "albums", title: "Moon Signals", subtitle: "Tems · Album", coverLabel: "Album", detail: "Ouvrir detail media", href: "#" },
-  { id: "sp-album-2", kind: "albums", title: "UTOPIA", subtitle: "Travis Scott · Album", coverLabel: "Album", detail: "Ouvrir detail media", href: "#" },
-];
-
-const fallbackYoutubeResults = [
-  { id: "yt-track-1", kind: "tracks", title: "Timeless (Live Session)", subtitle: "YouTube Video · The Weeknd", coverLabel: "Video", detail: "Ouvrir detail media", youtubePlayable: true, url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", href: "#" },
-  { id: "yt-track-2", kind: "tracks", title: "Afro Sunset Mix", subtitle: "YouTube Video · DJ Nova", coverLabel: "Video", detail: "Ouvrir detail media", youtubePlayable: true, url: "https://www.youtube.com/watch?v=dQw4w9WgXcQ", href: "#" },
-  { id: "yt-artist-1", kind: "artists", title: "A COLORS SHOW", subtitle: "Chaine / createur", coverLabel: "Channel", detail: "Ouvrir detail media", youtubePlayable: false, url: "", href: "#" },
-  { id: "yt-album-1", kind: "albums", title: "Late Night Pop Essentials", subtitle: "Playlist importee YouTube", coverLabel: "Playlist", detail: "Ouvrir playlist importee", youtubePlayable: true, url: "https://music.youtube.com/playlist?list=PLmock001", href: "#" },
-  { id: "yt-album-2", kind: "albums", title: "Rap FR Recharge", subtitle: "Playlist importee YouTube", coverLabel: "Playlist", detail: "Ouvrir playlist importee", youtubePlayable: true, url: "https://music.youtube.com/playlist?list=PLmock002", href: "#" },
-];
-
-const fallbackImportedPlaylists = [
-  { id: "pl-1", title: "Night Drive", source: "Spotify", tracks: 24, favorite: true, synced: true, loginRequired: true, url: "https://open.spotify.com/playlist/mock001" },
-  { id: "pl-2", title: "Rap FR Recharge", source: "YouTube", tracks: 31, favorite: false, synced: false, loginRequired: true, url: "https://music.youtube.com/playlist?list=PLmock002" },
-  { id: "pl-3", title: "Afro Sunset", source: "Spotify", tracks: 18, favorite: true, synced: true, loginRequired: true, url: "https://open.spotify.com/playlist/mock003" },
-  { id: "md-1", title: "SoundHelix Demo", source: "Lien audio", tracks: 1, favorite: false, synced: true, loginRequired: true, url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", mediaType: "audio", itemType: "media" },
-  { id: "md-2", title: "Video Demo", source: "Lien video", tracks: 1, favorite: false, synced: false, loginRequired: true, url: "https://www.w3schools.com/html/mov_bbb.mp4", mediaType: "video", itemType: "media" },
-];
-
 const RANDOM_SPOTIFY_TERMS = ["afrobeats", "house", "drill", "rap fr", "amapiano", "dancehall", "rnb", "electro", "pop", "trap", "latin", "funk", "jazz", "lofi", "chill", "soul"];
 
 const state = {
   notificationsOpen: false,
-  notifications: sanitizeNotifications(DEFAULT_NOTIFICATIONS),
-  socketConnected: true,
-  lastRealtimeEvent: "Dernier evenement il y a quelques secondes",
+  notifications: [],
+  socketConnected: false,
+  lastRealtimeEvent: "Aucune notification recente",
   searchValue: "",
   activeSource: "spotify",
   activeType: "tracks",
@@ -84,7 +49,6 @@ const refs = {
   notifStats: document.querySelector("#searchNotifStats"),
   notifLast: document.querySelector("#searchNotifLast"),
   notifList: document.querySelector("#searchNotifList"),
-  mockNotifBtn: document.querySelector("#searchMockNotifBtn"),
   markAllReadBtn: document.querySelector("#searchMarkAllReadBtn"),
   searchInput: document.querySelector("#searchInput"),
   searchClearBtn: document.querySelector("#searchClearBtn"),
@@ -336,7 +300,7 @@ function getNotificationIcon(type) {
 
 function storageRows() {
   if (state.importedPlaylists.length || state.hasPersistedPlaylists) return state.importedPlaylists.map(normalizePlaylistRow);
-  return fallbackImportedPlaylists.map(normalizePlaylistRow);
+  return [];
 }
 
 function getVisibleSuggestions() {
@@ -348,7 +312,7 @@ function getVisibleSuggestions() {
 
 function getLiveResults() {
   if (state.activeSource === "spotify") {
-    const base = state.spotifyResultsLive.length ? state.spotifyResultsLive : fallbackSpotifyResults.map((item) => normalizeSearchResult(item, "spotify"));
+    const base = state.spotifyResultsLive;
     return base.filter((item) => item.kind === state.activeType).filter(matchesAdvancedResultFilters);
   }
 
@@ -369,7 +333,7 @@ function getLiveResults() {
     canPlayVideo: true,
   }, "youtube"));
 
-  const base = importedYoutube.length ? importedYoutube : fallbackYoutubeResults.map((item) => normalizeSearchResult(item, "youtube"));
+  const base = importedYoutube;
   const typed = base.filter((item) => item.kind === state.activeType);
   const searched = !query ? typed : typed.filter((item) => item.title.toLowerCase().includes(query) || item.subtitle.toLowerCase().includes(query));
   return searched.filter(matchesAdvancedResultFilters);
@@ -382,27 +346,25 @@ function getFilteredPlaylists() {
 function renderNotifications() {
   const unreadCount = getUnreadCount();
   const safeNotifications = getSafeNotifications();
-  const allTestsPassed = runNotificationTests().every((test) => test.passed);
-
   refs.notifBtn.classList.toggle("is-open", state.notificationsOpen);
   refs.notifPanel.hidden = !state.notificationsOpen;
   refs.notifBadge.hidden = unreadCount === 0;
   refs.notifBadge.textContent = unreadCount > 99 ? "99+" : String(unreadCount);
   refs.realtimePill.textContent = state.socketConnected ? "Temps reel connecte" : "Temps reel hors ligne";
   refs.realtimePill.classList.toggle("is-offline", !state.socketConnected);
-  refs.notifStatus.textContent = state.socketConnected ? "WebSocket simule : de nouvelles notifications arrivent automatiquement toutes les 5 secondes." : "Temps reel coupe : le flux live est en pause.";
+  refs.notifStatus.textContent = state.socketConnected ? "Notifications synchronisees avec ton compte." : "Connecte-toi pour synchroniser tes notifications.";
   refs.notifStats.innerHTML = `
     <div class="search-stat-card"><span class="search-stat-label">Total</span><strong>${safeNotifications.length}</strong><span>notifications</span></div>
     <div class="search-stat-card is-pink"><span class="search-stat-label">Non lues</span><strong>${unreadCount}</strong><span>elements</span></div>
-    <div class="search-stat-card is-blue"><span class="search-stat-label">Mode</span><strong>${allTestsPassed ? "OK" : "KO"}</strong><span>mock data live</span></div>
+    <div class="search-stat-card is-blue"><span class="search-stat-label">Etat</span><strong>${state.socketConnected ? "OK" : "OFF"}</strong><span>synchronisation</span></div>
   `;
-  refs.notifLast.textContent = `${allTestsPassed ? "Tests de robustesse passes" : "Un test de robustesse a echoue"} · ${state.lastRealtimeEvent}`;
-  refs.notifList.innerHTML = safeNotifications.map((item) => `
+  refs.notifLast.textContent = state.lastRealtimeEvent;
+  refs.notifList.innerHTML = safeNotifications.length ? safeNotifications.map((item) => `
     <button class="search-notif-item ${item.read ? "" : "is-unread"}" type="button" data-notif-id="${String(item.id)}">
       <div class="search-notif-icon">${getNotificationIcon(item.type)}</div>
       <div><div class="search-notif-text-row"><div class="search-notif-text"><strong>${escapeHtml(item.user)}</strong> ${escapeHtml(item.text)}</div>${item.read ? "" : '<span class="search-notif-dot"></span>'}</div><div class="search-notif-time">${escapeHtml(item.time)}</div></div>
     </button>
-  `).join("");
+  `).join("") : '<div class="search-empty-state"><p>Aucune notification recente.</p></div>';
   refs.notifList.querySelectorAll("[data-notif-id]").forEach((button) => button.addEventListener("click", () => markNotificationAsRead(button.getAttribute("data-notif-id"))));
 }
 
@@ -471,7 +433,7 @@ function renderResults() {
             <span class="search-import-badge ${item.energy === "high" ? "is-spotify" : "is-youtube"}">${escapeHtml(item.mood)}</span>
             <span class="search-import-badge ${item.canPlayVideo ? "is-youtube" : "is-spotify"}">${escapeHtml(item.energy)}</span>
           </div>
-          ${state.inlinePlayerId === item.id ? '<div class="search-inline-player">Player YouTube inline simule · visible seulement si le player global est dispo.</div>' : ""}
+          ${state.inlinePlayerId === item.id ? '<div class="search-inline-player">Lecteur YouTube integre.</div>' : ""}
         </div>
       </div>
     </article>
@@ -565,38 +527,54 @@ function markAllNotificationsAsRead() {
   renderNotifications();
 }
 
-function pushMockNotification() {
-  const pool = sanitizeNotifications([
-    { id: Date.now(), type: "comment", user: "Rina.pop", text: "a repondu a ton avis sur le dernier single pop", time: "A l'instant", read: false },
-    { id: Date.now() + 1, type: "follow", user: "TrapZone", text: "vient de s'abonner a ton profil", time: "A l'instant", read: false },
-    { id: Date.now() + 2, type: "playlist", user: "Afro Mood", text: 'a ajoute ton titre dans "Sunset Vibes"', time: "A l'instant", read: false },
-  ]);
-  const nextItem = pool[Math.floor(Math.random() * pool.length)] ?? sanitizeNotification(undefined);
-  state.notifications = [nextItem, ...sanitizeNotifications(state.notifications)];
-  state.lastRealtimeEvent = `${nextItem.user} · ${nextItem.text}`;
-  state.notificationsOpen = true;
+async function loadAccountNotifications() {
+  try {
+    const data = await apiFetch("/notifications/me?limit=20");
+    const followers = Array.isArray(data?.followers) ? data.followers : [];
+    const replies = Array.isArray(data?.comment_replies) ? data.comment_replies : [];
+    const chatMessages = Array.isArray(data?.chat_messages) ? data.chat_messages : [];
+    state.notifications = sanitizeNotifications([
+      ...chatMessages.map((item, index) => ({
+        id: `chat-${item?.message_id || index}`,
+        type: "comment",
+        user: String(item?.display_name || item?.username || "Utilisateur"),
+        text: String(item?.body || "t'a ecrit"),
+        time: "Recent",
+        read: false,
+      })),
+      ...followers.map((item, index) => ({
+        id: `follow-${item?.id || index}-${item?.created_at || ""}`,
+        type: "follow",
+        user: String(item?.display_name || item?.username || "Utilisateur"),
+        text: "a commence a te suivre",
+        time: "Recent",
+        read: false,
+      })),
+      ...replies.map((item, index) => ({
+        id: `reply-${item?.id || index}`,
+        type: "comment",
+        user: String(item?.display_name || item?.username || "Utilisateur"),
+        text: `a repondu a ton commentaire : "${String(item?.body || "").slice(0, 80)}"`,
+        time: "Recent",
+        read: false,
+      })),
+    ]);
+    state.socketConnected = true;
+    state.lastRealtimeEvent = "Derniere synchronisation : maintenant";
+  } catch {
+    state.notifications = [];
+    state.socketConnected = false;
+    state.lastRealtimeEvent = "Notifications indisponibles sans session active";
+  }
   renderNotifications();
 }
 
-function startRealtimeNotifications() {
+function startAccountNotificationSync() {
   if (wsTimer) clearInterval(wsTimer);
-  const simulatedRealtime = sanitizeNotifications([
-    { id: 1001, type: "release", user: "Kez.fm", text: "vient de publier une story sur une sortie rap", time: "A l'instant", read: false },
-    { id: 1002, type: "playlist", user: "DJ Nova", text: "a ajoute ton son a la playlist Midnight Drive", time: "A l'instant", read: false },
-    undefined,
-  ]);
-  let index = 0;
+  loadAccountNotifications().catch(() => {});
   wsTimer = window.setInterval(() => {
-    if (index >= simulatedRealtime.length) {
-      clearInterval(wsTimer);
-      return;
-    }
-    const nextItem = sanitizeNotification(simulatedRealtime[index], index);
-    state.notifications = [nextItem, ...sanitizeNotifications(state.notifications)];
-    state.lastRealtimeEvent = `${nextItem.user} · ${nextItem.text}`;
-    index += 1;
-    renderNotifications();
-  }, 5000);
+    if (!document.hidden) loadAccountNotifications().catch(() => {});
+  }, 30000);
 }
 
 async function fetchSearchResults() {
@@ -1138,7 +1116,6 @@ function bindEvents() {
     state.notificationsOpen = !state.notificationsOpen;
     renderNotifications();
   });
-  refs.mockNotifBtn?.addEventListener("click", pushMockNotification);
   refs.markAllReadBtn?.addEventListener("click", markAllNotificationsAsRead);
   document.addEventListener("mousedown", (event) => {
     if (!refs.dropdown?.contains(event.target)) {
@@ -1253,6 +1230,6 @@ function bindEvents() {
 
 bindEvents();
 renderAll();
-startRealtimeNotifications();
+startAccountNotificationSync();
 fetchSuggestions();
 hydrateImportedPlaylists();

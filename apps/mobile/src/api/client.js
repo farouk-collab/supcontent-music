@@ -298,5 +298,15 @@ export function createApiClient() {
 
     userFollows: (userId) =>
       request(`/follows/users/${encodeURIComponent(userId)}`),
+
+    searchUsers: (accessToken, q, limit = 20) =>
+      request(`/users/search?q=${encodeURIComponent(q)}&limit=${encodeURIComponent(limit)}`, {
+        headers: authHeaders(accessToken),
+      }),
+
+    followsMe: (accessToken) =>
+      request("/follows/me", {
+        headers: authHeaders(accessToken),
+      }),
   };
 }

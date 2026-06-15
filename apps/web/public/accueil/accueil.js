@@ -278,7 +278,7 @@ async function loadHomeNotifications({ silent = false } = {}) {
   if (!silent) renderNotifications();
 }
 
-function pushMockNotification() {
+function syncHomeNotifications() {
   loadHomeNotifications({ silent: false }).catch(() => {});
   lastRealtimeEvent = "Notifications synchronisees";
   renderNotifications();
@@ -291,17 +291,12 @@ function startRealtimeNotifications() {
     if (document.hidden) return;
     loadHomeNotifications({ silent: false }).catch(() => {});
   }, 15000);
-  /* legacy mock code removed
-    lastRealtimeEvent = `${next.user} â€¢ ${next.text}`;
-    renderNotifications();
-    index += 1;
-  */
 }
 
 function bindHomeNotifications() {
   notifications = [];
   renderNotifications();
-  pushMockNotification();
+  syncHomeNotifications();
   startRealtimeNotifications();
 
   const dropdown = document.querySelector("#homeNotifDropdown");
@@ -609,7 +604,7 @@ async function loadMusicNews() {
       : `<small style="color:var(--muted)">Sois le premier à partager une review ou une collection.</small>`;
   } catch (err) {
     renderMockNews();
-    console.warn("Actualites musique en fallback mock:", err?.message || err);
+    console.warn("Actualites musique indisponibles:", err?.message || err);
   }
 }
 
@@ -730,7 +725,7 @@ async function loadMusicCategories() {
   }
 
   if (HOME_FORCE_MOCK) {
-    setFeedModeHint("mock visuel");
+    setFeedModeHint("mode apercu");
     fillCategoryTracksFromMap(HOME_MOCK_CATEGORIES, categoryKeys);
     return;
   }
@@ -812,8 +807,8 @@ async function loadMusicCategories() {
       finalItems.forEach((it) => trackEl.appendChild(makeTile(it)));
     }
   } catch (err) {
-    console.warn("Spotify categories en fallback mock:", err?.message || err);
-    setFeedModeHint("fallback visuel");
+    console.warn("Spotify categories indisponibles:", err?.message || err);
+    setFeedModeHint("mode apercu");
     fillCategoryTracksFromMap(HOME_MOCK_CATEGORIES, categoryKeys);
   }
 }

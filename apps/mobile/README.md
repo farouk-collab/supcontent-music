@@ -6,6 +6,9 @@ Client mobile Expo/React Native pour SUPCONTENT Music.
 - Auth: register/login/logout + Google OAuth
 - Recherche media: `/search`
 - Detail media: `/media/:type/:id`
+- Bibliotheque, critiques et commentaires
+- Fil chronologique et notifications
+- Recherche de membres et abonnements
 - Profil: lecture + edition via `/auth/me`
 - Boutique mobile: catalogue, preview, favoris, panier, checkout, publication
 - Session persistante (access + refresh token)
@@ -64,7 +67,12 @@ Sorties attendues:
 Prerequis release:
 - Android Studio + Android SDK
 - JDK installe
+- NDK Android 26.1.10909125
 - Signature release Android a configurer si tu veux publier sur le Play Store
+
+Le script `android:apk` detecte automatiquement le SDK dans
+`%LOCALAPPDATA%\Android\Sdk` sous Windows et configure le build en mode
+production.
 
 ## URL API
 Par defaut:

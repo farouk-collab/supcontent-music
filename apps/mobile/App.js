@@ -7,6 +7,8 @@ import { ProfileScreen } from "./src/screens/ProfileScreen";
 import { LibraryScreen } from "./src/screens/LibraryScreen";
 import { FeedScreen } from "./src/screens/FeedScreen";
 import { NotificationsScreen } from "./src/screens/NotificationsScreen";
+import { ShopScreen } from "./src/screens/ShopScreen";
+import { UsersScreen } from "./src/screens/UsersScreen";
 import { createApiClient, ApiError } from "./src/api/client";
 import { clearSession, loadSession, saveSession } from "./src/storage/session";
 import { API_BASE_URL } from "./src/config";
@@ -18,6 +20,8 @@ const TABS = [
   { key: "feed", label: "Fil" },
   { key: "search", label: "Recherche" },
   { key: "library", label: "Biblio." },
+  { key: "users", label: "Membres" },
+  { key: "shop", label: "Boutique" },
   { key: "notifs", label: "Notifs" },
   { key: "profile", label: "Profil" },
 ];
@@ -26,6 +30,8 @@ const ROUTE_TITLES = {
   feed: "Fil d'actualité",
   search: "Recherche musicale",
   library: "Ma bibliothèque",
+  users: "Communauté",
+  shop: "Boutique",
   notifs: "Notifications",
   profile: "Mon profil",
   detail: "Détail",
@@ -220,6 +226,37 @@ export default function App() {
   const followUser = useCallback(async (userId) =>
     callAuthed((token) => api.followUser(token, userId)), [api, callAuthed]);
 
+  const searchUsers = useCallback(async (query) =>
+    callAuthed((token) => api.searchUsers(token, query)), [api, callAuthed]);
+
+  const toggleFollow = useCallback(async (userId, following) =>
+    callAuthed((token) => following
+      ? api.unfollowUser(token, userId)
+      : api.followUser(token, userId)), [api, callAuthed]);
+
+  const loadFollows = useCallback(async () =>
+    callAuthed((token) => api.followsMe(token)), [api, callAuthed]);
+
+  // Shop
+  const loadShopProducts = useCallback(async () => api.shopProducts(), [api]);
+  const loadShopCreators = useCallback(async () => api.shopSpotlight(), [api]);
+  const loadShopFavorites = useCallback(async () =>
+    callAuthed((token) => api.shopFavorites(token)), [api, callAuthed]);
+  const loadShopCart = useCallback(async () =>
+    callAuthed((token) => api.shopCart(token)), [api, callAuthed]);
+  const addShopCartItem = useCallback(async (productId) =>
+    callAuthed((token) => api.shopAddToCart(token, productId)), [api, callAuthed]);
+  const removeShopCartItem = useCallback(async (cartItemId) =>
+    callAuthed((token) => api.shopRemoveFromCart(token, cartItemId)), [api, callAuthed]);
+  const toggleShopFavorite = useCallback(async (productId, isFavorite) =>
+    callAuthed((token) => isFavorite
+      ? api.shopRemoveFavorite(token, productId)
+      : api.shopAddFavorite(token, productId)), [api, callAuthed]);
+  const checkoutShop = useCallback(async () =>
+    callAuthed((token) => api.shopCheckout(token)), [api, callAuthed]);
+  const publishShopProduct = useCallback(async (payload) =>
+    callAuthed((token) => api.shopPublishProduct(token, payload)), [api, callAuthed]);
+
   // Profile
   const refreshMe = useCallback(async () => {
     const data = await callAuthed((token) => api.me(token));
@@ -304,6 +341,29 @@ export default function App() {
           />
         ) : null}
 
+        {route.name === "users" ? (
+          <UsersScreen
+            onSearchUsers={searchUsers}
+            onToggleFollow={toggleFollow}
+            onLoadFollows={loadFollows}
+          />
+        ) : null}
+
+        {route.name === "shop" ? (
+          <ShopScreen
+            currentUser={session.user}
+            onLoadProducts={loadShopProducts}
+            onLoadCreators={loadShopCreators}
+            onLoadFavorites={loadShopFavorites}
+            onLoadCart={loadShopCart}
+            onAddToCart={addShopCartItem}
+            onRemoveFromCart={removeShopCartItem}
+            onToggleFavorite={toggleShopFavorite}
+            onCheckout={checkoutShop}
+            onPublish={publishShopProduct}
+          />
+        ) : null}
+
         {route.name === "detail" ? (
           <MediaDetailScreen
             mediaType={route.params?.type}
@@ -374,6 +434,7 @@ const styles = StyleSheet.create({
   content: { flex: 1 },
   bottomTabs: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 5,
     paddingHorizontal: 10,
     paddingTop: 8,
@@ -383,7 +444,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#0a1223",
   },
   tabBtn: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: "28%",
     borderWidth: 1,
     borderColor: "#2f4264",
     borderRadius: 9,

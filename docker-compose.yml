@@ -6,17 +6,22 @@ services:
     container_name: supcontent-api
     restart: always
     environment:
+      NODE_ENV: development
       PORT: 1234
       DATABASE_URL: postgres://supcontent:supcontent@db:5432/supcontent
       REDIS_URL: redis://redis:6379
-      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID}
-      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET}
-      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
-      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
-      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI}
-      FRONTEND_URL: ${FRONTEND_URL}
-      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      SPOTIFY_CLIENT_ID: ${SPOTIFY_CLIENT_ID:-}
+      SPOTIFY_CLIENT_SECRET: ${SPOTIFY_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI:-http://localhost:1234/auth/oauth/google/callback}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://localhost:1234/auth/oauth/github/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:4173}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4173}
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-supcontent-local-access-secret-change-me}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-supcontent-local-refresh-secret-change-me}
     depends_on:
       - db
       - redis

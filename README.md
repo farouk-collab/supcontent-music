@@ -2,6 +2,19 @@
 
 Réseau social musical basé sur l'API Spotify. Projet scolaire — SUPCONTENT.
 
+## Documentation du projet
+
+La documentation complète, les procédures de validation et les diagrammes UML
+sont regroupés dans [docs/README.md](docs/README.md).
+
+- [Architecture technique](docs/ARCHITECTURE.md)
+- [Installation et déploiement](docs/INSTALLATION.md)
+- [Guide utilisateur](docs/GUIDE_UTILISATEUR.md)
+- [Référence API](docs/API.md)
+- [Tests et recette](docs/VALIDATION.md)
+- [Diagrammes UML](docs/uml/DIAGRAMMES.md)
+- [Guide de soutenance](docs/SOUTENANCE.md)
+
 ---
 
 ## Table des matières
@@ -338,10 +351,10 @@ Le fichier `apps/api/.env.example` liste toutes les variables requises.
 ### Authentification (web + mobile)
 - Inscription email/mot de passe
 - Connexion email/mot de passe
-- Connexion via Google OAuth
-- Connexion via GitHub OAuth
+- Connexion via Google OAuth (web + mobile)
+- Connexion via GitHub OAuth (web)
 - Liaison compte Spotify (écoute personnalisée)
-- Réinitialisation de mot de passe par email
+- Flux sécurisé de réinitialisation du mot de passe
 - Refresh automatique des tokens JWT
 - Déconnexion (invalidation du refresh token)
 - Suppression de compte (RGPD)
@@ -349,8 +362,8 @@ Le fichier `apps/api/.env.example` liste toutes les variables requises.
 ### Recherche Spotify (web + mobile)
 - Recherche par titre, artiste, album
 - Filtres par type (titres / artistes / albums)
-- Filtre par année
-- Tri par pertinence, popularité ou nom
+- Filtre par année (web)
+- Tri par pertinence, popularité ou nom (web)
 - Cache Redis des résultats (TTL 300s)
 - Pool de secours en cas de rate-limiting Spotify
 
@@ -387,12 +400,12 @@ Le fichier `apps/api/.env.example` liste toutes les variables requises.
 - Gestion des utilisateurs (bannir, promouvoir admin)
 - Recherche d'utilisateurs
 
-### Paramètres (web + mobile)
-- Modification du profil (pseudo, bio, avatar)
-- Thème (sombre/clair/custom)
-- Préférences de notifications
-- Exportation des données RGPD (JSON / CSV)
-- Gestion des utilisateurs bloqués
+### Profil et paramètres
+- Modification du profil (pseudo, bio, avatar) sur web et mobile
+- Thème (sombre/clair/custom) sur le web
+- Préférences de notifications sur le web
+- Exportation des données RGPD (JSON / CSV) sur le web
+- Gestion des utilisateurs bloqués sur le web
 
 ---
 

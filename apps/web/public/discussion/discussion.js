@@ -955,7 +955,7 @@ function bindEvents() {
     input.click();
   });
   refs.micBtn?.addEventListener("click", () => {
-    toast("Enregistrement vocal bientot disponible.", "Info");
+    toast("Le chat texte est disponible dans cette version.", "Info");
   });
   refs.callBtn?.addEventListener("click", async () => {
     await sendStructuredMessage(

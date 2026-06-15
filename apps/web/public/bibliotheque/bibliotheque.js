@@ -85,7 +85,7 @@ const state = {
   favoritesOnly: false,
   favorites: new Set(),
   playerMode: "audio",
-  feedback: "Bibliotheque premium prete · /collections/me simule",
+  feedback: "Bibliotheque prete · collections synchronisees",
   nowPlaying: null,
   recentlyPlayed: [],
   queue: [],
@@ -846,7 +846,7 @@ function renderPlayer() {
   dom.playerProgress.style.width = `${Math.max(0, Math.min(100, Number(current.progress || 0)))}%`;
   dom.volumeInput.value = String(current.volume ?? 72);
   dom.playerBadges.innerHTML = [current.source || "Source", visualMode === "video" ? "video" : "audio", current.canPlayVideo ? "clip dispo" : "audio seul"].map((item) => `<span class="library-badge">${escapeHtml(item)}</span>`).join("");
-  dom.playerVisual.innerHTML = visualMode === "video" && current.canPlayVideo ? `<div><strong style="display:block;margin-bottom:6px;">Lecteur video simule</strong><div>Clip, live session ou video YouTube.</div></div>` : `<div><strong style="display:block;margin-bottom:6px;">Lecture audio en cours</strong><div>Player global ou audio bibliotheque.</div></div>`;
+  dom.playerVisual.innerHTML = visualMode === "video" && current.canPlayVideo ? `<div><strong style="display:block;margin-bottom:6px;">Lecteur video</strong><div>Clip, live session ou video YouTube.</div></div>` : `<div><strong style="display:block;margin-bottom:6px;">Lecture audio en cours</strong><div>Player global ou audio bibliotheque.</div></div>`;
   dom.footerPlay.textContent = current.isPlaying ? "Pause" : "Play";
   dom.prevButton.disabled = !state.nowPlaying;
   dom.nextButton.disabled = !state.queue.length;

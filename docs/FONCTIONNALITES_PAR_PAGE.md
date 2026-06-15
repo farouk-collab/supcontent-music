@@ -57,7 +57,7 @@
 - Fonctionnalites swipe reservees a l'utilisateur connecte.
 
 ## Discussion (Chat)
-- Zone chat (WIP selon etat du projet).
+- Conversations et historique des messages.
 - Invitations recues depuis swipe.
 - Affichage conditionne par connexion.
 

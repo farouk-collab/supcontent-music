@@ -650,8 +650,13 @@ router.post("/password/forgot", async (req, res) => {
 
   const frontendBase = String(process.env.FRONTEND_URL || "http://localhost:4173").trim();
   const resetUrl = `${frontendBase}/connexion/connexion.html?resetToken=${encodeURIComponent(rawToken)}`;
-  // In production, branch this to email provider (Resend/Sendgrid) and remove token from response.
-  return res.json({ ok: true, resetToken: rawToken, resetUrl, expiresInSec: 900 });
+  if (process.env.NODE_ENV !== "production") {
+    return res.json({ ok: true, devResetUrl: resetUrl, expiresInSec: 900 });
+  }
+
+  // Le fournisseur email de production consomme resetUrl sans exposer le token au client.
+  console.info("Password reset requested", { userId: user.id, expiresAt });
+  return res.json({ ok: true });
 });
 
 router.post("/password/reset", async (req, res) => {
