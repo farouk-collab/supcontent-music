@@ -4,6 +4,7 @@ import { z } from "zod";
 import { pool } from "../connections";
 import { verifyAccessToken } from "../auth/jwt";
 import { requireAuth, type AuthedRequest } from "../middleware/requireAuth";
+import { publishNotification } from "../realtime/notificationHub";
 
 const router = Router();
 
@@ -308,6 +309,7 @@ router.post("/reviews/:reviewId/comments", requireAuth, async (req: AuthedReques
   const parentCommentId = parsed.data.parent_comment_id || null;
   const imageUrl = String(parsed.data.image_url || "").trim();
   const sticker = String(parsed.data.sticker || "").trim();
+  let parentOwnerId = "";
 
   if (!body && !imageUrl && !sticker) {
     return res.status(400).json({ erreur: "Commentaire vide" });
@@ -316,7 +318,7 @@ router.post("/reviews/:reviewId/comments", requireAuth, async (req: AuthedReques
   if (parentCommentId) {
     const parentRes = await pool.query(
       `
-        SELECT id
+        SELECT id, user_id
         FROM review_comments
         WHERE id = $1 AND review_id = $2
         LIMIT 1
@@ -324,6 +326,7 @@ router.post("/reviews/:reviewId/comments", requireAuth, async (req: AuthedReques
       [parentCommentId, reviewId]
     );
     if (!parentRes.rows[0]) return res.status(400).json({ erreur: "Commentaire parent invalide" });
+    parentOwnerId = String(parentRes.rows[0].user_id || "");
   }
 
   const r = await pool.query(
@@ -334,6 +337,13 @@ router.post("/reviews/:reviewId/comments", requireAuth, async (req: AuthedReques
     `,
     [randomUUID(), reviewId, userId, parentCommentId, body || "", body || "", imageUrl || null, sticker || null]
   );
+  if (parentOwnerId && parentOwnerId !== userId) {
+    publishNotification(parentOwnerId, {
+      kind: "comment_reply",
+      actorId: userId,
+      resourceId: String(r.rows[0]?.id || ""),
+    });
+  }
   return res.status(201).json({ comment: r.rows[0] });
 });
 

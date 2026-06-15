@@ -22,6 +22,12 @@ services:
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:4173}
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-supcontent-local-access-secret-change-me}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-supcontent-local-refresh-secret-change-me}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-0}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-SupContent Music <no-reply@supcontent.local>}
     depends_on:
       - db
       - redis

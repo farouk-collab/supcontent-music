@@ -1,4 +1,4 @@
-import { apiFetch, toast, getTokens, serverLogout, escapeHtml, resolveMediaUrl } from "/noyau/app.js";
+import { apiFetch, toast, getTokens, serverLogout, escapeHtml, resolveMediaUrl, subscribeToNotificationStream } from "/noyau/app.js";
 
 const STORY_TTL_MS = 24 * 60 * 60 * 1000;
 const DEFAULT_NOTIFICATIONS = [];
@@ -285,12 +285,24 @@ function syncHomeNotifications() {
 }
 
 function startRealtimeNotifications() {
-  if (notificationsTimer) clearInterval(notificationsTimer);
-  if (!realtimeEnabled) return;
-  notificationsTimer = window.setInterval(() => {
-    if (document.hidden) return;
-    loadHomeNotifications({ silent: false }).catch(() => {});
-  }, 15000);
+  if (typeof notificationsTimer === "function") notificationsTimer();
+  notificationsTimer = null;
+  if (!realtimeEnabled) {
+    realtimeConnected = false;
+    renderNotifications();
+    return;
+  }
+  notificationsTimer = subscribeToNotificationStream({
+    onStatus(connected) {
+      realtimeConnected = connected;
+      renderNotifications();
+    },
+    onEvent(message) {
+      if (message.event !== "notification") return;
+      lastRealtimeEvent = "Nouvelle activite recue";
+      loadHomeNotifications({ silent: false }).catch(() => {});
+    },
+  });
 }
 
 function bindHomeNotifications() {

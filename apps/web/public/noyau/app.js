@@ -310,6 +310,83 @@ export async function apiFetch(path, opts = {}) {
   return data;
 }
 
+export function subscribeToNotificationStream({
+  onEvent,
+  onStatus,
+  reconnectDelayMs = 3000,
+} = {}) {
+  const controller = new AbortController();
+  let stopped = false;
+
+  const wait = (duration) => new Promise((resolve) => window.setTimeout(resolve, duration));
+
+  const connect = async () => {
+    while (!stopped) {
+      const { accessToken } = getTokens();
+      if (!accessToken) {
+        onStatus?.(false);
+        await wait(reconnectDelayMs);
+        continue;
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/notifications/stream`, {
+          headers: {
+            Accept: "text/event-stream",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (response.status === 401) {
+          await apiFetch("/notifications/me?limit=1");
+          await wait(250);
+          continue;
+        }
+        if (!response.ok || !response.body) throw new Error("Flux temps reel indisponible");
+
+        onStatus?.(true);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (!stopped) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const blocks = buffer.split(/\r?\n\r?\n/);
+          buffer = blocks.pop() || "";
+
+          for (const block of blocks) {
+            const eventName = block.match(/^event:\s*(.+)$/m)?.[1]?.trim() || "message";
+            const dataText = block
+              .split(/\r?\n/)
+              .filter((line) => line.startsWith("data:"))
+              .map((line) => line.slice(5).trim())
+              .join("\n");
+            if (!dataText) continue;
+            let data = dataText;
+            try { data = JSON.parse(dataText); } catch { /* keep text */ }
+            onEvent?.({ event: eventName, data });
+          }
+        }
+      } catch (error) {
+        if (stopped || error?.name === "AbortError") break;
+        onStatus?.(false);
+        await wait(reconnectDelayMs);
+      }
+    }
+  };
+
+  connect();
+  return () => {
+    stopped = true;
+    controller.abort();
+    onStatus?.(false);
+  };
+}
+
 export function escapeHtml(s = "") {
   return String(s)
     .replaceAll("&", "&amp;").replaceAll("<", "&lt;")

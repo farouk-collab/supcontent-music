@@ -15,6 +15,7 @@
     "build:web": "npm --workspace apps/web run build",
     "lint:web": "npm --workspace apps/web run lint",
     "test:mobile": "node --test tests/mobile/*.test.mjs",
+    "verify:e2e": "node scripts/verify-two-account-flow.mjs",
     "test": "npm --workspace apps/api run test && npm --workspace apps/web run test && npm run test:mobile",
     "build:mobile": "npm --workspace apps/mobile run build",
     "check": "npm run lint:web && npm run build && npm run build:mobile && npm run test",

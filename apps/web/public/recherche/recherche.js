@@ -1,4 +1,4 @@
-import { apiFetch, toast, resolveMediaUrl, requireLogin, repairText } from "/noyau/app.js";
+import { apiFetch, toast, resolveMediaUrl, requireLogin, repairText, subscribeToNotificationStream } from "/noyau/app.js";
 
 const STORAGE_KEY = "supcontent_imported_playlists_v1";
 
@@ -570,11 +570,17 @@ async function loadAccountNotifications() {
 }
 
 function startAccountNotificationSync() {
-  if (wsTimer) clearInterval(wsTimer);
+  if (typeof wsTimer === "function") wsTimer();
   loadAccountNotifications().catch(() => {});
-  wsTimer = window.setInterval(() => {
-    if (!document.hidden) loadAccountNotifications().catch(() => {});
-  }, 30000);
+  wsTimer = subscribeToNotificationStream({
+    onStatus(connected) {
+      state.socketConnected = connected;
+      renderNotifications();
+    },
+    onEvent(message) {
+      if (message.event === "notification") loadAccountNotifications().catch(() => {});
+    },
+  });
 }
 
 async function fetchSearchResults() {

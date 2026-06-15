@@ -6,7 +6,8 @@
 - npm 10 ou version compatible ;
 - Docker Desktop avec Compose v2 ;
 - Android Studio et JDK 17 pour produire l'APK ;
-- clés Spotify et OAuth pour activer les services externes.
+- clés Spotify et OAuth pour activer les services externes ;
+- accès SMTP pour envoyer les e-mails de réinitialisation.
 
 ## Installation locale
 
@@ -104,7 +105,16 @@ apps/mobile/android/app/build/outputs/bundle/release/app-release.aab
 | `JWT_REFRESH_SECRET` | signature des refresh tokens |
 | `FRONTEND_URL` | URL utilisée pour les redirections |
 | `CORS_ORIGINS` | origines web autorisées, séparées par des virgules |
+| `SMTP_HOST` | serveur SMTP utilisé pour les e-mails |
+| `SMTP_PORT` | port SMTP, généralement `587` |
+| `SMTP_SECURE` | `1` pour TLS direct, sinon `0` |
+| `SMTP_USER` | utilisateur SMTP |
+| `SMTP_PASS` | mot de passe SMTP |
+| `MAIL_FROM` | expéditeur visible des e-mails |
 | `EXPO_PUBLIC_API_BASE_URL` | URL API utilisée par le mobile |
 
 Les secrets réels ne doivent jamais être ajoutés au dépôt Git.
 
+Sans configuration SMTP, la récupération de mot de passe reste testable en
+développement grâce au lien renvoyé par l'API. En production, les variables
+SMTP sont nécessaires et l'API ne révèle jamais si une adresse existe.

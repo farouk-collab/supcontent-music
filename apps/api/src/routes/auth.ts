@@ -24,6 +24,7 @@ import { getSpotifyLinkByUserId, upsertSpotifyLink } from "../db/spotifyLinks";
 import { exchangeSpotifyAuthCode, spotifyUserGet } from "../services";
 import { isSupportedImageMime, storeUploadedImage } from "../services/mediaStorage";
 import { buildOauthSuccessRedirect, decodeOauthReturnTo } from "../lib/oauth";
+import { sendPasswordResetEmail } from "../services/email";
 
 /* =========================
    Router
@@ -650,11 +651,21 @@ router.post("/password/forgot", async (req, res) => {
 
   const frontendBase = String(process.env.FRONTEND_URL || "http://localhost:4173").trim();
   const resetUrl = `${frontendBase}/connexion/connexion.html?resetToken=${encodeURIComponent(rawToken)}`;
+  try {
+    await sendPasswordResetEmail({
+      to: user.email,
+      displayName: user.display_name,
+      resetUrl,
+      expiresInMinutes: 15,
+    });
+  } catch (error: any) {
+    console.error("Password reset email failed", { userId: user.id, message: error?.message || error });
+  }
+
   if (process.env.NODE_ENV !== "production") {
     return res.json({ ok: true, devResetUrl: resetUrl, expiresInSec: 900 });
   }
 
-  // Le fournisseur email de production consomme resetUrl sans exposer le token au client.
   console.info("Password reset requested", { userId: user.id, expiresAt });
   return res.json({ ok: true });
 });

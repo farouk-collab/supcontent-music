@@ -96,46 +96,42 @@ export async function ensureCollectionsTables() {
   await pool.query(`
     DO $$
     DECLARE
-      existing_check text;
+      existing_check record;
     BEGIN
-      SELECT conname
-      INTO existing_check
-      FROM pg_constraint
-      WHERE conrelid = 'collection_items'::regclass
-        AND contype = 'c'
-        AND pg_get_constraintdef(oid) LIKE '%media_type%'
-      LIMIT 1;
-
-      IF existing_check IS NOT NULL AND existing_check <> 'collection_items_media_type_check' THEN
-        EXECUTE format('ALTER TABLE collection_items DROP CONSTRAINT %I', existing_check);
-      END IF;
-
-      IF NOT EXISTS (
-        SELECT 1
+      FOR existing_check IN
+        SELECT conname
         FROM pg_constraint
         WHERE conrelid = 'collection_items'::regclass
-          AND conname = 'collection_items_media_type_check'
-      ) THEN
-        ALTER TABLE collection_items
-          ADD CONSTRAINT collection_items_media_type_check
-          CHECK (media_type IN ('track', 'album', 'artist', 'playlist', 'media'));
-      END IF;
+          AND contype = 'c'
+          AND pg_get_constraintdef(oid) LIKE '%media_type%'
+      LOOP
+        EXECUTE format('ALTER TABLE collection_items DROP CONSTRAINT %I', existing_check.conname);
+      END LOOP;
+
+      ALTER TABLE collection_items
+        ADD CONSTRAINT collection_items_media_type_check
+        CHECK (media_type IN ('track', 'album', 'artist', 'playlist', 'media'));
     END
     $$;
   `);
   await pool.query(`
     DO $$
+    DECLARE
+      existing_check record;
     BEGIN
-      IF NOT EXISTS (
-        SELECT 1
+      FOR existing_check IN
+        SELECT conname
         FROM pg_constraint
         WHERE conrelid = 'collection_items'::regclass
-          AND conname = 'collection_items_item_kind_check'
-      ) THEN
-        ALTER TABLE collection_items
-          ADD CONSTRAINT collection_items_item_kind_check
-          CHECK (item_kind IN ('catalog', 'playlist', 'media'));
-      END IF;
+          AND contype = 'c'
+          AND pg_get_constraintdef(oid) LIKE '%item_kind%'
+      LOOP
+        EXECUTE format('ALTER TABLE collection_items DROP CONSTRAINT %I', existing_check.conname);
+      END LOOP;
+
+      ALTER TABLE collection_items
+        ADD CONSTRAINT collection_items_item_kind_check
+        CHECK (item_kind IN ('catalog', 'playlist', 'media'));
     END
     $$;
   `);

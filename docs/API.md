@@ -80,8 +80,13 @@ Exemple :
 | GET | `/follows/me` | abonnés et abonnements |
 | GET | `/feed/me` | fil chronologique |
 | GET | `/notifications/me` | notifications |
+| GET | `/notifications/stream` | flux temps réel SSE authentifié |
 | GET | `/chat/threads` | conversations |
 | POST | `/chat/threads/:id/messages` | envoyer un message |
+
+Le flux `/notifications/stream` émet un événement `notification` lors d'un
+nouvel abonnement, d'une réponse à un commentaire ou d'un message reçu. Le
+client recharge ensuite les données détaillées via `/notifications/me`.
 
 ## Boutique et administration
 
@@ -105,4 +110,3 @@ Exemple :
 - `404` ressource absente ;
 - `409` conflit ou doublon ;
 - `500` erreur serveur.
-

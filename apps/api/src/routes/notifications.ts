@@ -1,8 +1,14 @@
 import { Router } from "express";
 import { requireAuth, type AuthedRequest } from "../middleware/requireAuth";
 import { pool } from "../connections";
+import { subscribeToNotifications } from "../realtime/notificationHub";
 
 const router = Router();
+
+router.get("/stream", requireAuth, (req: AuthedRequest, res) => {
+  const unsubscribe = subscribeToNotifications(req.user!.id, res);
+  req.on("close", unsubscribe);
+});
 
 router.get("/me", requireAuth, async (req: AuthedRequest, res) => {
   const userId = req.user!.id;

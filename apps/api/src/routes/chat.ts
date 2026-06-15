@@ -3,6 +3,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { pool } from "../connections";
 import { requireAuth, type AuthedRequest } from "../middleware/requireAuth";
+import { publishNotification } from "../realtime/notificationHub";
 
 const router = Router();
 
@@ -393,6 +394,11 @@ router.post("/threads/:threadId/messages", requireAuth, async (req: AuthedReques
   );
 
   await pool.query(`UPDATE chat_threads SET updated_at = NOW() WHERE id = $1`, [threadId]);
+  publishNotification(String(thread.profile_id || ""), {
+    kind: "chat_message",
+    actorId: userId,
+    resourceId: messageId,
+  });
 
   return res.status(201).json({
     item: {

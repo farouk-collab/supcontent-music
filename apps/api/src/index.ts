@@ -45,6 +45,7 @@ import shopRoutes from "./routes/shop";
 import searchHubRoutes from "./routes/searchHub";
 import adminRoutes from "./routes/admin";
 import { AuthedRequest, requireAuth } from "./middleware/requireAuth";
+import { isEmailConfigured } from "./services/email";
 
 export function createApp() {
   const app = express();
@@ -175,6 +176,7 @@ const endpointCatalog: EndpointDef[] = [
   { method: "delete", path: "/profile-posts/{id}", tag: "ProfilePosts", auth: true },
   { method: "get", path: "/feed/me", tag: "Feed", auth: true },
   { method: "get", path: "/notifications/me", tag: "Notifications", auth: true },
+  { method: "get", path: "/notifications/stream", tag: "Notifications", auth: true },
   { method: "get", path: "/chat/threads", tag: "Chat", auth: true },
   { method: "post", path: "/chat/threads", tag: "Chat", auth: true },
   { method: "get", path: "/chat/threads/{threadId}/messages", tag: "Chat", auth: true },
@@ -346,6 +348,7 @@ const buildOpenApiSpec = (baseUrl: string) => {
     redisUrlLoaded: Boolean(process.env.REDIS_URL),
     jwtAccessLoaded: Boolean(process.env.JWT_ACCESS_SECRET),
     jwtRefreshLoaded: Boolean(process.env.JWT_REFRESH_SECRET),
+    emailConfigured: isEmailConfigured(),
   });
   });
 

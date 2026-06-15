@@ -4,6 +4,7 @@ import { pool } from "../connections";
 import { requireAuth, type AuthedRequest } from "../middleware/requireAuth";
 import { verifyAccessToken } from "../auth/jwt";
 import { spotifyGet } from "../services";
+import { publishNotification } from "../realtime/notificationHub";
 
 const router = Router();
 
@@ -642,14 +643,18 @@ router.post("/swipe/profiles/:targetUserId", requireAuth, async (req: AuthedRequ
   );
 
   if (isPositiveSwipe(direction)) {
-    await pool.query(
+    const followResult = await pool.query(
       `
         INSERT INTO follows (follower_id, following_id)
         VALUES ($1, $2)
         ON CONFLICT (follower_id, following_id) DO NOTHING
+        RETURNING following_id
       `,
       [actorId, targetUserId]
     );
+    if (followResult.rows[0]) {
+      publishNotification(targetUserId, { kind: "follow", actorId });
+    }
   }
 
   let invitationCreated = false;
@@ -852,14 +857,18 @@ router.post("/:targetUserId", requireAuth, async (req: AuthedRequest, res) => {
   const target = await readUserBasic(targetUserId);
   if (!target) return res.status(404).json({ erreur: "Utilisateur introuvable" });
 
-  await pool.query(
+  const followResult = await pool.query(
     `
       INSERT INTO follows (follower_id, following_id)
       VALUES ($1, $2)
       ON CONFLICT (follower_id, following_id) DO NOTHING
+      RETURNING following_id
     `,
     [followerId, targetUserId]
   );
+  if (followResult.rows[0]) {
+    publishNotification(targetUserId, { kind: "follow", actorId: followerId });
+  }
 
   return res.json({ ok: true, following: true });
 });
