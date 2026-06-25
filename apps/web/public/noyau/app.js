@@ -1,8 +1,25 @@
+const CURRENT_PRODUCTION_API_BASE = "https://supcontent-api-0zmj.onrender.com";
+const LEGACY_PRODUCTION_API_BASE = "https://supcontent-music-api-zivr.onrender.com";
+
 const DEFAULT_API_BASE = (() => {
   const h = String(window.location.hostname || "").toLowerCase();
   if (h === "localhost" || h === "127.0.0.1") return "http://localhost:1234";
-  return "https://supcontent-music-api-zivr.onrender.com";
+  return CURRENT_PRODUCTION_API_BASE;
 })();
+
+function readStoredApiBase() {
+  try {
+    const stored = String(window.localStorage?.getItem("SUPCONTENT_API_BASE") || "").trim();
+    if (!stored) return "";
+    if (stored === LEGACY_PRODUCTION_API_BASE) {
+      window.localStorage?.setItem("SUPCONTENT_API_BASE", CURRENT_PRODUCTION_API_BASE);
+      return CURRENT_PRODUCTION_API_BASE;
+    }
+    return stored;
+  } catch {
+    return "";
+  }
+}
 
 function readRuntimeApiBase() {
   try {
@@ -28,7 +45,7 @@ function readRuntimeApiBase() {
 }
 
 export const API_BASE = String(
-  readRuntimeApiBase() || window.localStorage?.getItem("SUPCONTENT_API_BASE") || DEFAULT_API_BASE
+  readRuntimeApiBase() || readStoredApiBase() || DEFAULT_API_BASE
 ).replace(/\/+$/, "");
 const LS = { access: "supcontent_access", refresh: "supcontent_refresh" };
 export const APP_SETTINGS_STORAGE_KEY = "supcontent-app-settings-v1";
