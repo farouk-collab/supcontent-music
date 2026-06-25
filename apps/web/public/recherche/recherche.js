@@ -154,7 +154,13 @@ function setImportedRows(rows) {
 async function hydrateImportedPlaylists() {
   try {
     const data = await apiFetch("/search-hub/imports");
-    setImportedRows(Array.isArray(data?.items) ? data.items : []);
+    const apiItems = Array.isArray(data?.items) ? data.items : [];
+    if (apiItems.length > 0) {
+      setImportedRows(apiItems);
+    } else {
+      setImportedRows(readImportedPlaylists());
+      state.hasPersistedPlaylists = hasPersistedPlaylists();
+    }
   } catch {
     setImportedRows(readImportedPlaylists());
     state.hasPersistedPlaylists = hasPersistedPlaylists();

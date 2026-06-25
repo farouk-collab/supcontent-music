@@ -349,6 +349,7 @@ function renderHero() {
   renderSocialLinks(profile);
   renderBirthdayRain();
 
+  if (els.logoutBtn) els.logoutBtn.hidden = !state.isOwnProfile;
   if (state.isOwnProfile) {
     els.followToggleBtn.hidden = true;
     if (els.messageProfileBtn) els.messageProfileBtn.hidden = true;

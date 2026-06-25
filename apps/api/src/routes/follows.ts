@@ -577,13 +577,14 @@ router.get("/swipe/profiles", requireAuth, async (req: AuthedRequest, res) => {
       };
     })
     .filter((it: any) => {
-      if (!Number.isFinite(Number(it.age))) return false;
-      if (actorIsMinor) {
-        if (Number(it.age) >= 18) return false;
-      } else if (Number(it.age) < 18) {
-        return false;
+      if (it.age != null) {
+        if (actorIsMinor) {
+          if (Number(it.age) >= 18) return false;
+        } else if (Number(it.age) < 18) {
+          return false;
+        }
+        if (Number(it.age) < ageMin || Number(it.age) > ageMax) return false;
       }
-      if (Number(it.age) < ageMin || Number(it.age) > ageMax) return false;
       if (preferredGenders.length) {
         const g = String(it.gender || "").trim().toLowerCase();
         if (!preferredGenders.includes(g)) return false;
