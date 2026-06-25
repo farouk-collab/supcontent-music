@@ -24,9 +24,12 @@
       color:#171c2b;
     }
     .auth-shell{
-      width:min(720px,calc(100vw - 24px));
+      width:min(1320px,calc(100vw - 24px));
       margin:0 auto;
       padding:28px 0 120px;
+      display:grid;
+      gap:24px;
+      grid-template-columns:minmax(0,1fr) minmax(340px,.95fr);
     }
     .auth-panel,
     .auth-side{
@@ -296,22 +299,39 @@
       </div>
     </section>
 
-    <aside class="auth-side" style="display:none" aria-hidden="true">
+    <aside class="auth-side">
       <h2>Etat de session</h2>
+
       <div class="auth-status">
-        <div id="authStatusHead" class="auth-status-head is-warn"><span>⚠</span><span>Non connecte</span></div>
+        <div id="authStatusHead" class="auth-status-head is-warn">
+          <span>⚠</span>
+          <span>Non connecte</span>
+        </div>
         <p id="authDiagnosticText">Aucune session active</p>
       </div>
+
       <div class="auth-status">
-        <div class="auth-token-block"><div id="authAccessToken" class="auth-token-value"></div></div>
-        <div class="auth-token-block"><div id="authRefreshToken" class="auth-token-value"></div></div>
+        <p class="auth-kicker" style="color:#9ca3af;">Tokens</p>
+        <div class="auth-token-block">
+          <div class="auth-token-label"><span>🛡</span><span>Access Token</span></div>
+          <div id="authAccessToken" class="auth-token-value">Aucun</div>
+        </div>
+        <div class="auth-token-block">
+          <div class="auth-token-label"><span>🔑</span><span>Refresh Token</span></div>
+          <div id="authRefreshToken" class="auth-token-value">Aucun</div>
+        </div>
         <div class="auth-side-actions" style="margin-top:16px;">
           <button id="authDiagnosticButton" class="auth-ghost" type="button">Diagnostic</button>
           <button id="authLogoutButton" class="auth-ghost" type="button">Deconnexion</button>
         </div>
       </div>
-      <div class="auth-status"><p id="authFeedbackText"></p></div>
-      <div id="authTestsBox" class="auth-test"></div>
+
+      <div class="auth-status">
+        <p class="auth-kicker" style="color:#9ca3af;">Retour interface</p>
+        <p id="authFeedbackText">Connexion prete</p>
+      </div>
+
+      <div id="authTestsBox" class="auth-test is-ok">Tests connexion passes</div>
     </aside>
   </div>
 

@@ -7,14 +7,19 @@ const INITIAL_AUTH_STATE = {
   diagnostic: "Aucune session active",
 };
 
-const FEATURE_CARDS = [];
+const FEATURE_CARDS = [
+  { id: "f1", title: "Connexion email", text: "Connexion classique avec email et mot de passe.", icon: "@" },
+  { id: "f2", title: "OAuth Google", text: "Connexion rapide avec ton compte Google.", icon: "G" },
+  { id: "f3", title: "OAuth GitHub", text: "Connexion rapide avec ton compte GitHub.", icon: "GH" },
+  { id: "f4", title: "Reset password", text: "Mot de passe oublie avec lien de reinitialisation.", icon: "K" },
+];
 
 const state = {
   mode: "login",
   showPassword: false,
-  email: "",
-  password: "",
-  forgotEmail: "",
+  email: "farouk@email.com",
+  password: "password123",
+  forgotEmail: "farouk@email.com",
   feedback: "Connexion prete",
   authState: { ...INITIAL_AUTH_STATE },
 };
@@ -45,10 +50,10 @@ const dom = {
 
 function runLoginTests() {
   const cases = [
+    { check: () => FEATURE_CARDS.length === 4 },
     { check: () => INITIAL_AUTH_STATE.isConnected === false },
-    { check: () => true },
-    { check: () => true },
-    { check: () => true },
+    { check: () => FEATURE_CARDS.some((item) => item.title.includes("Google")) },
+    { check: () => FEATURE_CARDS.some((item) => item.title.includes("GitHub")) },
   ];
   return cases.map((test) => ({ passed: test.check() }));
 }
