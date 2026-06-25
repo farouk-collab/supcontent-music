@@ -14,6 +14,7 @@ sont regroupés dans [docs/README.md](docs/README.md).
 - [Tests et recette](docs/VALIDATION.md)
 - [Diagrammes UML](docs/uml/DIAGRAMMES.md)
 - [Guide de soutenance](docs/SOUTENANCE.md)
+- [Fiche d'entrainement soutenance](docs/FICHE_ENTRAINEMENT_SOUTENANCE.md)
 
 ---
 

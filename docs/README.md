@@ -19,6 +19,7 @@ Express TypeScript, PostgreSQL, Redis et les intégrations Spotify/OAuth.
 | [Validation](VALIDATION.md) | Builds, tests, critères de recette et CI |
 | [Diagrammes UML](uml/DIAGRAMMES.md) | Cas d'utilisation, classes, séquences, composants, déploiement et données |
 | [Guide de soutenance](SOUTENANCE.md) | Démonstration conseillée et réponses techniques |
+| [Fiche d'entrainement soutenance](FICHE_ENTRAINEMENT_SOUTENANCE.md) | Pitch, demo, questions probables et checklist du jour J |
 
 ## Résumé fonctionnel
 
@@ -45,4 +46,3 @@ docs           documentation fonctionnelle et technique
 tests          tests API, web et mobile
 scripts        scripts de développement et d'installation
 ```
-
