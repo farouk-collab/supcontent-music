@@ -35,6 +35,19 @@ Variables backend obligatoires :
 3. Lancer le mobile:
    - `npm --workspace apps/mobile run start`
 
+## Android dev build
+
+Pour un emulateur Android local, utilise de preference:
+- `npm --workspace apps/mobile run start:android-dev`
+
+Cette commande:
+- configure `adb reverse` pour Metro (`8081`) et l'API (`1234`)
+- demarre Expo en mode `development build`
+- force le debug Android a utiliser `localhost:8081` pour Metro
+
+Si la build debug n'est pas encore installee:
+- `npm --workspace apps/mobile run android`
+
 ## Branding mobile
 - Nom app: `SUPCONTENT Music`
 - Android package: `com.supcontent.music`

@@ -6,6 +6,7 @@
   "scripts": {
     "assets:generate": "node ./scripts/generate-assets.mjs",
     "start": "expo start",
+    "start:android-dev": "node ./scripts/start-android-dev.mjs",
     "android": "expo run:android",
     "android:native": "expo prebuild --platform android",
     "android:native:clean": "expo prebuild --platform android --clean",
