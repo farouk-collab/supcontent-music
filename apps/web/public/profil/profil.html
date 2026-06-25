@@ -583,6 +583,7 @@
 
           <div class="action-row">
             <button id="followToggleBtn" class="pill-btn pill-btn--primary" type="button" hidden></button>
+            <button id="messageProfileBtn" class="pill-btn" type="button" hidden>Message</button>
             <a id="musicalProfileBtn" class="pill-btn" href="/profil-musical/" hidden>Profil musical</a>
           </div>
         </div>
@@ -635,20 +636,47 @@
         <div id="profileContentList" class="content-list"></div>
       </main>
 
-      <aside class="profile-card summary-panel" style="display:none" aria-hidden="true">
+      <aside class="profile-card summary-panel">
+        <h2 class="section-title">Resume du profil</h2>
         <div class="summary-stack">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <p>Publications</p>
+              <strong id="postsCount">0</strong>
+            </div>
+            <div class="stat-card">
+              <p>Stories actives</p>
+              <strong id="storiesCount">0</strong>
+            </div>
+          </div>
+
           <div class="soft-card">
+            <p class="profile-kicker" style="margin-bottom:10px;color:var(--text-faint)">Cache & uploads</p>
+            <div class="stats-grid">
+              <div class="stat-card">
+                <p>Posts en cache</p>
+                <strong id="cachedPostsCount">0</strong>
+              </div>
+              <div class="stat-card">
+                <p>Uploads en attente</p>
+                <strong id="pendingUploadsCount">0</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="soft-card">
+            <p class="profile-kicker" style="margin-bottom:10px;color:var(--text-faint)">Actions profil</p>
             <div class="action-list">
               <button id="refreshBtn" class="pill-btn" type="button">Rafraichir</button>
               <button id="logoutBtn" class="pill-btn" type="button">Deconnexion (local)</button>
               <button id="deleteAccountBtn" class="pill-btn" type="button">Supprimer mon compte</button>
             </div>
           </div>
-          <p id="feedbackText" class="feedback-line" style="display:none"></p>
-          <strong id="postsCount" style="display:none">0</strong>
-          <strong id="storiesCount" style="display:none">0</strong>
-          <strong id="cachedPostsCount" style="display:none">0</strong>
-          <strong id="pendingUploadsCount" style="display:none">0</strong>
+
+          <div class="soft-card">
+            <div class="profile-kicker" style="margin-bottom:10px;color:var(--accent2)">Etat visuel / technique</div>
+            <p id="feedbackText" class="feedback-line">Profil pret - donnees mises en cache</p>
+          </div>
         </div>
       </aside>
     </section>
@@ -661,7 +689,12 @@
         <div id="recentPostsList" class="content-list"></div>
       </section>
 
-      <div id="settingsSummary" style="display:none"></div>
+      <section class="profile-card bottom-panel">
+        <div style="display:flex;align-items:center;gap:10px">
+          <h2 class="section-title" style="font-size:24px">Reglages actifs</h2>
+        </div>
+        <div id="settingsSummary" class="content-list"></div>
+      </section>
     </section>
   </div>
 
@@ -749,6 +782,10 @@
           <input id="locationInput" type="text" maxlength="80" />
         </div>
         <div class="field">
+          <label for="birthdayInput">Date de naissance</label>
+          <input id="birthdayInput" type="date" />
+        </div>
+        <div class="field">
           <label for="bioInput">Bio</label>
           <textarea id="bioInput" maxlength="160"></textarea>
         </div>
@@ -807,4 +844,3 @@
   <script type="module" src="/noyau/footer.js"></script>
 </body>
 </html>
-
